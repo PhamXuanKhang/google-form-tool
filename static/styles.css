@@ -1,0 +1,96 @@
+body {
+    background-image: url('resources/background.gif');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    height: 100vh;
+}
+
+.form-control {
+    background-color: #e8e8e8;
+    border-color: #000000;
+    width: calc(40%);
+}
+
+.card {
+    margin: 5vh;
+    border-color: #000000;
+}
+
+.instruction-popup {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    width: 200px;
+    z-index: 100;
+}
+.save-button{
+    text-align: end; /* Canh giữa nội dung nút */
+    margin: 0px 20px 20px 0px;
+}
+.filling {
+    font-family: Arial, sans-serif;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+#container-filling {
+    text-align: center;
+}
+#progress-container-filling {
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5vh;
+    position: relative;
+}
+#progress-bar {
+    width: 100%;
+    background-color: #ccc;
+    justify-content: center;
+    align-items: center;
+    height: 5vh;
+    overflow: hidden;
+}
+#progress-filling {
+    width: 0%;
+    height: 5vh;
+    background-color: #4caf50;
+    transition: width 1s ease-in-out;
+}
+#progress-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 0;
+    left: 0;
+    font-weight: bold;
+    color: rgb(223, 22, 22);
+    z-index: 1;
+}
+#info-container {
+    margin-top: 10vh;
+}
+#time-display, #money-display {
+    margin-top: 1vh;
+    color: #333;
+}
+#control-buttons-filling {
+    margin-top: 5vh;
+}
+#mode-options {
+    margin-top: 5vh;
+}
+
+#restart-button{
+    margin-top: 15vh;
+    display: None;
+    top: 50%;
+    left: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}

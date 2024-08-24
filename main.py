@@ -1,32 +1,65 @@
 from form_information import *
 from selenium import webdriver
-# from selenium.webdriver.common.by import By
-# from selenium.webdriver.support.ui import WebDriverWait
-# from selenium.webdriver.support import expected_conditions as EC
+import threading
 import random
+import csv
 
+""" Main structure to run fill action"""
 class Main:
-    def __init__(self):
-        pass
-
-    def input(self):
-        field11 = Field(xpath="//input[@type='text' and @aria-labelledby='i1']", field_type="text", value="John")
-        field12 = Field(xpath="//input[@type='text' and @aria-labelledby='i5']", field_type="text", value="Doe")
-        field21 = Field(xpath="//textarea", field_type="text", value="Fill fill cai dmm")
-        field22 = Field(xpath="//input[@type='date']", field_type="text", value="11102004")
-        field311 = Field(xpath="//*[@id='mG61Hd']/div[2]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/div[2]/div[1]/div/div[1]/input", field_type="text", value="01")
-        field312 = Field(xpath="//*[@id='mG61Hd']/div[2]/div/div[2]/div[2]/div/div/div[2]/div/div[3]/div/div[1]/div/div[1]/input", field_type="text", value="02")
-        page1 = Page([field11,field12])
-        page2 = Page([field21,field22])
-        page3 = Page([field311,field312])
-        form = Form([page1,page2,page3], 10)
-        return form
+    def __init__(self, form):
+        self.is_run = False 
+        self.is_fair = False
+        self.form = form
+        self.state_num = 0
+        self.time = 0
+        self.lock = threading.Lock()
+        self.thread = None
     
-    def filling(self):
-        form = self.input()
+    def start_fill(self):
+        if self.thread is None or not self.thread.is_alive():
+            self.is_run = True  # Start run
+            self.form.links = self.form.links.split("\n")
+            self.thread = threading.Thread(target=self.process_forms)
+            self.thread.start()
+    
+    def process_forms(self):
         options = webdriver.ChromeOptions()
-        # options.add_argument("--headless")
-        for i in range(form.num_forms):
-            driver = webdriver.Chrome(options=options)
-            driver.get(random.choice(['https://docs.google.com/forms/d/e/1FAIpQLSfQZ5Vb58GVbSIIUDM4GZiFQ4zbBys5xkEBgPZ0uwb7mj-RhQ/viewform?usp=pp_url&entry.2099488582=2024-08-07&entry.1137360084=02:01']))
-            form.fill_form(driver=driver)
+        options.add_argument("--headless")
+        while self.state_num < self.form.num_forms:
+            with self.lock:
+                start_time = time.time()
+
+                if not self.is_run:
+                    break  # Break immediately if stop
+
+                driver = webdriver.Chrome(options=options)
+                if self.is_fair:
+                    driver.get(self.form.links[self.state_num % len(self.form.links)])
+                else:
+                    driver.get(random.choice(self.form.links))
+
+                self.form.fill_form(driver=driver, state_num=self.state_num)
+                self.state_num += 1
+
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+                self.time += elapsed_time
+
+        if self.state_num == self.form.num_forms:
+            self.save_to_csv()
+
+    def stop_fill(self):
+        self.is_run = False  # Only change status to stop process
+    
+    def continue_fill(self):
+        if not self.is_run:  # Only continue if stopped
+            self.is_run = True
+            if self.thread is None or not self.thread.is_alive():
+                self.thread = threading.Thread(target=self.process_forms)
+                self.thread.start()
+
+    # Save data to excel
+    def save_to_csv(self):
+        with open("form_data.csv", "a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([self.form.num_pages, self.form.num_forms, self.time, self.form.get_num_fields(), self.form.money])
