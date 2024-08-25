@@ -58,7 +58,6 @@ class Field:
         if len(self.value) == len(self.full_value):
             self.full_value.extend(gen_info(num_forms, self.field_type))
             self.full_value = self.full_value[:num_forms]
-            random.shuffle(self.full_value)
 
     def fill_field(self, driver, state_num):
         text_input = driver.find_element(By.XPATH, self.xpath)
@@ -101,7 +100,7 @@ class Form:
                 button = driver.find_element(By.XPATH, "//div[@role='button']//span[contains(text(), 'Tiếp')]")
                 driver.execute_script("arguments[0].click();", button)
             except Exception as e:
-                print(e)
+                print(f"Continue fill page step: {e}")
         
         try:
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@role='button']//span[contains(text(), 'G')]")))
@@ -112,7 +111,7 @@ class Form:
             buttonlast = driver.find_element(By.XPATH, "//div[@role='button']//span[contains(text(), 'G')]")
             driver.execute_script("arguments[0].click();", buttonlast)
         except Exception as e:
-            print(e)
+            print(f"Send page step: {e}")
 
         try:
             WebDriverWait(driver, 2).until(EC.url_changes(driver.current_url))

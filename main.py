@@ -26,24 +26,27 @@ class Main:
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
         while self.state_num < self.form.num_forms:
-            with self.lock:
-                start_time = time.time()
+            try:
+                with self.lock:
+                    start_time = time.time()
 
-                if not self.is_run:
-                    break  # Break immediately if stop
+                    if not self.is_run:
+                        break  # Break immediately if stop
 
-                driver = webdriver.Chrome(options=options)
-                if self.is_fair:
-                    driver.get(self.form.links[self.state_num % len(self.form.links)])
-                else:
-                    driver.get(random.choice(self.form.links))
+                    driver = webdriver.Chrome(options=options)
+                    if self.is_fair:
+                        driver.get(self.form.links[self.state_num % len(self.form.links)])
+                    else:
+                        driver.get(random.choice(self.form.links))
 
-                self.form.fill_form(driver=driver, state_num=self.state_num)
-                self.state_num += 1
+                    self.form.fill_form(driver=driver, state_num=self.state_num)
+                    self.state_num += 1
 
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-                self.time += elapsed_time
+                    end_time = time.time()
+                    elapsed_time = end_time - start_time
+                    self.time += elapsed_time
+            except Exception as e:
+                print("Error processing form:", e)
 
         if self.state_num == self.form.num_forms:
             self.save_to_csv()
@@ -60,6 +63,9 @@ class Main:
 
     # Save data to excel
     def save_to_csv(self):
-        with open("form_data.csv", "a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([self.form.num_pages, self.form.num_forms, self.time, self.form.get_num_fields(), self.form.money])
+        try:
+            with open("form_data.csv", "a", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow([self.form.num_pages, self.form.num_forms, self.time, self.form.get_num_fields(), self.form.money])
+        except Exception as e:
+            print("Error saving to csv:", e)

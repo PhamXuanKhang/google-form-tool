@@ -51,9 +51,12 @@ fill_app = None
 # Build endpoint to receive form
 @app.post("/submit-form/")
 async def submit_form(form_model: FormModel):
-    global fill_app
-    form = convert_form_model_to_form(form_model)
-    fill_app = Main(form)
+    try:
+        global fill_app
+        form = convert_form_model_to_form(form_model)
+        fill_app = Main(form)
+    except Exception as e:
+        return {"error": e}
 
 # Build endpoint to start fill form
 @app.post("/start-fill/")
@@ -61,7 +64,7 @@ async def start_fill(background_tasks: BackgroundTasks):
     if fill_app:
         background_tasks.add_task(fill_app.start_fill)
     else:
-        return {"error": "Form has not been submitted."}
+        return {"error": "the start step have problems"}
 
 # Build endpoint to stop fill
 @app.patch("/stop-fill/")
@@ -69,7 +72,7 @@ async def stop_fill():
     if fill_app:
         fill_app.stop_fill()
     else:
-        return {"error": "Form has not been submitted."}
+        return {"error": "the stop step have problems"}
 
 # Build endpoint to continue fill
 @app.post("/continue-fill/")
@@ -77,7 +80,7 @@ async def continue_fill(background_tasks: BackgroundTasks):
     if fill_app:
         background_tasks.add_task(fill_app.continue_fill)
     else:
-        return {"error": "Form has not been submitted."}
+        return {"error": "the continue step have problems"}
     
 # Build endpoint to return progress state
 @app.get("/progress-fill")
@@ -85,12 +88,14 @@ async def progress_fill():
     if fill_app:
         return {"progress": fill_app.state_num/fill_app.form.num_forms, "state_num": fill_app.state_num, "time": fill_app.time, "money": fill_app.form.money}
     else:
-        return {"error": "Form has not been submitted."}
+        return {"error": "showing progress bar have problems"}
     
 # Build endpoint to change mode
 @app.patch("/change-mode/")
 async def change_mode(mode: str):
     if fill_app:
         fill_app.is_fair = (mode=="fair")
+    else:
+        return {"error": "change mode have problems"}
     
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
