@@ -1,0 +1,4 @@
+/.env
+/ggenv
+/drivers
+/app/db.json
