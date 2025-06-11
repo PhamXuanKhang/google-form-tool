@@ -1,0 +1,1061 @@
+// The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work.
+
+import React, { useState, useEffect } from 'react';
+import * as echarts from 'echarts';
+
+const App: React.FC = () => {
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [language, setLanguage] = useState<string>('EN');
+  const [activePage, setActivePage] = useState<string>('home');
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [selectedForm, setSelectedForm] = useState<any>(null);
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const [formUrl, setFormUrl] = useState<string>('');
+  const [submissionCount, setSubmissionCount] = useState<number>(10);
+  const [submissionRate, setSubmissionRate] = useState<number>(5);
+  const [threads, setThreads] = useState<number>(2);
+  const [progress, setProgress] = useState<number>(0);
+
+  useEffect(() => {
+    if (activePage === 'fillForm' && activeStep === 4) {
+      const cpuChartDom = document.getElementById('cpuChart');
+      const memoryChartDom = document.getElementById('memoryChart');
+      
+      if (cpuChartDom && memoryChartDom) {
+        const cpuChart = echarts.init(cpuChartDom);
+        const memoryChart = echarts.init(memoryChartDom);
+        
+        const cpuOption = {
+          animation: false,
+          title: {
+            text: 'CPU Usage',
+            left: 'center',
+            textStyle: {
+              color: darkMode ? '#fff' : '#333'
+            }
+          },
+          tooltip: {
+            trigger: 'axis'
+          },
+          xAxis: {
+            type: 'category',
+            data: ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '10m'],
+            axisLabel: {
+              color: darkMode ? '#ccc' : '#666'
+            }
+          },
+          yAxis: {
+            type: 'value',
+            max: 100,
+            axisLabel: {
+              formatter: '{value}%',
+              color: darkMode ? '#ccc' : '#666'
+            }
+          },
+          series: [
+            {
+              data: [12, 24, 36, 42, 38, 25, 30, 35, 40, 45],
+              type: 'line',
+              smooth: true,
+              areaStyle: {
+                opacity: 0.3
+              },
+              lineStyle: {
+                width: 3
+              }
+            }
+          ],
+          grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+          },
+          color: ['#007bff']
+        };
+        
+        const memoryOption = {
+          animation: false,
+          title: {
+            text: 'Memory Usage',
+            left: 'center',
+            textStyle: {
+              color: darkMode ? '#fff' : '#333'
+            }
+          },
+          tooltip: {
+            trigger: 'axis'
+          },
+          xAxis: {
+            type: 'category',
+            data: ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '10m'],
+            axisLabel: {
+              color: darkMode ? '#ccc' : '#666'
+            }
+          },
+          yAxis: {
+            type: 'value',
+            max: 100,
+            axisLabel: {
+              formatter: '{value}%',
+              color: darkMode ? '#ccc' : '#666'
+            }
+          },
+          series: [
+            {
+              data: [28, 32, 45, 50, 55, 60, 58, 62, 65, 68],
+              type: 'line',
+              smooth: true,
+              areaStyle: {
+                opacity: 0.3
+              },
+              lineStyle: {
+                width: 3
+              }
+            }
+          ],
+          grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+          },
+          color: ['#28a745']
+        };
+        
+        cpuChart.setOption(cpuOption);
+        memoryChart.setOption(memoryOption);
+        
+        // Simulate progress
+        const interval = setInterval(() => {
+          setProgress(prev => {
+            if (prev >= 100) {
+              clearInterval(interval);
+              return 100;
+            }
+            return prev + 1;
+          });
+        }, 300);
+        
+        return () => {
+          clearInterval(interval);
+          cpuChart.dispose();
+          memoryChart.dispose();
+        };
+      }
+    }
+  }, [activePage, activeStep, darkMode]);
+
+  const recentForms = [
+    {
+      id: 1,
+      name: 'Customer Feedback Survey',
+      timestamp: '2 hours ago',
+      submissions: 145,
+      description: 'Collecting customer feedback about our new product launch.',
+      url: 'https://forms.google.com/customer-feedback'
+    },
+    {
+      id: 2,
+      name: 'Employee Satisfaction',
+      timestamp: '1 day ago',
+      submissions: 78,
+      description: 'Annual employee satisfaction survey for HR department.',
+      url: 'https://forms.google.com/employee-satisfaction'
+    },
+    {
+      id: 3,
+      name: 'Event Registration Form',
+      timestamp: '3 days ago',
+      submissions: 213,
+      description: 'Registration form for the upcoming tech conference.',
+      url: 'https://forms.google.com/event-registration'
+    },
+    {
+      id: 4,
+      name: 'Product Testing Feedback',
+      timestamp: '5 days ago',
+      submissions: 56,
+      description: 'Collecting feedback from beta testers for our new software release.',
+      url: 'https://forms.google.com/product-testing'
+    },
+    {
+      id: 5,
+      name: 'Market Research Survey',
+      timestamp: '1 week ago',
+      submissions: 320,
+      description: 'Market research survey to understand customer preferences.',
+      url: 'https://forms.google.com/market-research'
+    },
+    {
+      id: 6,
+      name: 'Website Usability Test',
+      timestamp: '2 weeks ago',
+      submissions: 89,
+      description: 'Collecting feedback about the usability of our new website design.',
+      url: 'https://forms.google.com/website-usability'
+    }
+  ];
+
+  const openFormModal = (form: any) => {
+    setSelectedForm(form);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedForm(null);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const changeLanguage = (lang: string) => {
+    setLanguage(lang);
+  };
+
+  const navigateTo = (page: string) => {
+    setActivePage(page);
+    if (page === 'fillForm') {
+      setActiveStep(1);
+      setProgress(0);
+    }
+  };
+
+  const nextStep = () => {
+    if (activeStep < 4) {
+      setActiveStep(activeStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (activeStep > 1) {
+      setActiveStep(activeStep - 1);
+    }
+  };
+
+  const extractForm = () => {
+    // Simulate form extraction
+    alert(`Extracting form from URL: ${formUrl}`);
+  };
+
+  return (
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+      {/* Header */}
+      <header className="relative">
+        <div 
+          className="w-full h-64 bg-cover bg-center" 
+          style={{ 
+            backgroundImage: `url('https://readdy.ai/api/search-image?query=Modern%20abstract%20technology%20background%20with%20blue%20gradient%20and%20digital%20elements%2C%20suitable%20for%20a%20forms%20automation%20tool%20banner%2C%20clean%20and%20professional%20design%20with%20subtle%20grid%20patterns%20and%20soft%20lighting%20effects&width=1440&height=400&seq=1&orientation=landscape')` 
+          }}
+        >
+          <div className={`absolute inset-0 ${darkMode ? 'bg-gray-900 bg-opacity-70' : 'bg-white bg-opacity-30'}`}></div>
+        </div>
+        
+        <nav className={`px-4 py-3 shadow-md ${darkMode ? 'bg-gray-800' : 'bg-white'} absolute w-full top-0 z-10`}>
+          <div className="container mx-auto flex flex-wrap items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-xl font-bold mr-10">
+                <i className="fas fa-robot mr-2"></i>
+                FormAutomator
+              </span>
+              
+              <div className="hidden md:flex space-x-6">
+                <button 
+                  onClick={() => navigateTo('home')} 
+                  className={`flex items-center px-3 py-2 !rounded-button whitespace-nowrap cursor-pointer ${activePage === 'home' ? (darkMode ? 'text-blue-400' : 'text-blue-600') : ''}`}
+                >
+                  <i className="fas fa-home mr-2"></i> Home
+                </button>
+                <button 
+                  onClick={() => navigateTo('fillForm')} 
+                  className={`flex items-center px-3 py-2 !rounded-button whitespace-nowrap cursor-pointer ${activePage === 'fillForm' ? (darkMode ? 'text-blue-400' : 'text-blue-600') : ''}`}
+                >
+                  <i className="fas fa-file-alt mr-2"></i> Fill Form
+                </button>
+                <button 
+                  onClick={() => navigateTo('settings')} 
+                  className={`flex items-center px-3 py-2 !rounded-button whitespace-nowrap cursor-pointer ${activePage === 'settings' ? (darkMode ? 'text-blue-400' : 'text-blue-600') : ''}`}
+                >
+                  <i className="fas fa-cog mr-2"></i> Settings
+                </button>
+                <button 
+                  onClick={() => navigateTo('recentForms')} 
+                  className={`flex items-center px-3 py-2 !rounded-button whitespace-nowrap cursor-pointer ${activePage === 'recentForms' ? (darkMode ? 'text-blue-400' : 'text-blue-600') : ''}`}
+                >
+                  <i className="fas fa-history mr-2"></i> Recent Forms
+                </button>
+                <button 
+                  onClick={() => navigateTo('about')} 
+                  className={`flex items-center px-3 py-2 !rounded-button whitespace-nowrap cursor-pointer ${activePage === 'about' ? (darkMode ? 'text-blue-400' : 'text-blue-600') : ''}`}
+                >
+                  <i className="fas fa-info-circle mr-2"></i> About
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center">
+                <button 
+                  onClick={toggleDarkMode} 
+                  className={`relative inline-flex items-center h-6 rounded-full w-12 transition-colors focus:outline-none ${darkMode ? 'bg-blue-600' : 'bg-gray-300'} !rounded-button whitespace-nowrap cursor-pointer`}
+                >
+                  <span className={`${darkMode ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}>
+                    {darkMode ? <i className="fas fa-moon text-xs text-blue-600"></i> : <i className="fas fa-sun text-xs text-yellow-500"></i>}
+                  </span>
+                </button>
+              </div>
+              
+              <div className="relative">
+                <button 
+                  className={`flex items-center px-3 py-2 border ${darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-100'} rounded !rounded-button whitespace-nowrap cursor-pointer`}
+                >
+                  <span className="mr-1">{language === 'EN' ? '🇺🇸' : '🇻🇳'}</span>
+                  {language}
+                  <i className="fas fa-chevron-down ml-2 text-xs"></i>
+                </button>
+                <div className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} ring-1 ring-black ring-opacity-5 hidden`}>
+                  <div className="py-1">
+                    <button 
+                      onClick={() => changeLanguage('EN')} 
+                      className={`block px-4 py-2 text-sm ${darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'} w-full text-left !rounded-button whitespace-nowrap cursor-pointer`}
+                    >
+                      🇺🇸 English
+                    </button>
+                    <button 
+                      onClick={() => changeLanguage('VN')} 
+                      className={`block px-4 py-2 text-sm ${darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'} w-full text-left !rounded-button whitespace-nowrap cursor-pointer`}
+                    >
+                      🇻🇳 Vietnamese
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <button className="md:hidden">
+                <i className={`fas fa-bars text-xl ${darkMode ? 'text-white' : 'text-gray-800'}`}></i>
+              </button>
+            </div>
+          </div>
+        </nav>
+        
+        <div className="container mx-auto px-4 pt-24 pb-8 relative z-0">
+          <h1 className={`text-4xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Google Forms Automation Tool
+          </h1>
+          <p className={`text-xl ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            Automate your form submissions with ease and efficiency
+          </p>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {/* Home Page */}
+        {activePage === 'home' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Recent Forms</h2>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search forms..." 
+                  className={`pl-10 pr-4 py-2 rounded-lg border-none ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                />
+                <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentForms.map(form => (
+                <div 
+                  key={form.id} 
+                  onClick={() => openFormModal(form)}
+                  className={`${darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'} rounded-lg shadow-md p-6 transition-all duration-200 transform hover:-translate-y-1 cursor-pointer`}
+                >
+                  <div className="flex items-start">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${darkMode ? 'bg-blue-900' : 'bg-blue-100'} mr-4`}>
+                      <i className={`fas fa-file-alt text-xl ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}></i>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className={`text-lg font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{form.name}</h3>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{form.timestamp}</p>
+                      <div className="mt-2 flex items-center">
+                        <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <i className="fas fa-paper-plane mr-1"></i> {form.submissions} submissions
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Form Modal */}
+            {showModal && selectedForm && (
+              <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                  <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={closeModal}></div>
+                  
+                  <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                  
+                  <div className={`inline-block align-bottom ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}>
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}>
+                      <div className="sm:flex sm:items-start">
+                        <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${darkMode ? 'bg-blue-900' : 'bg-blue-100'} sm:mx-0 sm:h-10 sm:w-10`}>
+                          <i className={`fas fa-file-alt ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}></i>
+                        </div>
+                        <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                          <h3 className={`text-lg leading-6 font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`} id="modal-title">
+                            {selectedForm.name}
+                          </h3>
+                          <div className="mt-2">
+                            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                              {selectedForm.description}
+                            </p>
+                            <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              <i className="fas fa-link mr-1"></i> {selectedForm.url}
+                            </p>
+                            <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              <i className="fas fa-paper-plane mr-1"></i> {selectedForm.submissions} submissions
+                            </p>
+                            <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              <i className="fas fa-clock mr-1"></i> Last used: {selectedForm.timestamp}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse`}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          closeModal();
+                          navigateTo('fillForm');
+                          setFormUrl(selectedForm.url);
+                        }} 
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm !rounded-button whitespace-nowrap cursor-pointer"
+                      >
+                        Fill This Form
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={closeModal} 
+                        className={`mt-3 w-full inline-flex justify-center rounded-md border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} shadow-sm px-4 py-2 bg-transparent text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm !rounded-button whitespace-nowrap cursor-pointer`}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Fill Form Page */}
+        {activePage === 'fillForm' && (
+          <div className="flex flex-col md:flex-row">
+            {/* Sidebar */}
+            <div className={`w-full md:w-80 md:min-h-[600px] ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg shadow-md p-4 md:mr-6 mb-6 md:mb-0`}>
+              <div className="flex flex-col h-full">
+                <h2 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Form Automation Steps</h2>
+                
+                <div className="space-y-4 flex-grow">
+                  <div 
+                    onClick={() => setActiveStep(1)} 
+                    className={`flex items-center p-3 rounded-lg cursor-pointer ${activeStep === 1 ? (darkMode ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-800') : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200')}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeStep === 1 ? 'bg-blue-600' : (darkMode ? 'bg-gray-700' : 'bg-gray-300')}`}>
+                      <span className="text-white text-sm">1</span>
+                    </div>
+                    <span className="ml-3 font-medium">Enter Form URL</span>
+                  </div>
+                  
+                  <div 
+                    onClick={() => setActiveStep(2)} 
+                    className={`flex items-center p-3 rounded-lg cursor-pointer ${activeStep === 2 ? (darkMode ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-800') : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200')}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeStep === 2 ? 'bg-blue-600' : (darkMode ? 'bg-gray-700' : 'bg-gray-300')}`}>
+                      <span className="text-white text-sm">2</span>
+                    </div>
+                    <span className="ml-3 font-medium">Configure Answers</span>
+                  </div>
+                  
+                  <div 
+                    onClick={() => setActiveStep(3)} 
+                    className={`flex items-center p-3 rounded-lg cursor-pointer ${activeStep === 3 ? (darkMode ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-800') : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200')}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeStep === 3 ? 'bg-blue-600' : (darkMode ? 'bg-gray-700' : 'bg-gray-300')}`}>
+                      <span className="text-white text-sm">3</span>
+                    </div>
+                    <span className="ml-3 font-medium">Settings</span>
+                  </div>
+                  
+                  <div 
+                    onClick={() => setActiveStep(4)} 
+                    className={`flex items-center p-3 rounded-lg cursor-pointer ${activeStep === 4 ? (darkMode ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-800') : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200')}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeStep === 4 ? 'bg-blue-600' : (darkMode ? 'bg-gray-700' : 'bg-gray-300')}`}>
+                      <span className="text-white text-sm">4</span>
+                    </div>
+                    <span className="ml-3 font-medium">Monitor Progress</span>
+                  </div>
+                </div>
+                
+                <div className="mt-auto pt-6">
+                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <p><i className="fas fa-info-circle mr-2"></i> Need help? Check our <a href="#" className="text-blue-500 hover:underline">documentation</a>.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Main Content */}
+            <div className="flex-1">
+              {/* Step 1: Enter Form URL */}
+              {activeStep === 1 && (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+                  <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Enter Google Form URL</h3>
+                  
+                  <div className="mb-6">
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={formUrl}
+                        onChange={(e) => setFormUrl(e.target.value)}
+                        placeholder="https://forms.google.com/..." 
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border-none ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                      />
+                      <i className="fas fa-link absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                      <button 
+                        onClick={extractForm}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white px-3 py-1 rounded !rounded-button whitespace-nowrap cursor-pointer"
+                      >
+                        Extract
+                      </button>
+                    </div>
+                    <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <i className="fas fa-info-circle mr-1"></i> Enter a valid Google Form URL to extract form fields
+                    </p>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg mb-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                    <h4 className={`text-md font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Form Preview</h4>
+                    
+                    {formUrl ? (
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                        <div className="flex items-center mb-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-blue-900' : 'bg-blue-100'} mr-3`}>
+                            <i className={`fas fa-file-alt ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}></i>
+                          </div>
+                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>Customer Feedback Survey</span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Name</p>
+                            <div className={`h-8 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                          </div>
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Email</p>
+                            <div className={`h-8 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                          </div>
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>How would you rate our service?</p>
+                            <div className={`h-8 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <i className={`fas fa-file-import text-4xl mb-2 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}></i>
+                        <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Enter a form URL to see preview</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <button 
+                      onClick={nextStep}
+                      className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors !rounded-button whitespace-nowrap cursor-pointer"
+                    >
+                      Next Step <i className="fas fa-arrow-right ml-2"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Step 2: Configure Answers */}
+              {activeStep === 2 && (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+                  <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Configure Form Answers</h3>
+                  
+                  <div className="mb-6">
+                    <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      <h4 className={`text-md font-medium mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Answer Method</h4>
+                      
+                      <div className="flex space-x-4">
+                        <div className={`flex-1 p-3 rounded-lg cursor-pointer border-2 ${darkMode ? 'border-blue-600 bg-gray-800' : 'border-blue-500 bg-white'}`}>
+                          <div className="flex items-center mb-2">
+                            <div className={`w-5 h-5 rounded-full border-2 ${darkMode ? 'border-blue-600' : 'border-blue-500'} flex items-center justify-center mr-2`}>
+                              <div className={`w-3 h-3 rounded-full ${darkMode ? 'bg-blue-600' : 'bg-blue-500'}`}></div>
+                            </div>
+                            <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>Manual Input</span>
+                          </div>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Manually configure answers for each field</p>
+                        </div>
+                        
+                        <div className={`flex-1 p-3 rounded-lg cursor-pointer border-2 ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-white'}`}>
+                          <div className="flex items-center mb-2">
+                            <div className={`w-5 h-5 rounded-full border-2 ${darkMode ? 'border-gray-600' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                              <div className="w-3 h-3 rounded-full"></div>
+                            </div>
+                            <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>File Upload</span>
+                          </div>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Upload CSV/Excel with answer data</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className={`space-y-4 mb-6`}>
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>Name</h5>
+                          <div className="flex items-center">
+                            <button className={`px-2 py-1 rounded mr-2 text-xs ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'} !rounded-button whitespace-nowrap cursor-pointer`}>
+                              <i className="fas fa-dice mr-1"></i> Random
+                            </button>
+                            <button className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-700'} !rounded-button whitespace-nowrap cursor-pointer`}>
+                              <i className="fas fa-robot mr-1"></i> AI Generate
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <input 
+                          type="text" 
+                          placeholder="Enter name..." 
+                          className={`w-full px-4 py-2 rounded-lg border-none ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                        />
+                      </div>
+                      
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>Email</h5>
+                          <div className="flex items-center">
+                            <button className={`px-2 py-1 rounded mr-2 text-xs ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'} !rounded-button whitespace-nowrap cursor-pointer`}>
+                              <i className="fas fa-dice mr-1"></i> Random
+                            </button>
+                            <button className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-700'} !rounded-button whitespace-nowrap cursor-pointer`}>
+                              <i className="fas fa-robot mr-1"></i> AI Generate
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <input 
+                          type="email" 
+                          placeholder="Enter email..." 
+                          className={`w-full px-4 py-2 rounded-lg border-none ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                        />
+                      </div>
+                      
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>How would you rate our service?</h5>
+                          <div className="flex items-center">
+                            <button className={`px-2 py-1 rounded mr-2 text-xs ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'} !rounded-button whitespace-nowrap cursor-pointer`}>
+                              <i className="fas fa-dice mr-1"></i> Random
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between px-2">
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>1</span>
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>2</span>
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>3</span>
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>4</span>
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>5</span>
+                        </div>
+                        
+                        <input 
+                          type="range" 
+                          min="1" 
+                          max="5" 
+                          defaultValue="4" 
+                          className="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <button 
+                      onClick={prevStep}
+                      className={`px-4 py-2 rounded shadow ${darkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition-colors !rounded-button whitespace-nowrap cursor-pointer`}
+                    >
+                      <i className="fas fa-arrow-left mr-2"></i> Previous
+                    </button>
+                    <button 
+                      onClick={nextStep}
+                      className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors !rounded-button whitespace-nowrap cursor-pointer"
+                    >
+                      Next Step <i className="fas fa-arrow-right ml-2"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Step 3: Settings */}
+              {activeStep === 3 && (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+                  <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Automation Settings</h3>
+                  
+                  <div className="space-y-6 mb-6">
+                    <div>
+                      <label className={`block mb-2 font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                        Number of Submissions
+                      </label>
+                      <div className="flex items-center">
+                        <input 
+                          type="number" 
+                          value={submissionCount}
+                          onChange={(e) => setSubmissionCount(parseInt(e.target.value))}
+                          min="1" 
+                          max="1000" 
+                          className={`w-full px-4 py-2 rounded-lg border-none ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                        />
+                        <div className={`ml-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          submissions
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className={`block mb-2 font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                        Submission Rate
+                      </label>
+                      <div className="flex items-center">
+                        <input 
+                          type="number" 
+                          value={submissionRate}
+                          onChange={(e) => setSubmissionRate(parseInt(e.target.value))}
+                          min="1" 
+                          max="100" 
+                          className={`w-full px-4 py-2 rounded-lg border-none ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                        />
+                        <div className={`ml-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          per minute
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className={`block mb-2 font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                        Concurrent Threads
+                      </label>
+                      <div className="flex items-center">
+                        <input 
+                          type="number" 
+                          value={threads}
+                          onChange={(e) => setThreads(parseInt(e.target.value))}
+                          min="1" 
+                          max="20" 
+                          className={`w-full px-4 py-2 rounded-lg border-none ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                        />
+                        <div className={`ml-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          threads
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                          Use Proxies
+                        </label>
+                        <div className="relative inline-block w-12 align-middle select-none">
+                          <input type="checkbox" id="toggle" className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                          <label htmlFor="toggle" className={`toggle-label block overflow-hidden h-6 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-300'} cursor-pointer`}></label>
+                        </div>
+                      </div>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Use proxy servers to avoid rate limiting and IP blocking
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                          Randomize Submission Timing
+                        </label>
+                        <div className="relative inline-block w-12 align-middle select-none">
+                          <input type="checkbox" id="toggle2" className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" defaultChecked />
+                          <label htmlFor="toggle2" className={`toggle-label block overflow-hidden h-6 rounded-full ${darkMode ? 'bg-blue-600' : 'bg-blue-500'} cursor-pointer`}></label>
+                        </div>
+                      </div>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Add random delays between submissions to appear more human-like
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <button 
+                      onClick={prevStep}
+                      className={`px-4 py-2 rounded shadow ${darkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition-colors !rounded-button whitespace-nowrap cursor-pointer`}
+                    >
+                      <i className="fas fa-arrow-left mr-2"></i> Previous
+                    </button>
+                    <button 
+                      onClick={nextStep}
+                      className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors !rounded-button whitespace-nowrap cursor-pointer"
+                    >
+                      Next Step <i className="fas fa-arrow-right ml-2"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Step 4: Monitor Progress */}
+              {activeStep === 4 && (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Monitor Progress</h3>
+                    
+                    <button 
+                      className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition-colors !rounded-button whitespace-nowrap cursor-pointer"
+                    >
+                      <i className="fas fa-play mr-2"></i> Start Automation
+                    </button>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                        Overall Progress
+                      </div>
+                      <div className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {progress}% Complete
+                      </div>
+                    </div>
+                    
+                    <div className={`w-full h-4 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                      <div 
+                        className="h-4 rounded-full bg-blue-600" 
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Submissions</div>
+                        <div className="flex items-end justify-between">
+                          <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {Math.floor(progress * submissionCount / 100)} / {submissionCount}
+                          </div>
+                          <div className={`text-sm ${progress > 0 ? 'text-green-500' : (darkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                            {progress > 0 ? <i className="fas fa-arrow-up"></i> : <i className="fas fa-minus"></i>}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Success Rate</div>
+                        <div className="flex items-end justify-between">
+                          <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            98.5%
+                          </div>
+                          <div className="text-sm text-green-500">
+                            <i className="fas fa-check"></i>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Est. Time Left</div>
+                        <div className="flex items-end justify-between">
+                          <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {progress < 100 ? `${Math.ceil((100 - progress) / 10)}m` : '0m'}
+                          </div>
+                          <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <i className="fas fa-clock"></i>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <h4 className={`text-md font-medium mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>CPU Usage</h4>
+                      <div id="cpuChart" className="w-full h-64"></div>
+                    </div>
+                    
+                    <div>
+                      <h4 className={`text-md font-medium mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Memory Usage</h4>
+                      <div id="memoryChart" className="w-full h-64"></div>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} mb-6`}>
+                    <h4 className={`text-md font-medium mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Recent Activity</h4>
+                    
+                    <div className="space-y-3">
+                      {progress > 0 && (
+                        <>
+                          <div className="flex items-start">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-green-900' : 'bg-green-100'} mr-3`}>
+                              <i className={`fas fa-check ${darkMode ? 'text-green-300' : 'text-green-600'}`}></i>
+                            </div>
+                            <div>
+                              <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>Form submitted successfully</p>
+                              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>2 seconds ago</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-start">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-green-900' : 'bg-green-100'} mr-3`}>
+                              <i className={`fas fa-check ${darkMode ? 'text-green-300' : 'text-green-600'}`}></i>
+                            </div>
+                            <div>
+                              <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>Form submitted successfully</p>
+                              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>15 seconds ago</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-start">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-green-900' : 'bg-green-100'} mr-3`}>
+                              <i className={`fas fa-check ${darkMode ? 'text-green-300' : 'text-green-600'}`}></i>
+                            </div>
+                            <div>
+                              <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>Form submitted successfully</p>
+                              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>28 seconds ago</p>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      
+                      {progress === 0 && (
+                        <div className="text-center py-6">
+                          <i className={`fas fa-hourglass-start text-4xl mb-2 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}></i>
+                          <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Waiting to start automation</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <button 
+                      onClick={prevStep}
+                      className={`px-4 py-2 rounded shadow ${darkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition-colors !rounded-button whitespace-nowrap cursor-pointer`}
+                    >
+                      <i className="fas fa-arrow-left mr-2"></i> Previous
+                    </button>
+                    <button 
+                      className={`px-4 py-2 rounded shadow ${progress === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'} text-white transition-colors !rounded-button whitespace-nowrap cursor-pointer`}
+                    >
+                      {progress === 0 ? (
+                        <><i className="fas fa-times mr-2"></i> Cancel</>
+                      ) : (
+                        <><i className="fas fa-pause mr-2"></i> Pause</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className={`py-8 mt-12 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <h4 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>FormAutomator</h4>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Powerful Google Forms automation tool for efficient form submissions.
+              </p>
+              <p className={`mt-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                © 2025 FormAutomator. All rights reserved.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Contact</h4>
+              <ul className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} space-y-2`}>
+                <li>
+                  <a href="#" className="hover:underline">
+                    <i className="fas fa-envelope mr-2"></i> support@formautomator.com
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:underline">
+                    <i className="fas fa-phone mr-2"></i> +1 (555) 123-4567
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:underline">
+                    <i className="fas fa-map-marker-alt mr-2"></i> 123 Tech Street, San Francisco, CA
+                  </a>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Legal</h4>
+              <ul className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} space-y-2`}>
+                <li>
+                  <a href="#" className="hover:underline">Terms of Service</a>
+                </li>
+                <li>
+                  <a href="#" className="hover:underline">Privacy Policy</a>
+                </li>
+                <li>
+                  <a href="#" className="hover:underline">Cookie Policy</a>
+                </li>
+                <li>
+                  <a href="#" className="hover:underline">Acceptable Use Policy</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className={`mt-8 pt-6 border-t ${darkMode ? 'border-gray-700' : 'border-gray-300'} flex flex-col md:flex-row justify-between items-center`}>
+            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-4 md:mb-0`}>
+              Designed with <i className="fas fa-heart text-red-500"></i> for form automation
+            </div>
+            
+            <div className="flex space-x-4">
+              <a href="#" className={`text-xl ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                <i className="fab fa-twitter"></i>
+              </a>
+              <a href="#" className={`text-xl ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                <i className="fab fa-facebook"></i>
+              </a>
+              <a href="#" className={`text-xl ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                <i className="fab fa-instagram"></i>
+              </a>
+              <a href="#" className={`text-xl ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                <i className="fab fa-github"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        .toggle-checkbox:checked {
+          right: 0;
+          transform: translateX(100%);
+          border-color: ${darkMode ? '#3b82f6' : '#3b82f6'};
+        }
+        .toggle-checkbox:checked + .toggle-label {
+          background-color: ${darkMode ? '#3b82f6' : '#3b82f6'};
+        }
+      `}</style>
+    </div>
+  );
+};

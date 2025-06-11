@@ -1,0 +1,7 @@
+/* hover effect for cards */
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    transition: all 0.2s ease-in-out;
+    background-color: #abd4fc;
+}
