@@ -1,7 +1,6 @@
 /.env
 /venv
-/drivers
-/app/services/db.json
-/__pycache__
-/app/__pycache__
-/app/core/__pycache__
+/.vscode
+__pycache__/
+.pytest_cache/
+*/__pycache__/

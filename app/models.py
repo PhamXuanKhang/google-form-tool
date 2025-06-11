@@ -22,30 +22,25 @@ class FormData:
         })
 
     @classmethod
-    def from_json(cls, json_data: str) -> 'FormData':
-        data = json.loads(json_data)
-        return cls(
-            form_id=data["form_id"],
-            title=data["title"],
-            created_at=data["created_at"],
-            form_url=data["form_url"]
-        )
+    def from_url(cls, url: str, **kwargs):
+        """
+        Create a Form instance from a given URL, automatically generating a deterministic ID.
 
-@dataclass
-class ResponseConfig:
-    form_id: str
-    some_field: str  # Ví dụ trường, thay bằng các trường thực tế
+        Args:
+            url (str): The form's URL to generate the ID from.
+            **kwargs: Other keyword arguments for initializing the Form (e.g., title, description).
 
-    def to_json(self) -> str:
-        return json.dumps({
-            "form_id": self.form_id,
-            "some_field": self.some_field
-        })
+        Returns:
+            Form: A new Form instance with ID generated from the URL.
+        """
+        return cls(id=f"f_{generate_uuid_from_url(url)}", url=url, **kwargs)
 
-    @classmethod
-    def from_json(cls, json_data: str) -> 'ResponseConfig':
-        data = json.loads(json_data)
-        return cls(
-            form_id=data["form_id"],
-            some_field=data["some_field"]
-        )
+
+class FormData(BaseModel):
+    """
+    Represents the in-memory or on-disk database structure that stores multiple forms.
+
+    Attributes:
+        forms (List[Form]): List of all forms in the database.
+    """
+    forms: Optional[List[Form]]

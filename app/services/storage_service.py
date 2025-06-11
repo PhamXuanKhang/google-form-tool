@@ -70,44 +70,22 @@ class StorageService:
             "data": config.to_json()
         }, where("form_id") == config.form_id)
 
-    def load_response_config(self, form_id: str) -> Optional[ResponseConfig]:
-        result = self.configs.get(where("form_id") == form_id)
-        if result:
-            return ResponseConfig.from_json(result["data"])
-        return None
+    def delete_submission(self, form_id: str, submission_id: str) -> bool:
+        """
+        Delete a specific submission from a form.
 
-    def save_submission_batch(self, batch: SubmissionBatch) -> None:
-        self.submissions.upsert({
-            "form_id": batch.form_id,
-            "batch_id": batch.batch_id,
-            "data": batch.to_json(),
-            "created_at": batch.created_at
-        }, (where("form_id") == batch.form_id) & (where("batch_id") == batch.batch_id))
+        Args:
+            form_id (str): ID of the form.
+            submission_id (str): ID of the submission to delete.
 
-    def load_submission_batch(self, form_id: str, batch_id: str) -> Optional[SubmissionBatch]:
-        result = self.submissions.get((where("form_id") == form_id) & (where("batch_id") == batch_id))
-        if result:
-            return SubmissionBatch.from_json(result["data"])
-        return None
-
-    def list_submission_batches(self, form_id: str) -> List[Dict[str, Any]]:
-        results = self.submissions.search(where("form_id") == form_id)
-        return sorted([
-            {
-                "batch_id": r["batch_id"],
-                "created_at": r["created_at"],
-                "total_tasks": SubmissionBatch.from_json(r["data"]).total_tasks
-            } for r in results
-        ], key=lambda x: x["created_at"], reverse=True)
-
-# Singleton
-_storage_service_instance = None
-
-def get_storage_service(db_path: Optional[str] = None) -> StorageService:
-    global _storage_service_instance
-    if _storage_service_instance is None:
-        if db_path is None:
-            from app.config import get_config
-            db_path = get_config().TINYDB_PATH
-        _storage_service_instance = StorageService(db_path)
-    return _storage_service_instance
+        Returns:
+            bool: True if deleted, False otherwise.
+        """
+        form = self._load_form(form_id)
+        if form:
+            form.submissions = [s for s in form.submissions if s.submission_id != submission_id]
+            self.db.update(self._dump(form), self.query.id == form_id)
+            logger.info(f"Deleted submission from form: {form_id}")
+            return True
+        else:
+            return False
