@@ -1,28 +1,54 @@
-function validatePercentages(input) {
-    const parent = input.parentElement.parentElement;
-    const inputs = parent.querySelectorAll('input[type="number"]');
-    let total = 0;
-    inputs.forEach(inp => total += parseInt(inp.value || 0));
-    if (total > 100) {
-        alert('Total percentage cannot exceed 100%');
-        input.value = 0;
+/**
+ * Change text and background color correspond to dark/light mode
+ * 
+ * @param {boolean} isDark 
+ */
+function applyDarkMode(isDark) {
+    const body = document.body;
+    body.classList.toggle('bg-dark', isDark);
+    body.classList.toggle('text-white', isDark);
+    body.classList.toggle('bg-light', !isDark);
+    body.classList.toggle('text-dark', !isDark);
+
+    document.querySelectorAll('.navbar').forEach(nav => {
+      nav.classList.toggle('bg-dark', isDark);
+      nav.classList.toggle('navbar-dark', isDark);
+      nav.classList.toggle('bg-light', !isDark);
+      nav.classList.toggle('navbar-light', !isDark);
+    });
+
+    document.querySelectorAll('footer').forEach(footer => {
+        footer.classList.toggle('bg-dark', isDark);
+        footer.classList.toggle('text-light', isDark);
+        footer.classList.toggle('bg-light', !isDark);
+        footer.classList.toggle('text-dark', !isDark);
+    });
+
+    const icon = document.getElementById("darkModeIcon");
+    if (icon) {
+      icon.className = isDark ? "fas fa-sun" : "fas fa-moon";
     }
 }
 
-function randomizePercentages(button) {
-    const parent = button.parentElement;
-    const inputs = parent.querySelectorAll('input[type="number"]');
-    const count = inputs.length;
-    let remaining = 100;
-    let percentages = [];
-
-    for (let i = 0; i < count - 1; i++) {
-        const max = remaining - (count - i - 1) * 1;
-        const value = Math.floor(Math.random() * (max + 1));
-        percentages.push(value);
-        remaining -= value;
-    }
-    percentages.push(remaining);
-
-    inputs.forEach((inp, idx) => inp.value = percentages[idx]);
+/**
+ * Turn on/off dark mode
+ */
+function toggleDarkMode() {
+    let isDark = document.body.classList.contains('bg-dark');
+    isDark = !isDark;
+    localStorage.setItem('darkMode', isDark);
+    applyDarkMode(isDark);
 }
+
+/**
+ * Get dark mode status from local storage
+ */
+window.addEventListener('DOMContentLoaded', () => {
+    let darkMode = localStorage.getItem('darkMode');
+    if (darkMode === null) {
+    darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } else {
+    darkMode = (darkMode === 'true');
+    }
+    applyDarkMode(darkMode);
+});

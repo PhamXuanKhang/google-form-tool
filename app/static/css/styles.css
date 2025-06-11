@@ -1,27 +1,27 @@
-.banner {
-    background: url('/app/static/images/banner.png') center center no-repeat;
-    background-size: contain;
+/* default setting */
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* css for header banner */
+.banner-img {
     aspect-ratio: 4 / 1;
-    width: 100%;
+    background-image: url("/static/images/banner.png");
+    background-size: cover;
+    background-position: center;
 }
 
-.process-step {
-    transition: transform 0.3s;
+/* css for footer */
+footer a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
 }
 
-.process-step:hover {
-    transform: scale(1.05);
-}
-
-.question-card { 
-    border: 1px solid #ddd; 
-    border-radius: 8px; 
-    padding: 15px; 
-    margin-bottom: 20px; 
-}
-
-.arrow { 
-    text-align: center; 
-    font-size: 24px; 
-    color: #007bff; 
+/* effect for nav bar when active */
+.nav-link.active {
+    font-weight: bold;
+    border: 2px solid #0d6efd;
+    border-radius: 0.5rem;
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd !important;
 }

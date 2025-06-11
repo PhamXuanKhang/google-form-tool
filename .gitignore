@@ -1,6 +1,7 @@
 /.env
-/ggenv
+/venv
 /drivers
-/app/db.json
+/app/services/db.json
 /__pycache__
 /app/__pycache__
+/app/core/__pycache__
