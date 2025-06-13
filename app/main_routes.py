@@ -3,8 +3,8 @@ Main Routes Module
 
 This module defines the main routes for the Google Form Automation Tool.
 """
-
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
+from app.services import storage_service
 
 # Create blueprint
 bp = Blueprint('main', __name__)
@@ -14,24 +14,15 @@ bp = Blueprint('main', __name__)
 def index():
     """Render the home page"""
     # TODO: Implement logic to get recent forms from database
-    recent_forms = [
-        {
-            'id': 'abc123',
-            'title': 'Feedback Form',
-            'timestamp': '2025-06-07 14:20',
-            'submissions': 12,
-            'url': 'https://forms.gle/example1',
-            'description': 'A feedback form for user experience.'
-        },
-        {
-            'id': 'def456',
-            'title': 'Survey Form',
-            'timestamp': '2025-06-06 09:00',
-            'submissions': 50,
-            'url': 'https://forms.gle/example2',
-            'description': 'A survey about user preferences.'
-        }
-    ]
+    recent_forms = storage_service.get_all_forms_summary()
+        # {
+        #     'id': 'abc123',
+        #     'title': 'Feedback Form',
+        #     'timestamp': '2025-06-07 14:20',
+        #     'submissions': 12,
+        #     'url': 'https://forms.gle/example1',
+        #     'description': 'A feedback form for user experience.'
+        # }
 
     return render_template('index.html', recent_forms=recent_forms, active_page="home")
 
