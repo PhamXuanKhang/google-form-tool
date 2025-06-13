@@ -8,7 +8,6 @@ from app.main_routes import bp, get_locale
 from config import Config
 from app.logging_config import logger
 
-
 def create_app():
     """
     Create and configure the app
@@ -21,4 +20,3 @@ def create_app():
     app.register_blueprint(bp)
 
     return app
-
