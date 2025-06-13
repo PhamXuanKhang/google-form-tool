@@ -1,10 +1,10 @@
-from typing import Dict, Any, List, Optional
-from tinydb import TinyDB, Query, where
-from tinydb.table import Document
-from app.models.form_data import FormData, ResponseConfig
-from app.models.submission_model import SubmissionBatch
+from typing import Optional, List
+from tinydb import TinyDB, Query
+from pydantic import ValidationError
+from app.models import Form, ResponseConfig, Submission
+from app.logging_config import logger
 
-# TODO: Check again
+# TODO: Continue implementation of the StorageService class.
 class StorageService:
     """
     Service for storing and retrieving data using TinyDB.
@@ -17,97 +17,84 @@ class StorageService:
         Args:
             db_path (str): The path to the json file.
         """
-        self.db = TinyDB(db_path)
-        self.forms = self.db.table("forms")
-        self.configs = self.db.table("configs")
-        self.submissions = self.db.table("submissions")
-
+        self.db_path = db_path
+        self.db: Optional[TinyDB] = None
         self.query = Query()
 
-    def save_form_data(self, form_data: FormData) -> str:
-        """
-        Save the form data to the database.
-        
-        Args:
-            form_data (FormData): The form data to save.
+    def __enter__(self):
+        self.db = TinyDB(self.db_path)
+        logger.info("StorageService opened DB connection.")
+        return self
 
-        Returns:
-            str: The form id of the saved form.
-            """
-        self.forms.upsert(Document({
-            "form_id": form_data.form_id,
-            "title": form_data.title,
-            "created_at": form_data.created_at,
-            "url": form_data.form_url
-        }, doc_id=form_data.form_id))
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.db is not None:
+            self.db.close()
+            logger.info("StorageService closed DB connection.")
 
-    def load_form_data(self, form_id: str) -> Optional[FormData]:
-        result = self.forms.get(doc_id=form_id)
-        if result:
-            return FormData.from_json(result["data"])
-        return None
 
-    def list_forms(self) -> List[Dict[str, Any]]:
-        return sorted([
-            {
-                "form_id": doc["form_id"],
-                "title": doc["title"],
-                "created_at": doc["created_at"],
-                "url": doc["url"]
-            } for doc in self.forms.all()
-        ], key=lambda x: x["created_at"], reverse=True)
+    def get_all_forms_summary(self) -> List[dict]:
+        try:
+            forms = self.db.all()
+            summaries = [
+                {
+                    "id": form["id"],
+                    "title": form["title"],
+                    "description": form["description"],
+                    "url": form["url"],
+                    "created_at": form["created_at"],
+                    "last_used": form["last_used"],
+                    "response_config": True if form["response_config"] else False,
+                    "total_fill": len(form["submissions"]) if "submissions" in form else 0
+                }
+                for form in forms
+            ]
+            logger.info(f"Retrieved {len(summaries)} forms summary")
+            return summaries
+        except Exception as e:
+            logger.error(f"Error retrieving forms summary: {e}")
+            raise
 
-    def delete_form(self, form_id: str) -> bool:
-        self.forms.remove(doc_ids=[form_id])
-        self.configs.remove(where("form_id") == form_id)
-        self.submissions.remove(where("form_id") == form_id)
-        self.screenshots.remove(where("form_id") == form_id)
-        return True
 
-    def save_response_config(self, config: ResponseConfig) -> None:
-        self.configs.upsert({
-            "form_id": config.form_id,
-            "data": config.to_json()
-        }, where("form_id") == config.form_id)
+    def get_form_response_config(self, form_id: str) -> Optional[ResponseConfig]:
+        try:
+            form_data = self.db.search(self.query.id == form_id)
+            if form_data:
+                form = Form(**form_data[0])
+                logger.info(f"Retrieved response_config for form_id: {form_id}")
+                return form.response_config
+            else:
+                logger.warning(f"Form not found: {form_id}")
+                return None
+        except ValidationError as e:
+            logger.error(f"Validation error for form_id {form_id}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error retrieving response_config for form_id {form_id}: {e}")
+            raise
 
-    def load_response_config(self, form_id: str) -> Optional[ResponseConfig]:
-        result = self.configs.get(where("form_id") == form_id)
-        if result:
-            return ResponseConfig.from_json(result["data"])
-        return None
+    def save_form(self, form: Form) -> Optional[str]:
+        try:
+            self.db.upsert(form.dict(), self.query.id == form.id)
+            logger.info(f"Saved form: {form.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving form {form.id}: {e}")
+            return False
 
-    def save_submission_batch(self, batch: SubmissionBatch) -> None:
-        self.submissions.upsert({
-            "form_id": batch.form_id,
-            "batch_id": batch.batch_id,
-            "data": batch.to_json(),
-            "created_at": batch.created_at
-        }, (where("form_id") == batch.form_id) & (where("batch_id") == batch.batch_id))
-
-    def load_submission_batch(self, form_id: str, batch_id: str) -> Optional[SubmissionBatch]:
-        result = self.submissions.get((where("form_id") == form_id) & (where("batch_id") == batch_id))
-        if result:
-            return SubmissionBatch.from_json(result["data"])
-        return None
-
-    def list_submission_batches(self, form_id: str) -> List[Dict[str, Any]]:
-        results = self.submissions.search(where("form_id") == form_id)
-        return sorted([
-            {
-                "batch_id": r["batch_id"],
-                "created_at": r["created_at"],
-                "total_tasks": SubmissionBatch.from_json(r["data"]).total_tasks
-            } for r in results
-        ], key=lambda x: x["created_at"], reverse=True)
-
-# Singleton
-_storage_service_instance = None
-
-def get_storage_service(db_path: Optional[str] = None) -> StorageService:
-    global _storage_service_instance
-    if _storage_service_instance is None:
-        if db_path is None:
-            from app.config import get_config
-            db_path = get_config().TINYDB_PATH
-        _storage_service_instance = StorageService(db_path)
-    return _storage_service_instance
+    def add_submission(self, form_id: str, submission: Submission) -> bool:
+        try:
+            form_data = self.db.search(self.query.id == form_id)
+            if form_data:
+                form = Form(**form_data[0])
+                form.submissions.append(submission)
+                self.db.update(form.dict(), self.query.id == form_id)
+                logger.info(f"Added submission {submission.submission_id} to form {form_id}")
+                return True
+            logger.warning(f"Form not found for submission: {form_id}")
+            return False
+        except ValidationError as e:
+            logger.error(f"Validation error for submission in form_id {form_id}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Error adding submission to form_id {form_id}: {e}")
+            return False
