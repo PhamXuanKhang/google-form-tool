@@ -49,7 +49,7 @@ class Question(BaseModel):
     question_id: str
     type: str = Field(pattern=r"^(text|multiple_choice)$")
     text: str
-    answer_config: AnswerConfig
+    answer_config: Optional[AnswerConfig]
 
 
 class Page(BaseModel):
@@ -61,7 +61,7 @@ class Page(BaseModel):
         questions (List[Question]): List of questions on this page.
     """
     page_id: str = Field(default_factory=lambda: f"page_{uuid4().hex[:8]}")
-    questions: List[Question]
+    questions: Optional[List[Question]]
 
 
 class ResponseConfig(BaseModel):
@@ -114,8 +114,8 @@ class Form(BaseModel):
     url: HttpUrl
     created_at: datetime
     last_used: datetime
-    response_config: ResponseConfig
-    submissions: List[Submission]
+    response_config: Optional[ResponseConfig]
+    submissions: Optional[List[Submission]]
 
     @classmethod
     def from_url(cls, url: str, **kwargs):
@@ -139,4 +139,4 @@ class FormData(BaseModel):
     Attributes:
         forms (List[Form]): List of all forms in the database.
     """
-    forms: List[Form]
+    forms: Optional[List[Form]]
