@@ -1,22 +1,221 @@
-from tests.conftest import temp_db
-from app import StorageService, Form
-from config import Config
+"""
+Test suite for the StorageService class which handles all form-related database operations.
 
-def test_create_form_success():
-    data = {
-        "title": "Test form",
-        "description": "For testing",
-        "url": "https://example.com/form",
-        "created_at": "2023-01-01T00:00:00Z",
-        "last_used": "2023-01-01T00:00:00Z",
-        "response_config": None,
-        "submissions": []
-    }
-    form = Form().from_url(url=data["url"], **{k: v for k, v in data.items() if k != "url"})
-    save_result = StorageService(Config.DB_PATH).save_form(form)
-    assert isinstance(form, Form)
-    assert save_result
+This module includes comprehensive tests for:
+- Saving forms, including error scenarios.
+- Retrieving summaries of all forms.
+- Loading individual form data and validating deserialization.
+- Getting, updating, and validating response configurations.
+- Adding and retrieving submission data.
+- Deleting forms and submissions, including edge cases.
+- Logging output for all operations at appropriate levels (INFO, WARNING, ERROR).
 
-def test_connect_db_success():
-    storage_service = StorageService(Config.DB_PATH)
-    assert storage_service.connect_db()
+Each test ensures correct behavior, data integrity, and proper logging under normal and exceptional conditions.
+"""
+from app import Submission, ResponseConfig, Page
+from datetime import datetime
+import pytest
+import logging
+
+
+def test_get_all_forms_summary_empty(temp_db, caplog):
+    caplog.set_level(logging.INFO)
+    summaries = temp_db.get_all_forms_summary()
+    assert summaries == []
+    assert "Retrieved 0 forms summary" in caplog.text
+
+
+def test_get_all_forms_summary_with_data(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    summaries = temp_db.get_all_forms_summary()
+    assert len(summaries) == 1
+    assert summaries[0]["id"] == "form_001"
+    assert summaries[0]["title"] == "Test Form"
+    assert summaries[0]["response_config"] is True
+    assert summaries[0]["total_fill"] == 1
+    assert "Retrieved 1 forms summary" in caplog.text
+
+
+def test_get_all_forms_summary_error(temp_db, monkeypatch, caplog):
+    caplog.set_level(logging.ERROR)
+    # Simulate database error
+    def mock_db_all():
+        raise Exception("Database error")
+    monkeypatch.setattr(temp_db.db, "all", mock_db_all)
+    with pytest.raises(Exception, match="Database error"):
+       (temp_db.get_all_forms_summary())
+    assert "Error retrieving forms summary: Database error" in caplog.text
+
+
+def test_load_form_not_found(temp_db, caplog):
+    caplog.set_level(logging.WARNING)
+    form = temp_db._load_form("form_nonexistent")
+    assert form is None
+    assert "Form not found: form_nonexistent" in caplog.text
+
+
+def test_load_form_validation_error(temp_db, caplog, monkeypatch):
+    caplog.set_level(logging.ERROR)
+    # Simulate invalid form data
+    temp_db.db.insert({"id": "form_002", "title": 123})  # Invalid: title should be str
+    form = temp_db._load_form("form_002")
+    assert form is None
+    assert "Validation error for form_id form_002" in caplog.text
+
+
+def test_get_form_response_config(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    response_config = temp_db.get_form_response_config("form_001")
+    assert response_config is not None
+    assert len(response_config.pages) == 2
+    assert response_config.pages[0].page_id == "page_001"
+    assert "Retrieved response config for form: form_001" in caplog.text
+
+
+def test_get_form_response_config_not_found(temp_db, caplog):
+    caplog.set_level(logging.INFO)
+    response_config = temp_db.get_form_response_config("form_nonexistent")
+    assert response_config is None
+    assert "Form not found: form_nonexistent" in caplog.text
+
+
+def test_get_submission(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    submissions = temp_db.get_submission("form_001")
+    assert len(submissions) == 1
+    assert submissions[0].submission_id == "sub_001"
+    assert "Retrieved submission for form: form_001" in caplog.text
+
+
+def test_get_submission_not_found(temp_db, caplog):
+    caplog.set_level(logging.INFO)
+    submissions = temp_db.get_submission("form_nonexistent")
+    assert submissions is None
+    assert "Form not found: form_nonexistent" in caplog.text
+
+
+
+def test_save_form(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    result = temp_db.save_form(sample_form)
+    assert result is True
+    form = temp_db._load_form("form_001")
+    assert form is not None
+    assert form.title == "Test Form"
+    assert "Saved form: form_001" in caplog.text
+
+
+def test_save_form_with_no_response_config(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    sample_form.response_config = None
+    result = temp_db.save_form(sample_form)
+    assert result is True
+    form = temp_db._load_form("form_001")
+    assert form is not None
+    assert form.title == "Test Form"
+    assert "Saved form: form_001" in caplog.text
+    assert form.response_config is None
+
+
+def test_save_form_error(temp_db, sample_form, caplog, monkeypatch):
+    caplog.set_level(logging.ERROR)
+    # Simulate database error
+    def mock_db_upsert(*args, **kwargs):
+        raise Exception("Database error")
+    monkeypatch.setattr(temp_db.db, "upsert", mock_db_upsert)
+    result = temp_db.save_form(sample_form)
+    assert result is False
+    assert "Error saving form form_001: Database error" in caplog.text
+
+
+def test_update_response_config(temp_db, sample_form, sample_config, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    new_config = ResponseConfig(pages=[Page(page_id="page_new", questions=[])])
+    result = temp_db.update_response_config("form_001", new_config)
+    assert result is True
+    form = temp_db._load_form("form_001")
+    assert len(form.response_config.pages) == 1
+    assert form.response_config.pages[0].page_id == "page_new"
+    assert "Updated response config for form: form_001" in caplog.text
+
+
+def test_update_response_config_not_found(temp_db, sample_config, caplog):
+    caplog.set_level(logging.INFO)
+    result = temp_db.update_response_config("form_nonexistent", sample_config)
+    assert result is False
+    assert "Form not found: form_nonexistent" in caplog.text
+
+
+def test_add_submission(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    new_submission = Submission(
+        submission_id="sub_002",
+        num_submission=2,
+        concurrent_thread=3,
+        time_used=6,
+        success_rate=90.0,
+        network_status="20ms"
+    )
+    result = temp_db.add_submission("form_001", new_submission)
+    assert result is True
+    form = temp_db._load_form("form_001")
+    assert len(form.submissions) == 2
+    assert form.submissions[1].submission_id == "sub_002"
+    assert "Added submission to form: form_001" in caplog.text
+
+
+def test_add_submission_not_found(temp_db, sample_submission, caplog):
+    caplog.set_level(logging.INFO)
+    result = temp_db.add_submission("form_nonexistent", sample_submission)
+    assert result is False
+    assert "Form not found: form_nonexistent" in caplog.text
+
+
+
+def test_delete_form(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    result = temp_db.delete_form("form_001")
+    assert result is True
+    form = temp_db._load_form("form_001")
+    assert form is None
+    assert "Deleted form: form_001" in caplog.text
+
+
+def test_delete_form_not_found(temp_db, caplog):
+    caplog.set_level(logging.INFO)
+    result = temp_db.delete_form("form_nonexistent")
+    assert result is True  # TinyDB returns True for remove even if no match
+    assert "Deleted form: form_nonexistent" in caplog.text
+
+
+def test_delete_submission(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    result = temp_db.delete_submission("form_001", "sub_001")
+    assert result is True
+    form = temp_db._load_form("form_001")
+    assert len(form.submissions) == 0
+    assert "Deleted submission from form: form_001" in caplog.text
+
+
+def test_delete_submission_not_found(temp_db, sample_form, caplog):
+    caplog.set_level(logging.INFO)
+    temp_db.save_form(sample_form)
+    result = temp_db.delete_submission("form_001", "sub_nonexistent")
+    assert result is True
+    form = temp_db._load_form("form_001")
+    assert len(form.submissions) == 1  # No change
+    assert "Deleted submission from form: form_001" in caplog.text
+
+
+def test_delete_submission_form_not_found(temp_db, caplog):
+    caplog.set_level(logging.INFO)
+    result = temp_db.delete_submission("form_nonexistent", "sub_001")
+    assert result is False
+    assert "Form not found: form_nonexistent" in caplog.text
