@@ -19,6 +19,5 @@ def create_app():
     # TODO: Add language setting: babel = Babel(app, locale_selector=get_locale)
     
     app.register_blueprint(bp)
-
+    
     return app
-
