@@ -18,8 +18,8 @@ function openFormModal(formId) {
                     <i class="fas fa-link me-1"></i>${selected.url || ''}
                 </a>
             </p>
-            <p><i class="fas fa-paper-plane"></i> ${selected.submissions || ''} submissions</p>
-            <p><i class="fas fa-clock"></i> Last used: ${selected.timestamp || ''}</p>
+            <p><i class="fas fa-paper-plane"></i> ${selected.total_fill || ''} submissions</p>
+            <p><i class="fas fa-clock"></i> Last used: ${selected.created_at || ''}</p>
         `;
         document.querySelector('#formModal .modal-footer a').href = `/fill_form?form_url=${encodeURIComponent(selected.url)}`;
 

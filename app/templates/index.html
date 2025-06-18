@@ -3,7 +3,12 @@
 {% block css %} <link rel="stylesheet" href="{{ url_for('static', filename='css/components/card.css') }}"> {% endblock %}
 {% block content %}
 <!-- Search Form -->
-<h2 class="h3 mb-4 fw-bold">Recent Forms</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h3 fw-bold mb-0">Recent Forms</h2>
+  <a href="{{ url_for('main.form_filling') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-1"></i> New Form
+  </a>
+</div>
 <form method="GET" action="{{ url_for('main.search') }}">
   <div class="input-group mb-3">
       <input type="text" name="query" class="form-control" placeholder="Search forms..." aria-label="Search forms">
@@ -25,8 +30,8 @@
                     </div>
                     <div>
                         <h5 class="card-title">{{ form.title }}</h5>
-                        <p class="card-text">{{ form.timestamp }}</p>
-                        <p class="card-text"><i class="fas fa-paper-plane"></i> {{ form.submissions }} submissions</p>
+                        <p class="card-text">{{ form.created_at }}</p>
+                        <p class="card-text"><i class="fas fa-paper-plane"></i> {{ form.total_fill }} submissions</p>
                     </div>
                 </div>
             </div>

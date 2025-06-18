@@ -1,8 +1,12 @@
 /.env
 /venv
+/.vscode
 /drivers
 /app/services/db.json
 /__pycache__
 /app/__pycache__
 /app/core/__pycache__
+/app/services/__pycache__
 /tests/__pycache__
+/.pytest_cache
+/tests/quick_handle.py
