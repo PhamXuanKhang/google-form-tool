@@ -6,10 +6,8 @@ This module defines the main routes for the Google Form Automation Tool.
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
 from app.services import get_storage_service
 
-
 # Create blueprint
 bp = Blueprint('main', __name__)
-
 
 # Home page
 @bp.route('/', methods=['GET'])
@@ -26,7 +24,6 @@ def index():
 def form_filling():
     """Render the form filling page"""
 
-
     # Truyền TẤT CẢ các biến cần thiết cho template
     return render_template(
         'form_filling.html',
@@ -41,21 +38,21 @@ def about():
     """Render the about page"""
     return render_template('about.html', active_page="about")
 
-
+  
 # TODO: Add Function to search form
 @bp.route('/search', methods=['GET'])
 def search():
     """Return searched form"""
     pass
 
-
+  
 # Extract form data
 @bp.route('/extract', methods=['POST'])
 def extract():
     """Extract form data from a Google Form Url"""
     pass
 
-
+  
 # Load data file
 @bp.route('/load_data', methods=['POST'])
 def load_data():
