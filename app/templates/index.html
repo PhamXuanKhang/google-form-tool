@@ -3,63 +3,77 @@
 {% block css %} <link rel="stylesheet" href="{{ url_for('static', filename='css/components/card.css') }}"> {% endblock %}
 {% block content %}
 <!-- Search Form -->
-<h2 class="h3 mb-4 fw-bold">Recent Forms</h2>
-<form method="GET" action="{{ url_for('main.search') }}">
-  <div class="input-group mb-3">
-      <input type="text" name="query" class="form-control" placeholder="Search forms..." aria-label="Search forms">
-      <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
-  </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h2 class="h3 fw-bold mb-0">Recent Forms</h2>
+	<a href="{{ url_for('main.form_filling') }}" class="btn btn-primary">
+		<i class="fas fa-plus me-1"></i> New Form
+	</a>
+</div>
+<form method="GET" action="/">
+	<div class="input-group mb-3">
+		<input type="text" name="search" class="form-control" placeholder="Search forms by title or description ..." value="{{ search_query | default('') }}" class="form-control">
+		<button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
+	</div>
 </form>
 
-<!-- TODO: Fix the field of form for suitable with backend-->
 <!-- Recent Form Cards -->
-<div class="row g-4">
-    {% for form in recent_forms %}
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm hover-shadow" onclick="openFormModal('{{ form.id }}')" style="cursor: pointer;">
-                <div class="card-body d-flex">
-                    <div class="me-3">
-                        <div class="rounded-circle bg-info d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h5 class="card-title">{{ form.title }}</h5>
-                        <p class="card-text">{{ form.timestamp }}</p>
-                        <p class="card-text"><i class="fas fa-paper-plane"></i> {{ form.submissions }} submissions</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% endfor %}
-</div>
+{% if recent_forms|length == 0 %}
+	<!-- Can't find available form in database -->
+	<div class="text-center my-5">
+		<i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+			<h4 class="text-muted">Cannot find any available form.</h4>
+  	</div>
+{% else %}
+  	<!-- Form List -->
+	<div class="row g-4">
+		{% for form in recent_forms %}
+			<div class="col-md-4">
+				<div class="card h-100 shadow-sm hover-shadow" onclick="openFormModal('{{ form.id }}')" style="cursor: pointer;">
+					<div class="card-body d-flex">
+						<div class="me-3">
+							<div class="rounded-circle bg-info d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+								<i class="fas fa-file-alt"></i>
+							</div>
+						</div>
+						<div>
+							<h5 class="card-title">{{ form.title }}</h5>
+							<p class="card-text">{{ form.created_at }}</p>
+							<p class="card-text"><i class="fas fa-paper-plane"></i> {{ form.total_fill }} submissions</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+{% endif %}
+
 
 <!-- Form Modal when user click on -->
 <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="formModalLabel">{{ selected_form.title if selected_form else '' }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="{{ url_for('main.form_filling', form_url=selected_form.url if selected_form else '') }}" class="btn btn-primary">Fill This Form</a>
-            </div>
-        </div>
-    </div>
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="formModalLabel">{{ selected_form.title if selected_form else '' }}</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+			</div>
+			<div class="modal-footer">
+				<a href="#" class="btn btn-secondary" id="deleteFormBtn">Delete</a>
+				<a href="#" class="btn btn-primary" id="fillFormBtn">Fill This Form</a>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock %}
 
 <!-- Get recent Forms information from server route -->
 {% block scripts %}
 <script id="recentFormsJson" type="application/json">
-    {{ recent_forms | tojson }}
+	{{ recent_forms | tojson }}
 </script>
 <script>
-    window.recentForms = JSON.parse(document.getElementById("recentFormsJson").textContent);
+	window.recentForms = JSON.parse(document.getElementById("recentFormsJson").textContent);
 </script>
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 {% endblock %}

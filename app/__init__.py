@@ -1,7 +1,9 @@
 from flask import Flask, request
-from flask_babel import Babel
-from app.main_routes import bp, get_locale
+
+from app.models import *
+from app.main_routes import bp
 from config import Config
+from app.logging_config import init_app_logging
 
 def create_app():
     """

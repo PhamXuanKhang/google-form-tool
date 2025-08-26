@@ -40,6 +40,14 @@ function toggleDarkMode() {
     applyDarkMode(isDark);
 }
 
+
+
+function changeLanguage(lang) {
+    localStorage.setItem('language', lang);
+    document.cookie = "language=" + lang + ";path=/;max-age=" + (30*24*60*60);
+    location.reload();
+}
+
 /**
  * Get dark mode status from local storage
  */
@@ -51,4 +59,14 @@ window.addEventListener('DOMContentLoaded', () => {
     darkMode = (darkMode === 'true');
     }
     applyDarkMode(darkMode);
+
+    const savedLang = localStorage.getItem('language');
+    const cookieLang = document.cookie.split('; ').find(row => row.startsWith('language='));
+    const currentLang = cookieLang ? cookieLang.split('=')[1] : null;
+
+    // Nếu localStorage có lang nhưng cookie chưa có → set lại
+    if (savedLang && savedLang !== currentLang) {
+        document.cookie = "language=" + savedLang + ";path=/;max-age=" + (30*24*60*60);
+        location.reload();
+    }
 });

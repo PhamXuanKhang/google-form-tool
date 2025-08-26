@@ -6,7 +6,7 @@ body {
 /* css for header banner */
 .banner-img {
     aspect-ratio: 4 / 1;
-    background-image: url("/static/images/banner.png");
+    /* background-image: url("/static/images/banner.png"); TODO: check after*/
     background-size: cover;
     background-position: center;
 }

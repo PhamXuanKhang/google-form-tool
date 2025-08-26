@@ -1,6 +1,6 @@
 /**
  * Open pop up to show form information
- * TODO: Fix the field to suitable for db
+ * 
  * @param {string} formId
  */
 function openFormModal(formId) {
@@ -21,7 +21,9 @@ function openFormModal(formId) {
             <p><i class="fas fa-paper-plane"></i> ${selected.submissions || ''} submissions</p>
             <p><i class="fas fa-clock"></i> Last used: ${selected.timestamp || ''}</p>
         `;
-        document.querySelector('#formModal .modal-footer a').href = `/fill_form?form_url=${encodeURIComponent(selected.url)}`;
+
+        document.getElementById('deleteFormBtn').href = `/?form_url=${encodeURIComponent(selected.url)}`;
+        document.getElementById('fillFormBtn').href = `/form_filling?form_url=${encodeURIComponent(selected.url)}`;
 
         const modal = new bootstrap.Modal(document.getElementById('formModal'));
         modal.show();

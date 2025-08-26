@@ -1,5 +1,183 @@
 {% extends "base.html" %}
 {% block title %}Form Filling - Google Form Automation Tool{% endblock%}
+{% block css %} 
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/preview.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/spinner.css') }}">
+{% endblock %}
 {% block content %}
-<h1>check form ok</h1>
+<div id="spinner" style="display: none;" class="spinner-overlay">
+  <div class="spinner"></div>
+</div>
+<div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100 p-3">
+            <h4 class="card-title">Form Automation Steps</h4>
+            <div class="list-group">
+                {% set step_titles = {
+                    1: "Enter Form URL",
+                    2: "Configure Answers",
+                    3: "Settings",
+                    4: "Monitor Progress"
+                } %}
+
+                {% for step_num, step_title in step_titles.items() %}
+                    <div class="list-group-item list-group-item-action 
+                                {% if step_num == 1 %}active{% endif %}" id="sidebar-step-{{ step_num }}">
+                        
+                        <span class="badge 
+                                    {% if step_num == 1 %}bg-dark{% else %}bg-secondary{% endif %} 
+                                    rounded-circle me-2" id="badge-step-{{ step_num }}">{{ step_num }}</span>
+                        {{ step_title }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="mt-4">
+                <i class="fas fa-info-circle"></i> Need help? Check our <a href="{{ (url_for('main.about')) }}">documentation</a>.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9">
+        <!-- Step 1 -->
+        <div id="step-1" class="step-section">
+            <div class="card shadow-sm p-4">
+                <h3 class="card-title">Step 1: Enter Google Form URL</h3>
+                <form id="extract-form" method="POST" action="/form_filling">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="fas fa-link"></i></span>
+                        <input type="text" name="form_url" class="form-control" placeholder="https://docs.google.com/forms" id="form-url-input" required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-download me-1"></i> Extract
+                        </button>
+                    </div>
+                </form>
+                <p><i class="fas fa-info-circle"></i> Enter a valid Google Form URL to extract form fields</p>
+                <div class="card p-3 mt-3">
+                    <h5 class="card-title">Form Preview</h5>
+                        <div id="form-preview-container-wrapper" style="max-height: 400px; overflow-y: auto;">
+                            <div id="form-preview-container" class="text-center py-4 text-muted">
+                                <i class="fas fa-file-import fs-2 mb-2"></i>
+                                <p>Enter a form URL to see preview</p>
+                            </div>
+                        </div>
+                    </div>
+                <div class="d-flex justify-content-end mt-3">
+                    <button class="btn btn-primary" onclick="nextStep()">Next Step <i class="fas fa-arrow-right ms-2"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step-2" class="step-section d-none">
+            <div class="card shadow-sm p-4">
+                <h3 class="card-title">Step 2: Configure Form Answers</h3>
+
+                <!-- Answer method (nếu bạn vẫn dùng) -->
+                <div class="card bg-light p-3 mb-4">
+                    <h5 class="card-title">Answer Method</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-primary p-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="answerMethod" id="manual" value="manual" checked onchange="toggleAnswerMethod()">
+                                    <label class="form-check-label" for="manual">Manual Input</label>
+                                </div>
+                                <p class="text-muted">Manually configure answers for each field</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-secondary p-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="answerMethod" id="fileUpload" value="fileUpload" onchange="toggleAnswerMethod()">
+                                    <label class="form-check-label" for="fileUpload">File Upload</label>
+                                </div>
+                                <p class="text-muted">Upload CSV/Excel with answer data</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Upload Section (Hidden by Default) -->
+                <div id="file-upload-section" class="mt-3 d-none">
+                    <form id="file-upload-form" enctype="multipart/form-data">
+                        <div class="input-group mb-3">
+                            <input type="file" name="answer_file" class="form-control" id="answer-file-input" accept=".csv,.xlsx" required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-upload me-1"></i> Upload
+                            </button>
+                        </div>
+                        <p class="text-muted"><i class="fas fa-info-circle"></i> Upload a CSV or Excel file with answer data. Ensure it matches the form structure.</p>
+                    </form>
+                </div>
+
+                <!-- ✅ Đây là chỗ sẽ render các câu hỏi -->
+                <div id="step-2-questions" class="mt-3">    
+                    <!-- JS sẽ đổ nội dung vào đây -->
+                </div>
+
+                <!-- Navigation buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button class="btn btn-outline-secondary" onclick="prevStep()">
+                        <i class="fas fa-arrow-left me-2"></i> Previous
+                    </button>
+                    <button class="btn btn-primary" onclick="nextStep()">
+                        Next Step <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 --> 
+        <div id="step-3" class="step-section d-none">
+            <div class="card shadow-sm p-4">
+                <h3 class="card-title">Step 3: Automation Settings</h3>
+                <!-- Settings content remains the same -->
+                ...
+                <div class="d-flex justify-content-between mt-3">
+                    <button class="btn" onclick="prevStep()"><i class="fas fa-arrow-left me-2"></i> Previous</button>
+                    <button class="btn btn-primary" onclick="nextStep()">Review and Start <i class="fas fa-arrow-right ms-2"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div id="step-4" class="step-section d-none">
+            <div class="card shadow-sm p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="card-title">Step 4: Monitor Progress</h3>
+                    <button class="btn btn-success"><i class="fas fa-play"></i> Start Automation</button>
+                </div>
+                <!-- Monitor progress content remains the same -->
+                ...
+                <div class="d-flex justify-content-between mt-4">
+                    <button class="btn" onclick="prevStep()"><i class="fas fa-arrow-left me-2"></i> Previous</button>
+                    <button class="btn" onclick="toggleAutomation()">
+                        {% if progress == 0 %}<i class="fas fa-times"></i> Cancel{% else %}<i class="fas fa-pause"></i> Pause{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="warningToast" class="toast align-items-center text-bg-warning border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-message">...</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if active_step == 4 %}
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endif %}
+<script type="module" src="{{ url_for('static', filename='js/form_filling/main.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form_filling/navigation.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form_filling/question_config.js') }}"></script>
 {% endblock %}

@@ -3,8 +3,10 @@ Main Routes Module
 
 This module defines the main routes for the Google Form Automation Tool.
 """
-
-from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
+from flask import Blueprint, render_template, request, redirect, session, make_response, jsonify
+from app.services import get_storage_service
+from datetime import datetime
+from app.core import FormExtractor
 
 # Create blueprint
 bp = Blueprint('main', __name__)
@@ -13,33 +15,38 @@ bp = Blueprint('main', __name__)
 @bp.route('/', methods=['GET'])
 def index():
     """Render the home page"""
-    # TODO: Implement logic to get recent forms from database
-    recent_forms = [
-        {
-            'id': 'abc123',
-            'title': 'Feedback Form',
-            'timestamp': '2025-06-07 14:20',
-            'submissions': 12,
-            'url': 'https://forms.gle/example1',
-            'description': 'A feedback form for user experience.'
-        },
-        {
-            'id': 'def456',
-            'title': 'Survey Form',
-            'timestamp': '2025-06-06 09:00',
-            'submissions': 50,
-            'url': 'https://forms.gle/example2',
-            'description': 'A survey about user preferences.'
-        }
-    ]
+    query = request.args.get('search', '').lower().strip()
+    delete_form_url = request.args.get('form_url', '').strip()
 
-    return render_template('index.html', recent_forms=recent_forms, active_page="home")
+    with get_storage_service() as storage:
+        if delete_form_url:
+            del_form = storage.get_form_by_url(delete_form_url)
+            storage.delete_form(del_form.id)
+        recent_forms = storage.get_all_forms_summary()
+    
+    recent_forms = [
+        {**form, 'created_at': datetime.fromisoformat(form['created_at']).strftime('%d/%m/%Y %H:%M')}
+        for form in recent_forms
+    ]
+    
+    if query:
+        recent_forms = [
+            form for form in recent_forms
+            if query in form.get('title', '').lower() or query in form.get('description', '').lower()
+        ]
+
+    return render_template('index.html', 
+                           recent_forms=recent_forms, 
+                           active_page="home")
 
 # Form Filling page
-@bp.route('/form_filling', methods=['GET'])
+@bp.route('/form_filling', methods=['GET', 'POST'])
 def form_filling():
     """Render the form filling page"""
-    return render_template('form_filling.html', active_page="form_filling")
+    return render_template(
+        'form_filling.html',
+        active_page="form_filling"
+    )
 
 # About page
 @bp.route('/about', methods=['GET'])
@@ -57,8 +64,42 @@ def search():
 @bp.route('/extract', methods=['POST'])
 def extract():
     """Extract form data from a Google Form Url"""
-    pass
+    form_url = request.get_json().get('form_url')
+    session['form_url'] = form_url
 
+    with get_storage_service() as storage:
+        form = storage.get_form_by_url(form_url)
+        if not form:
+            form_extractor = FormExtractor(chromebinary_path=r"D:\application\chrome-win64\chrome-win64\chrome.exe", chromedriver_path=r"D:\application\chromedriver-win64\chromedriver-win64\chromedriver.exe", headless=True)
+            try:
+                form = form_extractor.extract_form_data(form_url)
+                storage.save_form(form)
+            except:
+                return make_response('Failed to extract form data', 500)
+            
+    return make_response('Form extracted successfully', 200)
+
+
+@bp.route('/form_filling/preview', methods=['GET'])
+def preview():
+    form_url = session.get('form_url')
+    if not form_url:
+        return jsonify({"error": "No form URL provided"}), 400
+
+    with get_storage_service() as storage:
+        form = storage.get_form_by_url(form_url)
+
+    if not form:
+        return jsonify({"error": "No data found for this form"}), 404
+
+    return jsonify(form.model_dump(mode='json'))
+
+
+
+
+
+
+  
 # Load data file
 @bp.route('/load_data', methods=['POST'])
 def load_data():
