@@ -1,3 +1,4 @@
+// Make sure renderQuestionsStep2 is available globally
 function renderQuestionsStep2(formData) {
     const container = document.getElementById("step-2-questions");
     container.innerHTML = `
@@ -207,3 +208,10 @@ function generateEmails(domain, count) {
     }
     return result.join("\n");
 }
+
+// Export functions to global scope
+window.renderQuestionsStep2 = renderQuestionsStep2;
+window.adjustPercentDistribution = adjustPercentDistribution;
+window.randomizeDistribution = randomizeDistribution;
+window.adjustTextAreaRows = adjustTextAreaRows;
+window.generateEmails = generateEmails;

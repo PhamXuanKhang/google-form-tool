@@ -1,0 +1,276 @@
+/**
+ * This module handles form submission automation.
+ * It implements the Start, Stop, and Monitor functionality
+ * for automatic form submissions.
+ */
+
+// Track submission state
+let submissionActive = false;
+let submissionInterval;
+const DEFAULT_REFRESH_INTERVAL = 2000; // 2 seconds
+
+/**
+ * Start form submission automation
+ * @param {object} settings - Submission settings object
+ */
+export async function startSubmission(settings) {
+    if (submissionActive) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/start_submission', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            showStatusMessage(data.error, 'error');
+            return false;
+        }
+        
+        submissionActive = true;
+        updateUIForActiveSubmission();
+        
+        // Start monitoring
+        startStatusMonitoring();
+        
+        showStatusMessage(data.message || 'Submission started successfully', 'success');
+        return true;
+    } catch (error) {
+        console.error('Error starting submission:', error);
+        showStatusMessage('Failed to start submission. Check console for details.', 'error');
+        return false;
+    }
+}
+
+/**
+ * Stop the current form submission
+ */
+export async function stopSubmission() {
+    if (!submissionActive) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/stop_submission', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        submissionActive = false;
+        clearInterval(submissionInterval);
+        
+        updateUIForStoppedSubmission();
+        
+        showStatusMessage(data.message || 'Submission stopped', 'info');
+        return true;
+    } catch (error) {
+        console.error('Error stopping submission:', error);
+        showStatusMessage('Failed to stop submission. Check console for details.', 'error');
+        return false;
+    }
+}
+
+/**
+ * Start monitoring the submission status
+ */
+function startStatusMonitoring() {
+    // Clear any existing interval
+    if (submissionInterval) {
+        clearInterval(submissionInterval);
+    }
+    
+    // Create new interval for status updates
+    submissionInterval = setInterval(async () => {
+        await updateSubmissionStatus();
+    }, DEFAULT_REFRESH_INTERVAL);
+    
+    // Get initial status immediately
+    updateSubmissionStatus();
+}
+
+/**
+ * Fetch and update the submission status
+ */
+async function updateSubmissionStatus() {
+    try {
+        const response = await fetch('/submission_status');
+        const statusData = await response.json();
+        
+        // Update UI with status data
+        updateStatusDisplay(statusData);
+        
+        // If submission is no longer running, stop monitoring
+        if (!statusData.running) {
+            submissionActive = false;
+            clearInterval(submissionInterval);
+            updateUIForStoppedSubmission();
+        }
+    } catch (error) {
+        console.error('Error updating submission status:', error);
+        // Don't stop monitoring on error - it might be temporary
+    }
+}
+
+/**
+ * Update UI elements with submission status data
+ * @param {object} statusData - The status data from the server
+ */
+function updateStatusDisplay(statusData) {
+    // Find DOM elements to update
+    const progressElement = document.getElementById('submission-progress');
+    const successRateElement = document.getElementById('success-rate');
+    const completedElement = document.getElementById('completed-count');
+    const totalElement = document.getElementById('total-count');
+    const timeElement = document.getElementById('elapsed-time');
+    
+    if (!progressElement || !successRateElement || !completedElement || !totalElement || !timeElement) {
+        console.warn('Status display elements not found in DOM');
+        return;
+    }
+    
+    // Update elements with data
+    if (statusData.total > 0) {
+        const progressPercent = Math.round((statusData.completed / statusData.total) * 100);
+        progressElement.style.width = `${progressPercent}%`;
+        progressElement.setAttribute('aria-valuenow', progressPercent);
+        progressElement.textContent = `${progressPercent}%`;
+    }
+    
+    successRateElement.textContent = `${statusData.success_rate?.toFixed(1) || 0}%`;
+    completedElement.textContent = statusData.completed || 0;
+    totalElement.textContent = statusData.total || 0;
+    
+    if (statusData.elapsed_time) {
+        timeElement.textContent = formatTime(statusData.elapsed_time);
+    }
+    
+    // Update charts if they exist
+    updateCharts(statusData);
+}
+
+/**
+ * Update charts with the latest data
+ * @param {object} statusData - The status data from the server
+ */
+function updateCharts(statusData) {
+    // This assumes you have initialized charts elsewhere
+    if (window.submissionChart) {
+        // Update submission progress chart
+        window.submissionChart.data.datasets[0].data = [
+            statusData.success || 0,
+            statusData.failed || 0,
+            statusData.total - statusData.completed || 0
+        ];
+        window.submissionChart.update();
+    }
+    
+    // Update other charts as needed
+}
+
+/**
+ * Update UI for active submission
+ */
+function updateUIForActiveSubmission() {
+    const startButton = document.getElementById('start-button');
+    const stopButton = document.getElementById('stop-button');
+    
+    if (startButton) {
+        startButton.classList.add('d-none');
+    }
+    
+    if (stopButton) {
+        stopButton.classList.remove('d-none');
+    }
+    
+    // Additional UI updates for active state
+    document.querySelectorAll('.submission-controls input, .submission-controls select').forEach(el => {
+        el.disabled = true;
+    });
+}
+
+/**
+ * Update UI for stopped submission
+ */
+function updateUIForStoppedSubmission() {
+    const startButton = document.getElementById('start-button');
+    const stopButton = document.getElementById('stop-button');
+    
+    if (startButton) {
+        startButton.classList.remove('d-none');
+    }
+    
+    if (stopButton) {
+        stopButton.classList.add('d-none');
+    }
+    
+    // Additional UI updates for stopped state
+    document.querySelectorAll('.submission-controls input, .submission-controls select').forEach(el => {
+        el.disabled = false;
+    });
+}
+
+/**
+ * Format seconds into human-readable time
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Display a status message to the user
+ * @param {string} message - The message to display
+ * @param {string} type - Message type (success, error, info)
+ */
+function showStatusMessage(message, type = 'info') {
+    // This depends on your UI implementation
+    const toast = document.getElementById('statusToast');
+    const toastBody = document.getElementById('toast-message');
+    
+    if (!toast || !toastBody) {
+        console.warn('Toast notification elements not found');
+        console.log(`${type.toUpperCase()}: ${message}`);
+        return;
+    }
+    
+    // Update toast content
+    toastBody.textContent = message;
+    
+    // Remove existing classes
+    toast.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-info', 'text-bg-warning');
+    
+    // Add appropriate class based on type
+    switch (type) {
+        case 'success':
+            toast.classList.add('text-bg-success');
+            break;
+        case 'error':
+            toast.classList.add('text-bg-danger');
+            break;
+        case 'warning':
+            toast.classList.add('text-bg-warning');
+            break;
+        default:
+            toast.classList.add('text-bg-info');
+    }
+    
+    // Show the toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}

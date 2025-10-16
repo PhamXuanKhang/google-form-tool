@@ -147,14 +147,78 @@
             <div class="card shadow-sm p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="card-title">Step 4: Monitor Progress</h3>
-                    <button class="btn btn-success"><i class="fas fa-play"></i> Start Automation</button>
+                    <div>
+                        <button id="start-button" class="btn btn-success" onclick="startFormSubmission()">
+                            <i class="fas fa-play me-1"></i> Start Automation
+                        </button>
+                        <button id="stop-button" class="btn btn-danger d-none" onclick="stopFormSubmission()">
+                            <i class="fas fa-stop me-1"></i> Stop Automation
+                        </button>
+                    </div>
                 </div>
-                <!-- Monitor progress content remains the same -->
-                ...
+                
+                <div class="submission-status-section">
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h5>Submission Progress</h5>
+                            <div class="progress mb-3">
+                                <div id="submission-progress" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%" 
+                                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            </div>
+                            
+                            <div class="row text-center stats-row">
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="completed-count">0</div>
+                                        <div class="stat-label">Completed</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="total-count">0</div>
+                                        <div class="stat-label">Total</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="success-rate">0%</div>
+                                        <div class="stat-label">Success Rate</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="elapsed-time">00:00:00</div>
+                                        <div class="stat-label">Elapsed Time</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5>Submission Status</h5>
+                                    <canvas id="submission-chart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5>System Resources</h5>
+                                    <canvas id="resource-chart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="d-flex justify-content-between mt-4">
-                    <button class="btn" onclick="prevStep()"><i class="fas fa-arrow-left me-2"></i> Previous</button>
-                    <button class="btn" onclick="toggleAutomation()">
-                        {% if progress == 0 %}<i class="fas fa-times"></i> Cancel{% else %}<i class="fas fa-pause"></i> Pause{% endif %}
+                    <button class="btn btn-outline-secondary" onclick="prevStep()">
+                        <i class="fas fa-arrow-left me-2"></i> Previous
                     </button>
                 </div>
             </div>
@@ -173,11 +237,11 @@
 </div>
 {% endblock %}
 {% block scripts %}
-{% if active_step == 4 %}
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/main.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/navigation.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/question_config.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form_filling/form_extract.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form_filling/submission.js') }}"></script>
 {% endblock %}

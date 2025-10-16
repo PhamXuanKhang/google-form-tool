@@ -1,14 +1,18 @@
+import { setCurrentFormId } from './main.js';
+
 async function extractFromUrl(url) {
     const container = document.getElementById('form-preview-container');
     showSpinner();
 
     try {
-        await fetch('/form_filling/extract', {
+        // First, call the extract endpoint
+        await fetch('form_filling/extract', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ form_url: url })
         });
 
+        // Then, get the preview data
         const previewRes = await fetch('/form_filling/preview');
         const data = await previewRes.json();
 
@@ -19,17 +23,21 @@ async function extractFromUrl(url) {
             container.innerHTML = renderFormPreview(data);
             container.classList.add("preview-loaded");
 
+            // Store form data for later use
             window.formQuestionsData = data;
+            
+            // Store the form ID if available
+            if (data.id) {
+                setCurrentFormId(data.id);
+            }
         }
     } catch (error) {
+        console.error('Error during extraction:', error);
         showPopup("❌ Failed to extract form. Please check the URL and try again.");
         container.classList.remove("preview-loaded");
     } finally {
         hideSpinner();
     }
-
-    const previewRes = await fetch('/form_filling/preview');
-    const data = await previewRes.json();
 
     if (data.error) {
         container.innerHTML = `<p class="text-warning">⚠️ ${data.error}</p>`;
@@ -108,3 +116,16 @@ function showSpinner() {
 function hideSpinner() {
   document.getElementById("spinner").style.display = "none";
 }
+
+function showPopup(message) {
+    const toastMessage = document.getElementById("toast-message");
+    if (toastMessage) {
+        toastMessage.textContent = message;
+        const toast = new bootstrap.Toast(document.getElementById("warningToast"));
+        toast.show();
+    } else {
+        alert(message);
+    }
+}
+
+export { extractFromUrl, showSpinner, hideSpinner, showPopup };

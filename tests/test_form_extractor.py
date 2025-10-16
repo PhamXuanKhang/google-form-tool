@@ -10,7 +10,7 @@ def test_extract_form_data_structure(extractor, sample_form_url):
     assert form_data.description == "Cảm ơn bạn đã dành chút thời gian để hoàn thành khảo sát ngắn này! Những câu trả lời của bạn giúp chúng tôi cải thiện."
 
     # Có ít nhất 1 page
-    assert len(form_data.response_config.pages) >= 1
+    assert len(form_data.response_config.pages) == 4
 
     # Mỗi page có ít nhất 1 câu hỏi
     for page in form_data.response_config.pages:

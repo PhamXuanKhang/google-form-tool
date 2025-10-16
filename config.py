@@ -1,29 +1,21 @@
-"""
-Application configuration module.
+"""Application configuration module."""
 
-Loads environment variables from a .env file using `python-dotenv`, and defines a base configuration class for use across the Flask app.
-
-Typical usage:
-    from config import Config
-"""
-
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
+
 class Config:
-    """
-    Base configuration class for the Flask application.
-
+    """Base configuration class for the Flask application.
+    
     Attributes:
-        SECRET_KEY (str): Secret key for session and CSRF protection.
-        DB_PATH (str): Path to the database file (e.g., for SQLite).
+        SECRET_KEY: Secret key for session and CSRF protection.
+        DB_PATH: Path to the database file.
     """
-
-    # Security and internationalization
+    
     SECRET_KEY = os.getenv("SECRET_KEY")
-
-    # Service/database configuration
     DB_PATH = os.getenv("DB_PATH")
+    CHROME_BINARY_PATH = os.getenv("CHROME_BINARY_PATH")
+    CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH")

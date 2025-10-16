@@ -8,6 +8,19 @@ from app import create_app, Form, Submission, ResponseConfig, Page, Question, An
 from app.core.form_extractor import FormExtractor
 from app.services import StorageService
 from tempfile import NamedTemporaryFile
+from config import Config
+from app.logging_config import logger
+import logging
+
+@pytest.fixture(autouse=True)
+def setup_logging(caplog):
+    # Đặt mức log để bắt tất cả các mức (INFO, WARNING, ERROR)
+    caplog.set_level(logging.DEBUG)
+    # Gán handler của caplog vào logger custom
+    logger.handlers = [caplog.handler]
+    # Đặt formatter đơn giản để khớp với assert
+    caplog.handler.setFormatter(logging.Formatter("%(message)s"))
+
 
 ############### Storage Service ###############
 
@@ -102,7 +115,7 @@ def sample_form(sample_config, sample_submission):
 # Fixture khởi tạo FormExtractor (dùng headless)
 @pytest.fixture(scope="module")
 def extractor():
-    return FormExtractor(chromebinary_path=r"D:\application\chrome-win64\chrome-win64\chrome.exe", chromedriver_path=r"D:\application\chromedriver-win64\chromedriver-win64\chromedriver.exe", headless=True)
+    return FormExtractor(chromebinary_path=Config.CHROME_BINARY_PATH, chromedriver_path=Config.CHROME_DRIVER_PATH, headless=True)
 
 # Fixture URL Google Form mẫu
 @pytest.fixture(scope="module")

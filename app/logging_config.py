@@ -15,6 +15,9 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+logger.propagate = False
+logger.handlers.clear()
+
 # Define formatter
 formatter = logging.Formatter(
     "%(asctime)s %(levelname)s: %(message)s",
@@ -31,5 +34,12 @@ def init_app_logging(app):
     """
     Integrate this logger with a Flask app instance.
     """
+    app.logger.handlers.clear()
     app.logger.handlers = logger.handlers
     app.logger.setLevel(logger.level)
+    app.logger.propagate = False
+
+    logging.getLogger('werkzeug').handlers.clear()
+    logging.getLogger('werkzeug').addHandler(console_handler)
+    logging.getLogger('werkzeug').setLevel(logging.INFO)
+    logging.getLogger('werkzeug').propagate = False
