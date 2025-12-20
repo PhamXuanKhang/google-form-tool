@@ -1,8 +1,10 @@
 from typing import Dict, Any, List, Optional
 from tinydb import TinyDB, Query, where
 from tinydb.table import Document
-from app.models.form_data import FormData, ResponseConfig
-from app.models.submission_model import SubmissionBatch
+from app.models import FormData, ResponseConfig, Form
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 # TODO: Check again
 class StorageService:
