@@ -20,7 +20,7 @@ Create **/LC_MESSAGES** folder under each supported language
 
 ```
 [jinja2: templates/**.html]
-[python: **.py]
+[python: app/**.py]
 ```
 
 ### Extract text strings from our HTML templates and .py files

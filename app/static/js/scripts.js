@@ -46,9 +46,9 @@ function toggleDarkMode() {
 window.addEventListener('DOMContentLoaded', () => {
     let darkMode = localStorage.getItem('darkMode');
     if (darkMode === null) {
-    darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     } else {
-    darkMode = (darkMode === 'true');
+        darkMode = (darkMode === 'true');
     }
     applyDarkMode(darkMode);
 });

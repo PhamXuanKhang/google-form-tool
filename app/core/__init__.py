@@ -1,0 +1,1 @@
+from app.core.form_extractor import FormExtractor

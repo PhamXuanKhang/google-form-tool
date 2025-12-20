@@ -1,51 +1,155 @@
 """
 Define data classes for form data and response configuration.
 """
-import json
-from dataclasses import dataclass
-from typing import Any
+from pydantic import BaseModel, HttpUrl, Field
+from datetime import datetime
+from typing import List, Optional
+from app.utils import generate_uuid_from_url
+from uuid import uuid4
 
-# TODO: CHeck again
-@dataclass
-class FormData:
-    form_id: str
+
+class AnswerOption(BaseModel):
+    """
+    Represents a single option in a multiple-choice question.
+
+    Attributes:
+        text (str): The label or content of the answer option.
+        percentage (float): The selection probability percentage (0-100) for auto-filling.
+        next_page_id (Optional[str]): The ID of the next page if this option is selected (for branching logic).
+    """
+    text: str
+    percentage: float = Field(ge=0, le=100)
+    next_page_id: Optional[str] = None
+
+
+class AnswerConfig(BaseModel):
+    """
+    Configuration for how a question should be automatically answered.
+
+    Attributes:
+        fill_percentage (Optional[float]): Probability that this question will be answered (0-100).
+        answers (Optional[List[str]]): List of possible answers (used for text-based questions).
+        options (Optional[List[AnswerOption]]): List of multiple-choice options with selection probabilities.
+    """
+    fill_percentage: Optional[float] = Field(default=None, ge=0, le=100)
+    answers: Optional[List[str]] = None
+    options: Optional[List[AnswerOption]] = None
+
+
+class Question(BaseModel):
+    """
+    Represents a single question within a form page.
+
+    Attributes:
+        question_id (str): Unique identifier for the question.
+        type (str): Type of the question.
+        text (str): The question content.
+        answer_config (AnswerConfig): Configuration for how the question should be answered.
+    """
+    question_id: str
+    type: str
+    text: str
+    answer_config: Optional[AnswerConfig]
+
+
+class Page(BaseModel):
+    """
+    Represents a page in a form, which contains a list of questions.
+
+    Attributes:
+        page_id (str): Unique identifier for the page (auto-generated).
+        questions (List[Question]): List of questions on this page.
+    """
+    page_id: str = Field(default_factory=lambda: f"page_{uuid4().hex[:8]}")
+    questions: Optional[List[Question]]
+
+
+class ResponseConfig(BaseModel):
+    """
+    Defines the structure of the form's response flow.
+
+    Attributes:
+        pages (List[Page]): List of all pages that make up the form.
+    """
+    pages: List[Page]
+
+
+class Submission(BaseModel):
+    """
+    Represents a single submission attempt of a form.
+
+    Attributes:
+        submission_id (str): Unique identifier for the submission (auto-generated).
+        num_submission (int): Number of form submissions executed in this batch.
+        concurrent_thread (int): Number of concurrent threads used in submission.
+        time_used (int): Times spend for the submission.
+        success_rate (float): Percentage of successful submissions (0-100).
+        network_status (str): Network condition or response status at the time of submission.
+    """
+    submission_id: str = Field(default_factory=lambda: f"sub_{uuid4().hex[:8]}")
+    num_submission: int = Field(ge=1)
+    concurrent_thread: int = Field(ge=1)
+    time_used: int
+    success_rate: float = Field(ge=0, le=100)
+    network_status: str
+
+
+class Form(BaseModel):
+    """
+    Represents a complete form including metadata, structure, and submission history.
+
+    Attributes:
+        id (str): Unique identifier for the form.
+        title (str): Title of the form.
+        description (str): Brief description of the form.
+        url (HttpUrl): Direct URL to the form.
+        created_at (datetime): Date and time the form was created.
+        last_used (datetime): Most recent usage timestamp of the form.
+        response_config (ResponseConfig): The structure and content of the form.
+        submissions (List[Submission]): History of all submission attempts.
+    """
+    id: str
     title: str
-    created_at: float
-    form_url: str
-
-    def to_json(self) -> str:
-        return json.dumps({
-            "form_id": self.form_id,
-            "title": self.title,
-            "created_at": self.created_at,
-            "form_url": self.form_url
-        })
+    description: str
+    url: HttpUrl
+    created_at: datetime
+    last_used: Optional[datetime]
+    response_config: Optional[ResponseConfig]
+    submissions: Optional[List[Submission]]
 
     @classmethod
-    def from_json(cls, json_data: str) -> 'FormData':
-        data = json.loads(json_data)
-        return cls(
-            form_id=data["form_id"],
-            title=data["title"],
-            created_at=data["created_at"],
-            form_url=data["form_url"]
-        )
+    def get_id_from_url(cls, url: str) -> str:
+        """
+        Generate a deterministic ID for a form based on its URL.
 
-@dataclass
-class ResponseConfig:
-    form_id: str
-    some_field: str  # Ví dụ trường, thay bằng các trường thực tế
+        Args:
+            url (str): The form's URL to generate the ID from.
 
-    def to_json(self) -> str:
-        return json.dumps({
-            "form_id": self.form_id,
-            "some_field": self.some_field
-        })
-
+        Returns:
+             str: The generated form ID.
+        """
+        return f"f_{generate_uuid_from_url(url)}"
+    
     @classmethod
-    def from_json(cls, json_data: str) -> 'ResponseConfig':
-        data = json.loads(json_data)
-        return cls(
-            form_id=data["form_id"],
-            some_field=data["some_field"]
-        )
+    def from_url(cls, url: str, **kwargs):
+        """
+        Create a Form instance from a given URL, automatically generating a deterministic ID.
+
+        Args:
+            url (str): The form's URL to generate the ID from.
+            **kwargs: Other keyword arguments for initializing the Form (e.g., title, description).
+
+        Returns:
+            Form: A new Form instance with ID generated from the URL.
+        """
+        return cls(id=cls.get_id_from_url(url), url=url, **kwargs)
+
+
+class FormData(BaseModel):
+    """
+    Represents the in-memory or on-disk database structure that stores multiple forms.
+
+    Attributes:
+        forms (List[Form]): List of all forms in the database.
+    """
+    forms: Optional[List[Form]]

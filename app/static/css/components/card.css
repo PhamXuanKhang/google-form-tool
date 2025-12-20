@@ -5,3 +5,11 @@
     transition: all 0.2s ease-in-out;
     background-color: #abd4fc;
 }
+
+.modal-body {
+    max-height: 70vh; /* Giới hạn chiều cao để tránh tràn dọc */
+    overflow-y: auto; /* Thanh cuộn dọc nếu cần */
+    overflow-x: hidden; /* Ngăn tràn ngang */
+    word-wrap: break-word; /* Cho phép xuống dòng khi cần */
+    word-break: break-all; /* Chia nhỏ từ để xuống dòng */
+}

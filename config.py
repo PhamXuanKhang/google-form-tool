@@ -1,13 +1,21 @@
-from dotenv import load_dotenv
-import os
+"""Application configuration module."""
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
 load_dotenv()
 
-class Config:
-    """Base config"""
-    SECRET_KEY = os.getenv("SECRET_KEY")
-    BABEL_DEFAULT_LOCALE = 'en'
-    BABEL_TRANSLATION_DIRECTORIES = './translations'
 
-    """Service config"""
+class Config:
+    """Base configuration class for the Flask application.
+    
+    Attributes:
+        SECRET_KEY: Secret key for session and CSRF protection.
+        DB_PATH: Path to the database file.
+    """
+    
+    SECRET_KEY = os.getenv("SECRET_KEY")
     DB_PATH = os.getenv("DB_PATH")
+    CHROME_BINARY_PATH = os.getenv("CHROME_BINARY_PATH")
+    CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH")
