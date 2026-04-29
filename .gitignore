@@ -5,3 +5,4 @@ __pycache__/
 .pytest_cache/
 logs/
 */__pycache__/
+app/services/db.json
