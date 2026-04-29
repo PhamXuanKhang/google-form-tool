@@ -344,14 +344,14 @@ def save_edit():
     POST /save_edit
     - Applies user edits to a form and saves it
     """
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     form_id = data.get('form_id')
     edits = data.get('edits', {})
     
     if not form_id:
-        return jsonify({"error": "No form_id provided"}), 400
+        return jsonify({"error": "No form ID provided."}), 400
     if not edits:
-        return jsonify({"error": "No edits provided"}), 400
+        return jsonify({"error": "No manual configuration changes were provided."}), 400
     
     try:
         with get_storage_service() as storage:
@@ -363,7 +363,9 @@ def save_edit():
             processor = FormProcessor(form)
             processor.apply_user_edits(edits)
             
-            storage.save_form(form)
+            if not storage.save_form(form):
+                logger.error("Failed to save edited form configuration for form_id=%s", form_id)
+                return jsonify({"error": "Could not save form configuration."}), 500
             
             return jsonify({
                 "success": True,
@@ -371,7 +373,8 @@ def save_edit():
             })
     
     except Exception as e:
-        return jsonify({"error": f"Error saving form configuration: {str(e)}"}), 500
+        logger.exception("Error saving form configuration for form_id=%s", form_id)
+        return jsonify({"error": "Error saving form configuration."}), 500
 
 
 #############################

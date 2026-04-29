@@ -301,6 +301,12 @@ msgstr "Delays must be non-negative numbers."
 msgid "Maximum delay must be greater than or equal to minimum delay."
 msgstr "Maximum delay must be greater than or equal to minimum delay."
 
+msgid "Failed to save manual configuration."
+msgstr "Failed to save manual configuration."
+
+msgid "No manual configuration to save."
+msgstr "No manual configuration to save."
+
 msgid "Success"
 msgstr "Success"
 

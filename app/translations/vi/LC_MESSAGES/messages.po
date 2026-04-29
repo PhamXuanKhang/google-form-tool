@@ -301,6 +301,12 @@ msgstr "Độ trễ phải là số không âm."
 msgid "Maximum delay must be greater than or equal to minimum delay."
 msgstr "Độ trễ tối đa phải lớn hơn hoặc bằng độ trễ tối thiểu."
 
+msgid "Failed to save manual configuration."
+msgstr "Không thể lưu cấu hình thủ công."
+
+msgid "No manual configuration to save."
+msgstr "Không có cấu hình thủ công để lưu."
+
 msgid "Success"
 msgstr "Thành công"
 

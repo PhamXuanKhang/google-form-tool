@@ -38,7 +38,7 @@ function goToStep(step) {
 }
 
 
-function nextStep() {
+async function nextStep() {
     if (currentStep === 1) {
         const urlInput = document.getElementById("form-url-input");
         const previewContainer = document.getElementById("form-preview-container");
@@ -65,6 +65,10 @@ function nextStep() {
         if (answerMethod === "fileUpload" && !fileUploaded) {
             return showPopup(t("pleaseUploadAnswerFile", "Please upload a file with answer data."));
         }
+        if (answerMethod === "manual") {
+            const saved = await saveManualConfiguration();
+            if (!saved) return;
+        }
     } else if (currentStep === 3) {
         const validationError = validateSettingsStep();
         if (validationError) {
@@ -87,6 +91,46 @@ function syncSettingsFromExistingFormCount() {
     if (settingsFormCount && existingFormCount && !settingsFormCount.dataset.syncedFromStep2) {
         settingsFormCount.value = existingFormCount.value || settingsFormCount.value;
         settingsFormCount.dataset.syncedFromStep2 = "true";
+    }
+}
+
+async function saveManualConfiguration() {
+    if (!window.currentFormId) {
+        showPopup(t("pleaseExtractFormFirst", "Please extract a form first."));
+        return false;
+    }
+
+    if (typeof window.collectManualEdits !== "function") {
+        showPopup(t("manualConfigSaveFailed", "Failed to save manual configuration."));
+        return false;
+    }
+
+    const edits = window.collectManualEdits();
+    if (!edits || Object.keys(edits).length === 0) {
+        showPopup(t("noManualConfigToSave", "No manual configuration to save."));
+        return false;
+    }
+
+    try {
+        const response = await fetch("/save_edit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                form_id: window.currentFormId,
+                edits
+            })
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+            showPopup(result.error || t("manualConfigSaveFailed", "Failed to save manual configuration."));
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error("Manual configuration save failed:", error);
+        showPopup(t("manualConfigSaveFailed", "Failed to save manual configuration."));
+        return false;
     }
 }
 
@@ -121,6 +165,7 @@ function validateSettingsStep() {
 }
 
 window.validateSettingsStep = validateSettingsStep;
+window.saveManualConfiguration = saveManualConfiguration;
 
 // Make the functions globally available
 window.goToStep = goToStep;
