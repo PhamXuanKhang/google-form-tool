@@ -259,7 +259,7 @@
 
 <!-- Toast -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
-  <div id="warningToast" class="toast align-items-center text-bg-warning border-0" role="alert">
+  <div id="statusToast" class="toast align-items-center text-bg-info border-0" role="alert">
     <div class="d-flex">
       <div class="toast-body" id="toast-message">...</div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
@@ -302,6 +302,7 @@ window.i18n = {
     failedToStartSubmission: {{ _('Failed to start submission. Check console for details.') | tojson }},
     submissionStopped: {{ _('Submission stopped') | tojson }},
     failedToStopSubmission: {{ _('Failed to stop submission. Check console for details.') | tojson }},
+    noActiveSubmissionForThisForm: {{ _('No active submission for this form.') | tojson }},
     success: {{ _('Success') | tojson }},
     failed: {{ _('Failed') | tojson }},
     pending: {{ _('Pending') | tojson }}

@@ -39,6 +39,8 @@ def test_form_filling_renders_in_english(client):
     assert response.status_code == 200
     assert b"Step 1: Enter Google Form URL" in response.data
     assert b"Upload a CSV, JSON, or XLSX file with answer data." in response.data
+    assert b'id="statusToast"' in response.data
+    assert b"No active submission for this form." in response.data
 
 
 def test_form_filling_renders_in_vietnamese(client):

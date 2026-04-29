@@ -262,6 +262,9 @@ msgstr "Đã dừng gửi"
 msgid "Failed to stop submission. Check console for details."
 msgstr "Không thể dừng gửi. Xem console để biết chi tiết."
 
+msgid "No active submission for this form."
+msgstr "Không có phiên gửi nào đang chạy cho biểu mẫu này."
+
 msgid "Success"
 msgstr "Thành công"
 

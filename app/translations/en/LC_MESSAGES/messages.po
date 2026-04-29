@@ -262,6 +262,9 @@ msgstr "Submission stopped"
 msgid "Failed to stop submission. Check console for details."
 msgstr "Failed to stop submission. Check console for details."
 
+msgid "No active submission for this form."
+msgstr "No active submission for this form."
+
 msgid "Success"
 msgstr "Success"
 

@@ -142,8 +142,11 @@ function showPopup(message) {
     const toastMessage = document.getElementById("toast-message");
     if (toastMessage) {
         toastMessage.textContent = message;
-        const toast = new bootstrap.Toast(document.getElementById("warningToast"));
-        toast.show();
+        const toastElement = document.getElementById("statusToast") || document.getElementById("warningToast");
+        if (toastElement) {
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
     } else {
         alert(message);
     }

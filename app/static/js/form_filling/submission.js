@@ -7,6 +7,8 @@
 // Track submission state
 let submissionActive = false;
 let submissionInterval;
+let currentSubmissionFormId = null;
+let lastWarningMessage = null;
 const DEFAULT_REFRESH_INTERVAL = 2000; // 2 seconds
 
 function t(key, fallback) {
@@ -20,6 +22,14 @@ function t(key, fallback) {
 export async function startSubmission(settings) {
     if (submissionActive) {
         return;
+    }
+
+    currentSubmissionFormId = settings?.form_id || null;
+    lastWarningMessage = null;
+
+    if (!currentSubmissionFormId) {
+        showStatusMessage(t("pleaseExtractFormFirst", "Please extract a form first."), 'warning');
+        return false;
     }
     
     try {
@@ -107,9 +117,26 @@ function startStatusMonitoring() {
  * Fetch and update the submission status
  */
 async function updateSubmissionStatus() {
+    if (!currentSubmissionFormId) {
+        showStatusMessage(t("pleaseExtractFormFirst", "Please extract a form first."), 'warning');
+        return;
+    }
+
     try {
-        const response = await fetch('/submission_status');
+        const response = await fetch(`/submission_status?form_id=${encodeURIComponent(currentSubmissionFormId)}`);
         const statusData = await response.json();
+
+        if (statusData.active_submissions) {
+            showStatusMessage(t("noActiveSubmissionForThisForm", "No active submission for this form."), 'info');
+            stopStatusMonitoring();
+            return;
+        }
+
+        if (statusData.message && !statusData.running && !statusData.total) {
+            showStatusMessage(statusData.message, 'info');
+            stopStatusMonitoring();
+            return;
+        }
         
         // Update UI with status data
         updateStatusDisplay(statusData);
@@ -131,6 +158,13 @@ async function updateSubmissionStatus() {
  * @param {object} statusData - The status data from the server
  */
 function updateStatusDisplay(statusData) {
+    if (!isSingleStatusShape(statusData)) {
+        console.warn('Unexpected submission status shape:', statusData);
+        showStatusMessage(t("noActiveSubmissionForThisForm", "No active submission for this form."), 'info');
+        stopStatusMonitoring();
+        return;
+    }
+
     // Find DOM elements to update
     const progressElement = document.getElementById('submission-progress');
     const successRateElement = document.getElementById('success-rate');
@@ -158,9 +192,32 @@ function updateStatusDisplay(statusData) {
     if (statusData.elapsed_time) {
         timeElement.textContent = formatTime(statusData.elapsed_time);
     }
+
+    if (statusData.warning && statusData.warning !== lastWarningMessage) {
+        lastWarningMessage = statusData.warning;
+        showStatusMessage(statusData.warning, 'warning');
+    }
     
     // Update charts if they exist
     updateCharts(statusData);
+}
+
+function stopStatusMonitoring() {
+    submissionActive = false;
+    if (submissionInterval) {
+        clearInterval(submissionInterval);
+        submissionInterval = null;
+    }
+    updateUIForStoppedSubmission();
+}
+
+function isSingleStatusShape(statusData) {
+    return statusData &&
+        !statusData.active_submissions &&
+        typeof statusData.running === 'boolean' &&
+        Number.isFinite(Number(statusData.total)) &&
+        Number.isFinite(Number(statusData.completed)) &&
+        Number.isFinite(Number(statusData.success_rate));
 }
 
 /**
@@ -170,11 +227,12 @@ function updateStatusDisplay(statusData) {
 function updateCharts(statusData) {
     // This assumes you have initialized charts elsewhere
     if (window.submissionChart) {
+        const pending = Math.max((statusData.total || 0) - (statusData.completed || 0), 0);
         // Update submission progress chart
         window.submissionChart.data.datasets[0].data = [
             statusData.success || 0,
             statusData.failed || 0,
-            statusData.total - statusData.completed || 0
+            pending
         ];
         window.submissionChart.update();
     }
