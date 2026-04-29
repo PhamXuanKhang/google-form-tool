@@ -437,7 +437,7 @@ def start_submission():
             import threading
             submission_thread = threading.Thread(
                 target=_run_submission,
-                args=(submitter, form, storage, num_submissions, concurrent_threads, min_delay, max_delay, responses_list, responses)
+                args=(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list, responses)
             )
             submission_thread.daemon = True
             submission_thread.start()
@@ -458,7 +458,7 @@ def start_submission():
         return jsonify({"error": f"Error starting submission: {str(e)}"}), 500
 
 
-def _run_submission(submitter, form, storage, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None):
+def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None):
     """Internal helper: Runs submission in background thread"""
     try:
         submission_result = submitter.submit_form(
@@ -470,7 +470,16 @@ def _run_submission(submitter, form, storage, num_submissions, concurrent_thread
             max_delay=max_delay
         )
 
-        storage.add_submission(form.id, submission_result)
+        try:
+            with get_storage_service() as storage:
+                saved = storage.add_submission(form_id, submission_result)
+                if saved:
+                    logger.info(f"Saved submission history for form {form_id}")
+                else:
+                    logger.warning(f"Submission history was not saved because form {form_id} was not found")
+        except Exception as e:
+            logger.error(f"Failed to save submission history for form {form_id}: {str(e)}")
+
         logger.info(f"Submission complete: {submission_result.success_rate}% success rate")
 
     except Exception as e:
