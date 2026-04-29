@@ -19,6 +19,18 @@ import ast
 from app.logging_config import logger
 
 
+class FormExtractionError(RuntimeError):
+    """Base error for Google Form extraction failures."""
+
+
+class DriverStartupError(FormExtractionError):
+    """Raised when Chrome or ChromeDriver cannot start."""
+
+
+class FormLoadError(FormExtractionError):
+    """Raised when the Google Form cannot be loaded or parsed."""
+
+
 def retry_on_stale(max_retries: int = 3, delay: float = 0.5):
     """Decorator that retries function on StaleElementReferenceException."""
     def decorator(func):
@@ -117,6 +129,7 @@ class FormExtractor:
         self.webview_port = webview_port
         self.chromebinary_path = chromebinary_path
         self.chromedriver_path = chromedriver_path
+        self.driver = None
 
         self.option_arguments = [
             '--no-sandbox',
@@ -171,7 +184,7 @@ class FormExtractor:
             return driver
         except Exception as e:
             logger.error(f"Failed to initialize WebDriver: {str(e)}")
-            raise
+            raise DriverStartupError("Chrome or ChromeDriver could not start") from e
 
     def extract_form_data(self, form_url):
         """
@@ -295,12 +308,20 @@ class FormExtractor:
                     break
             return form_data
 
+        except DriverStartupError:
+            raise
+        except (TimeoutException, NoSuchElementException) as e:
+            logger.error(f"Google Form could not be loaded or parsed: {str(e)}")
+            raise FormLoadError("Google Form could not be loaded or parsed") from e
         except Exception as e:
             logger.error(f"Error extracting form data: {str(e)}")
-            raise ValueError(f"Error extracting form data: {str(e)}")
+            raise FormExtractionError("Unknown extraction failure") from e
         finally:
-            if self.driver:
-                self.driver.quit()
+            if self.driver is not None:
+                try:
+                    self.driver.quit()
+                finally:
+                    self.driver = None
 
     def _extract_page_questions(self):
         """

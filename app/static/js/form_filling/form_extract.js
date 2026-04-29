@@ -5,49 +5,66 @@ async function extractFromUrl(url) {
     showSpinner();
 
     try {
-        // First, call the extract endpoint
-        await fetch('form_filling/extract', {
+        const extractRes = await fetch('/form_filling/extract', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ form_url: url })
         });
+        const extractData = await readJsonResponse(extractRes);
 
-        // Then, get the preview data
+        if (!extractRes.ok || extractData.error) {
+            const message = extractData.error || "Failed to extract form data.";
+            showPopup(message);
+            showPreviewError(container, message);
+            return;
+        }
+
         const previewRes = await fetch('/form_filling/preview');
-        const data = await previewRes.json();
+        const data = await readJsonResponse(previewRes);
 
-        if (data.error) {
-            showPopup(data.error);
-            container.classList.remove("preview-loaded");
-        } else {
-            container.innerHTML = renderFormPreview(data);
-            container.classList.add("preview-loaded");
+        if (!previewRes.ok || data.error) {
+            const message = data.error || "Failed to load form preview.";
+            showPopup(message);
+            showPreviewError(container, message);
+            return;
+        }
 
-            // Store form data for later use
-            window.formQuestionsData = data;
-            
-            // Store the form ID if available
-            if (data.id) {
-                setCurrentFormId(data.id);
-            }
+        container.innerHTML = renderFormPreview(data);
+        container.classList.add("preview-loaded");
+
+        window.formQuestionsData = data;
+        
+        if (data.id) {
+            setCurrentFormId(data.id);
         }
     } catch (error) {
         console.error('Error during extraction:', error);
-        showPopup("❌ Failed to extract form. Please check the URL and try again.");
-        container.classList.remove("preview-loaded");
+        const message = "Failed to extract form. Please check the URL and try again.";
+        showPopup(message);
+        showPreviewError(container, message);
     } finally {
         hideSpinner();
     }
-
-    if (data.error) {
-        container.innerHTML = `<p class="text-warning">⚠️ ${data.error}</p>`;
-        return;
-    }
-
-
-    container.innerHTML = renderFormPreview(data);
 }
 
+
+async function readJsonResponse(response) {
+    try {
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to parse JSON response:', error);
+        return {};
+    }
+}
+
+function showPreviewError(container, message) {
+    container.innerHTML = "";
+    const errorMessage = document.createElement("p");
+    errorMessage.className = "text-warning";
+    errorMessage.textContent = `⚠️ ${message}`;
+    container.appendChild(errorMessage);
+    container.classList.remove("preview-loaded");
+}
 
 
 function renderFormPreview(form) {

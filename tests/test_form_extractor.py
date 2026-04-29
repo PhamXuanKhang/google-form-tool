@@ -1,5 +1,6 @@
 import pytest
 from app.models import Form, Page, Question
+from app.core.form_extractor import DriverStartupError, FormExtractor
 
 
 def test_extract_form_data_structure(extractor, sample_form_url):
@@ -24,3 +25,17 @@ def test_extract_form_data_structure(extractor, sample_form_url):
                 "dropdown", "checkbox", "linear_scale", "rank",
                 "textarea", "date", "time", "unknown"
             ]
+
+
+def test_extract_form_data_cleanup_when_driver_startup_fails(monkeypatch):
+    extractor = FormExtractor(headless=True)
+
+    def fail_to_start():
+        raise DriverStartupError("Chrome or ChromeDriver could not start")
+
+    monkeypatch.setattr(extractor, "initialize_driver", fail_to_start)
+
+    with pytest.raises(DriverStartupError):
+        extractor.extract_form_data("https://docs.google.com/forms/d/example/viewform")
+
+    assert extractor.driver is None

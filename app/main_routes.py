@@ -10,6 +10,7 @@ from flask import Blueprint, render_template, request, session, jsonify, current
 from app.services import get_storage_service
 from datetime import datetime
 from app.core import FormExtractor
+from app.core.form_extractor import DriverStartupError, FormExtractionError, FormLoadError
 from app.logging_config import logger
 from config import Config
 
@@ -95,6 +96,8 @@ def extract():
     form_url = data.get('form_url')
     if not form_url:
         return jsonify({"error": "No form URL provided"}), 400
+    if not isinstance(form_url, str) or not form_url.startswith('https://docs.google.com/forms/'):
+        return jsonify({"error": "Please enter a valid Google Form URL."}), 400
         
     session['form_url'] = form_url
 
@@ -109,9 +112,35 @@ def extract():
             try:
                 form = form_extractor.extract_form_data(form_url)
                 storage.save_form(form)
+            except ValueError as e:
+                logger.warning(f"Invalid Google Form URL: {form_url}. Details: {str(e)}")
+                return jsonify({"error": "Please enter a valid Google Form URL."}), 400
+            except DriverStartupError as e:
+                logger.exception(f"Chrome/ChromeDriver startup failed while extracting form: {e}")
+                return jsonify({
+                    "error": (
+                        "Chrome or ChromeDriver could not start. Please check that Chrome is installed "
+                        "and the ChromeDriver path is configured correctly."
+                    )
+                }), 500
+            except FormLoadError as e:
+                logger.exception(f"Google Form load/parse failed: {e}")
+                return jsonify({
+                    "error": (
+                        "The Google Form could not be loaded or parsed. Please check that the form URL "
+                        "opens in a browser and the form is accessible."
+                    )
+                }), 500
+            except FormExtractionError as e:
+                logger.exception(f"Unknown form extraction failure: {e}")
+                return jsonify({
+                    "error": "The form could not be extracted because of an unexpected extraction error."
+                }), 500
             except Exception as e:
-                logger.error(f"Form extraction failed: {str(e)}")
-                return jsonify({"error": "Failed to extract form data"}), 500
+                logger.exception(f"Unexpected form extraction failure: {e}")
+                return jsonify({
+                    "error": "The form could not be extracted because of an unknown error."
+                }), 500
             
     return jsonify({"success": True, "message": "Form extracted successfully"})
 
