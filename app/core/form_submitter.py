@@ -302,7 +302,7 @@ class FormSubmitter:
         """
         try:
             # Load the form URL
-            driver.get(self.form.url)
+            driver.get(str(self.form.url))
             
             # Wait for form to load
             WebDriverWait(driver, 10).until(
