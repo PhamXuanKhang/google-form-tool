@@ -600,6 +600,44 @@ def submission_status():
         return jsonify({"active_submissions": all_status, "count": len(all_status)})
 
 
+@bp.route('/submission_history/<form_id>', methods=['GET'])
+def submission_history(form_id):
+    """
+    Submission History
+
+    GET /submission_history/<form_id>
+    - Returns saved submission history for one form as JSON
+    """
+    try:
+        with get_storage_service() as storage:
+            form = storage._load_form(form_id)
+            if not form:
+                return jsonify({"error": "Form not found. Please refresh the page and try again."}), 404
+
+            submissions = [
+                {
+                    "submission_id": sub.submission_id,
+                    "num_submission": sub.num_submission,
+                    "concurrent_thread": sub.concurrent_thread,
+                    "time_used": sub.time_used,
+                    "success_rate": sub.success_rate,
+                    "network_status": sub.network_status,
+                }
+                for sub in (form.submissions or [])
+            ]
+
+            return jsonify({
+                "success": True,
+                "form_id": form.id,
+                "title": form.title,
+                "submissions": submissions,
+            })
+
+    except Exception as e:
+        logger.error(f"Error getting submission history for {form_id}: {e}")
+        return jsonify({"error": "Could not load submission history. Please try again."}), 500
+
+
 @bp.route('/export_history/<form_id>', methods=['GET'])
 def export_history(form_id):
     """
