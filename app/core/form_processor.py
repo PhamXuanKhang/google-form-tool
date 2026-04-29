@@ -8,6 +8,7 @@ import csv
 import json
 import random
 import string
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
@@ -45,9 +46,10 @@ class FormProcessor:
         Supported formats:
         - CSV: Each row becomes one submission's responses
         - JSON: Expects a list of objects, each object is one submission
+        - XLSX: First worksheet, first row as headers, each subsequent row as responses
 
         Args:
-            file_path (str): Path to the data file (CSV or JSON)
+            file_path (str): Path to the data file (CSV, JSON, or XLSX)
             mapping (Dict[str, str], optional): Mapping of file columns to question IDs.
                                                If None, assumes column names match question IDs.
 
@@ -70,8 +72,10 @@ class FormProcessor:
             return self._load_csv(path, mapping)
         elif suffix == ".json":
             return self._load_json(path, mapping)
+        elif suffix == ".xlsx":
+            return self._load_xlsx(path, mapping)
         else:
-            raise ValueError(f"Unsupported file format: {suffix}. Use .csv or .json")
+            raise ValueError(f"Unsupported file format: {suffix}. Use .csv, .json, or .xlsx")
 
     def _load_csv(
         self, path: Path, mapping: Optional[Dict[str, str]]
@@ -119,6 +123,56 @@ class FormProcessor:
 
         logger.info(f"Loaded {len(responses_list)} response sets from JSON")
         return responses_list
+
+    def _load_xlsx(
+        self, path: Path, mapping: Optional[Dict[str, str]]
+    ) -> List[Dict[str, Any]]:
+        """Load responses from the first worksheet in an XLSX file."""
+        try:
+            from openpyxl import load_workbook
+        except ImportError as e:
+            raise ValueError("Excel import requires openpyxl to be installed.") from e
+
+        workbook = load_workbook(path, read_only=True, data_only=True)
+        try:
+            worksheet = workbook.worksheets[0]
+            rows = worksheet.iter_rows(values_only=True)
+            headers = next(rows, None)
+
+            if not headers:
+                return []
+
+            responses_list = []
+            for row in rows:
+                responses = {}
+                for col_name, value in zip(headers, row):
+                    if col_name is None or value is None:
+                        continue
+                    if isinstance(value, str) and not value.strip():
+                        continue
+
+                    col_key = str(col_name).strip()
+                    if not col_key:
+                        continue
+
+                    question_id = mapping.get(col_key, col_key) if mapping else col_key
+                    responses[question_id] = self._normalize_excel_value(value)
+
+                if responses:
+                    responses_list.append(responses)
+
+            logger.info(f"Loaded {len(responses_list)} response sets from XLSX")
+            return responses_list
+        finally:
+            workbook.close()
+
+    def _normalize_excel_value(self, value: Any) -> Any:
+        """Normalize Excel-only values while preserving useful primitive types."""
+        if isinstance(value, datetime):
+            return value.isoformat(sep=" ")
+        if isinstance(value, (date, time)):
+            return value.isoformat()
+        return value
 
     def _parse_value(self, value: str) -> Any:
         """Parse a string value into appropriate type."""

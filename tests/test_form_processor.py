@@ -10,9 +10,12 @@ import pytest
 import json
 import tempfile
 import os
+from io import BytesIO
 from app.core.form_processor import FormProcessor
 from app.models import Form, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from datetime import datetime
+import app.main_routes as main_routes
+from openpyxl import Workbook
 
 
 @pytest.fixture
@@ -155,19 +158,109 @@ class TestLoadDataFromFile:
         finally:
             os.unlink(csv_path)
 
+    def test_load_xlsx_file(self, processor):
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.append(["q1", "q2", "q3"])
+        worksheet.append(["Alice", "Green", True])
+        worksheet.append(["Bob", "Red", 7])
+
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
+            xlsx_path = f.name
+
+        try:
+            workbook.save(xlsx_path)
+            responses_list = processor.load_data_from_file(xlsx_path)
+            assert len(responses_list) == 2
+            assert responses_list[0] == {"q1": "Alice", "q2": "Green", "q3": True}
+            assert responses_list[1] == {"q1": "Bob", "q2": "Red", "q3": 7}
+        finally:
+            workbook.close()
+            os.unlink(xlsx_path)
+
+    def test_load_xlsx_with_mapping(self, processor):
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.append(["name", "color", "hobbies"])
+        worksheet.append(["Dana", "Blue", "Reading"])
+
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
+            xlsx_path = f.name
+
+        try:
+            workbook.save(xlsx_path)
+            mapping = {"name": "q1", "color": "q2", "hobbies": "q3"}
+            responses_list = processor.load_data_from_file(xlsx_path, mapping)
+            assert responses_list == [{"q1": "Dana", "q2": "Blue", "q3": "Reading"}]
+        finally:
+            workbook.close()
+            os.unlink(xlsx_path)
+
+    def test_load_xlsx_skips_empty_rows_and_cells(self, processor):
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.append(["q1", "q2", "q3"])
+        worksheet.append(["Alice", None, True])
+        worksheet.append([None, None, None])
+        worksheet.append(["Bob", "", 12])
+
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
+            xlsx_path = f.name
+
+        try:
+            workbook.save(xlsx_path)
+            responses_list = processor.load_data_from_file(xlsx_path)
+            assert responses_list == [
+                {"q1": "Alice", "q3": True},
+                {"q1": "Bob", "q3": 12},
+            ]
+        finally:
+            workbook.close()
+            os.unlink(xlsx_path)
+
     def test_load_nonexistent_file_raises(self, processor):
         with pytest.raises(FileNotFoundError):
             processor.load_data_from_file("/nonexistent/path/file.csv")
 
     def test_load_unsupported_format_raises(self, processor):
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
-            xlsx_path = f.name
+        with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as f:
+            file_path = f.name
 
         try:
-            with pytest.raises(ValueError, match="Unsupported file format"):
-                processor.load_data_from_file(xlsx_path)
+            with pytest.raises(ValueError, match="Use .csv, .json, or .xlsx"):
+                processor.load_data_from_file(file_path)
         finally:
-            os.unlink(xlsx_path)
+            os.unlink(file_path)
+
+    def test_load_data_route_accepts_xlsx(self, client, sample_form, monkeypatch):
+        class Storage:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                return None
+
+            def _load_form(self, form_id):
+                return sample_form
+
+        def load_data_from_file(self, file_path, mapping=None):
+            assert file_path.endswith(".xlsx")
+            return [{"q1": "Alice"}]
+
+        monkeypatch.setattr(main_routes, "get_storage_service", lambda: Storage())
+        monkeypatch.setattr(FormProcessor, "load_data_from_file", load_data_from_file)
+
+        response = client.post(
+            "/load_data",
+            data={
+                "form_id": sample_form.id,
+                "answer_file": (BytesIO(b"not used by mocked parser"), "answers.xlsx"),
+            },
+            content_type="multipart/form-data",
+        )
+
+        assert response.status_code == 200
+        assert response.get_json()["rows_loaded"] == 1
 
 
 class TestApplyUserEdits:

@@ -193,8 +193,8 @@ def load_data():
     import os
     import tempfile
     suffix = os.path.splitext(file.filename)[1].lower()
-    if suffix not in ('.csv', '.json'):
-        return jsonify({"error": "Unsupported file format. Use .csv or .json"}), 400
+    if suffix not in ('.csv', '.json', '.xlsx'):
+        return jsonify({"error": "Unsupported file format. Use CSV, JSON, or XLSX"}), 400
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         file_path = tmp.name
