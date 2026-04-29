@@ -39,24 +39,45 @@ window.fileUploaded = false;
 /** @type {string|null} The ID of the currently loaded form */
 window.currentFormId = null;
 
+/** @type {Array|null} Loaded responses from file upload */
+window.loadedResponses = null;
+
 // Function to collect form settings from the UI
 function getFormSettings() {
-    // Get form count
-    const formCount = parseInt(document.getElementById("form-count").value || 10);
-    
+    // Get form count (default 10, or use loaded responses count if file uploaded)
+    let formCount = parseInt(document.getElementById("form-count")?.value || 10);
+
+    // If file uploaded, use the number of loaded responses
+    if (window.fileUploaded && window.loadedResponses) {
+        formCount = window.loadedResponses.length;
+    }
+
     // Get form URL from session (was entered in step 1)
     const formUrl = document.getElementById('form-url-input').value;
-    
+
     // Create settings object
-    return {
+    const settings = {
         form_url: formUrl,
-        form_id: window.currentFormId, // This will be set when form is extracted
+        form_id: window.currentFormId,
         num_submissions: formCount,
-        concurrent_threads: 2, // Default to 2 threads
-        min_delay: 1, // Default minimum delay between submissions (seconds)
-        max_delay: 5, // Default maximum delay between submissions (seconds)
-        // Add any other settings needed
+        concurrent_threads: 2,
+        min_delay: 1,
+        max_delay: 5,
     };
+
+    // Include loaded responses if file was uploaded
+    if (window.fileUploaded && window.loadedResponses) {
+        settings.responses_list = window.loadedResponses;
+        settings.use_file_data = true;
+    }
+
+    // Include AI-generated responses
+    if (window.answerMethod === "aiGenerate" && window.aiGeneratedResponses) {
+        settings.responses = window.aiGeneratedResponses;
+        settings.use_ai_responses = true;
+    }
+
+    return settings;
 }
 
 // Function to start form submission
@@ -72,22 +93,40 @@ window.stopFormSubmission = async function() {
 
 function toggleAnswerMethod() {
     const manualRadio = document.getElementById("manual");
+    const fileUploadRadio = document.getElementById("fileUpload");
+    const aiGenerateRadio = document.getElementById("aiGenerate");
     const fileUploadSection = document.getElementById("file-upload-section");
+    const aiGenerateSection = document.getElementById("ai-generate-section");
     const questionsContainer = document.getElementById("step-2-questions");
 
-    window.answerMethod = manualRadio.checked ? "manual" : "fileUpload";
-    
+    // Determine selected method
+    if (manualRadio?.checked) {
+        window.answerMethod = "manual";
+    } else if (fileUploadRadio?.checked) {
+        window.answerMethod = "fileUpload";
+    } else if (aiGenerateRadio?.checked) {
+        window.answerMethod = "aiGenerate";
+    }
+
+    // Hide all optional sections first
+    fileUploadSection?.classList.add("d-none");
+    aiGenerateSection?.classList.add("d-none");
+
     if (window.answerMethod === "manual") {
-        fileUploadSection.classList.add("d-none");
-        questionsContainer.classList.remove("d-none");
-        // Render questions for manual input if form data exists
+        questionsContainer?.classList.remove("d-none");
         if (window.formQuestionsData) {
-            window.renderQuestionsStep2(window.formQuestionsData);
+            window.renderQuestionsStep2?.(window.formQuestionsData);
         }
-    } else {
-        fileUploadSection.classList.remove("d-none");
-        questionsContainer.classList.add("d-none"); // Hide until file is uploaded
-        window.fileUploaded = false; // Reset file upload state
+    } else if (window.answerMethod === "fileUpload") {
+        fileUploadSection?.classList.remove("d-none");
+        questionsContainer?.classList.add("d-none");
+        window.fileUploaded = false;
+    } else if (window.answerMethod === "aiGenerate") {
+        aiGenerateSection?.classList.remove("d-none");
+        questionsContainer?.classList.remove("d-none");
+        if (window.formQuestionsData) {
+            window.renderQuestionsStep2?.(window.formQuestionsData);
+        }
     }
 }
 
@@ -99,10 +138,116 @@ window.addEventListener('DOMContentLoaded', () => {
         extractFromUrl(formUrl);
     }
     toggleAnswerMethod();
-    
+
     // Initialize charts for submission monitoring
     initializeCharts();
+
+    // Setup AI functionality
+    setupAIFeatures();
 });
+
+function setupAIFeatures() {
+    const validateBtn = document.getElementById('validate-api-key-btn');
+    const generateBtn = document.getElementById('generate-ai-responses-btn');
+    const apiKeyInput = document.getElementById('gemini-api-key');
+    const statusDiv = document.getElementById('api-key-status');
+
+    // Validate API key button
+    validateBtn?.addEventListener('click', async () => {
+        const apiKey = apiKeyInput?.value?.trim();
+        if (!apiKey) {
+            statusDiv.innerHTML = '<span class="text-warning"><i class="fas fa-exclamation-triangle"></i> Please enter an API key</span>';
+            return;
+        }
+
+        statusDiv.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin"></i> Validating...</span>';
+
+        try {
+            const response = await fetch('/validate_api_key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: apiKey })
+            });
+            const result = await response.json();
+
+            if (result.valid) {
+                statusDiv.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> API key is valid!</span>';
+                generateBtn.disabled = false;
+                window.geminiApiKey = apiKey;
+                localStorage.setItem('gemini_api_key', apiKey);
+            } else {
+                statusDiv.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> ${result.error || 'Invalid API key'}</span>`;
+                generateBtn.disabled = true;
+            }
+        } catch (error) {
+            statusDiv.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> Error: ${error.message}</span>`;
+            generateBtn.disabled = true;
+        }
+    });
+
+    // Generate AI responses button
+    generateBtn?.addEventListener('click', async () => {
+        if (!window.currentFormId) {
+            window.showPopup?.("Please extract a form first.");
+            return;
+        }
+
+        const apiKey = window.geminiApiKey || apiKeyInput?.value?.trim();
+        if (!apiKey) {
+            window.showPopup?.("Please enter and validate your API key first.");
+            return;
+        }
+
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+
+        try {
+            const response = await fetch('/generate_response', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    form_id: window.currentFormId,
+                    use_ai: true,
+                    api_key: apiKey
+                })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                window.aiGeneratedResponses = result.responses;
+                window.showPopup?.(`AI generated ${Object.keys(result.responses).length} responses!`, 'success');
+
+                // Show preview of generated responses
+                const questionsContainer = document.getElementById("step-2-questions");
+                if (questionsContainer) {
+                    questionsContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>AI responses generated!</strong>
+                        </div>
+                        <div class="card p-3">
+                            <h6>Generated Responses Preview:</h6>
+                            <pre style="max-height: 300px; overflow: auto; font-size: 12px;">${JSON.stringify(result.responses, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } else {
+                window.showPopup?.(result.error || "Failed to generate responses", 'error');
+            }
+        } catch (error) {
+            window.showPopup?.("Error: " + error.message, 'error');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-magic me-1"></i> Generate AI Responses';
+        }
+    });
+
+    // Load saved API key from localStorage
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey && apiKeyInput) {
+        apiKeyInput.value = savedKey;
+    }
+}
 
 document.getElementById('extract-form').addEventListener('submit', function (event) {
     event.preventDefault();
@@ -112,7 +257,57 @@ document.getElementById('extract-form').addEventListener('submit', function (eve
 
 document.getElementById('file-upload-form')?.addEventListener('submit', async function (event) {
     event.preventDefault();
-    window.showPopup("This function is not implemented yet. Please use the manual input method for now.")
+
+    if (!window.currentFormId) {
+        window.showPopup("Please extract a form first before uploading data.");
+        return;
+    }
+
+    const fileInput = document.getElementById('answer-file-input');
+    if (!fileInput.files.length) {
+        window.showPopup("Please select a file to upload.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('form_id', window.currentFormId);
+    formData.append('answer_file', fileInput.files[0]);
+
+    try {
+        const response = await fetch('/load_data', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            window.fileUploaded = true;
+            window.loadedResponses = result.responses;
+
+            // Show success message with row count
+            const questionsContainer = document.getElementById("step-2-questions");
+            questionsContainer.classList.remove("d-none");
+            questionsContainer.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>File loaded successfully!</strong><br>
+                    ${result.rows_loaded} response sets ready for submission.
+                </div>
+                <div class="card p-3">
+                    <h6>Preview (first 3 rows):</h6>
+                    <pre style="max-height: 200px; overflow: auto; font-size: 12px;">${JSON.stringify(result.responses.slice(0, 3), null, 2)}</pre>
+                </div>
+            `;
+
+            window.showPopup(result.message, 'success');
+        } else {
+            window.showPopup(result.error || "Failed to load file", 'error');
+        }
+    } catch (error) {
+        console.error('File upload error:', error);
+        window.showPopup("Error uploading file: " + error.message, 'error');
+    }
 });
 
 // Initialize charts for monitoring

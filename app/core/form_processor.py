@@ -4,11 +4,14 @@ Form Processor Module
 This module handles the processing of form data, including generating automated responses
 and preparing data for submission.
 """
-from app.models import Form, Question, AnswerConfig, AnswerOption
-from typing import Dict, List, Any, Optional
+import csv
+import json
 import random
 import string
-import datetime
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+from app.models import Form, Question, AnswerConfig, AnswerOption
 from app.logging_config import logger
 
 
@@ -33,21 +36,110 @@ class FormProcessor:
         self.form = form
         self.response_data = {}
     
-    def load_data_from_file(self, file_path: str, mapping: Dict[str, str]) -> Dict:
+    def load_data_from_file(
+        self, file_path: str, mapping: Optional[Dict[str, str]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Load data from an external file and map it to form fields.
-        
+
+        Supported formats:
+        - CSV: Each row becomes one submission's responses
+        - JSON: Expects a list of objects, each object is one submission
+
         Args:
-            file_path (str): Path to the data file (CSV, JSON, etc.)
-            mapping (Dict[str, str]): Mapping of file columns to form fields
-            
+            file_path (str): Path to the data file (CSV or JSON)
+            mapping (Dict[str, str], optional): Mapping of file columns to question IDs.
+                                               If None, assumes column names match question IDs.
+
         Returns:
-            Dict: Processed data mapped to form fields
+            List[Dict[str, Any]]: List of response dictionaries, each representing
+                                  one set of form responses (question_id -> answer).
+
+        Raises:
+            FileNotFoundError: If file does not exist
+            ValueError: If file format is unsupported or data is invalid
         """
-        # TODO: Implement file loading based on file type
-        # For now, return a placeholder
-        logger.info(f"Loading data from file: {file_path}")
-        return {"data_loaded": True}
+        path = Path(file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        suffix = path.suffix.lower()
+        logger.info(f"Loading data from file: {file_path} (format: {suffix})")
+
+        if suffix == ".csv":
+            return self._load_csv(path, mapping)
+        elif suffix == ".json":
+            return self._load_json(path, mapping)
+        else:
+            raise ValueError(f"Unsupported file format: {suffix}. Use .csv or .json")
+
+    def _load_csv(
+        self, path: Path, mapping: Optional[Dict[str, str]]
+    ) -> List[Dict[str, Any]]:
+        """Load responses from a CSV file."""
+        responses_list = []
+
+        with open(path, "r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                responses = {}
+                for col_name, value in row.items():
+                    if not col_name or not value:
+                        continue
+                    question_id = mapping.get(col_name, col_name) if mapping else col_name
+                    responses[question_id] = self._parse_value(value)
+                if responses:
+                    responses_list.append(responses)
+
+        logger.info(f"Loaded {len(responses_list)} response sets from CSV")
+        return responses_list
+
+    def _load_json(
+        self, path: Path, mapping: Optional[Dict[str, str]]
+    ) -> List[Dict[str, Any]]:
+        """Load responses from a JSON file."""
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if not isinstance(data, list):
+            data = [data]
+
+        responses_list = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            responses = {}
+            for col_name, value in item.items():
+                if value is None:
+                    continue
+                question_id = mapping.get(col_name, col_name) if mapping else col_name
+                responses[question_id] = value
+            if responses:
+                responses_list.append(responses)
+
+        logger.info(f"Loaded {len(responses_list)} response sets from JSON")
+        return responses_list
+
+    def _parse_value(self, value: str) -> Any:
+        """Parse a string value into appropriate type."""
+        value = value.strip()
+        if not value:
+            return None
+        if value.lower() in ("true", "yes"):
+            return True
+        if value.lower() in ("false", "no"):
+            return False
+        if "," in value and not value.startswith('"'):
+            return [v.strip() for v in value.split(",")]
+        try:
+            return int(value)
+        except ValueError:
+            pass
+        try:
+            return float(value)
+        except ValueError:
+            pass
+        return value
     
     def generate_random_responses(self, fill_percentage: int = 100) -> Dict[str, Any]:
         """

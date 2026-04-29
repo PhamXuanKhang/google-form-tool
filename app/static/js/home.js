@@ -25,6 +25,10 @@ function openFormModal(formId) {
         document.getElementById('deleteFormBtn').href = `/?form_url=${encodeURIComponent(selected.url)}`;
         document.getElementById('fillFormBtn').href = `/form_filling?form_url=${encodeURIComponent(selected.url)}`;
 
+        const exportBtn = document.getElementById('exportHistoryBtn');
+        exportBtn.href = `/export_history/${selected.id}`;
+        exportBtn.setAttribute('download', `${selected.title || 'form'}_history.csv`);
+
         const modal = new bootstrap.Modal(document.getElementById('formModal'));
         modal.show();
     }

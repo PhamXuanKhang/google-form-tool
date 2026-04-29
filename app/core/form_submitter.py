@@ -10,7 +10,13 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementNotInteractableException
+from selenium.common.exceptions import (
+    TimeoutException,
+    NoSuchElementException,
+    ElementNotInteractableException,
+    StaleElementReferenceException,
+    WebDriverException,
+)
 
 from app.models import Form, Question, Submission
 from app.core.form_processor import FormProcessor
@@ -20,7 +26,27 @@ import threading
 import time
 import random
 from datetime import datetime
+from functools import wraps
 from typing import Dict, List, Any, Optional, Callable
+
+
+def retry_on_stale(max_retries: int = 3, delay: float = 0.5):
+    """Decorator that retries function on StaleElementReferenceException."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except StaleElementReferenceException as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        logger.debug(f"Stale element, retry {attempt + 1}/{max_retries}")
+                        time.sleep(delay)
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class FormSubmitter:
@@ -98,27 +124,39 @@ class FormSubmitter:
             logger.error(f"Failed to initialize WebDriver: {str(e)}")
             raise
     
-    def submit_form(self, 
-                    num_submissions: int = 1, 
+    def submit_form(self,
+                    num_submissions: int = 1,
                     concurrent_threads: int = 1,
                     min_delay: int = 1,
                     max_delay: int = 5,
                     responses: Optional[Dict[str, Any]] = None,
+                    responses_list: Optional[List[Dict[str, Any]]] = None,
                     callback: Optional[Callable] = None) -> Submission:
         """
         Start the form submission process with specified parameters.
-        
+
         Args:
             num_submissions (int): Number of submissions to make
             concurrent_threads (int): Number of concurrent submission threads
             min_delay (int): Minimum delay between submissions (seconds)
             max_delay (int): Maximum delay between submissions (seconds)
-            responses (Dict[str, Any], optional): Predefined responses to use
+            responses (Dict[str, Any], optional): Single response dict for all submissions
+            responses_list (List[Dict[str, Any]], optional): List of responses, one per submission
             callback (Callable, optional): Function to call after each submission
-            
+
         Returns:
             Submission: Submission record with results
         """
+        # Data-driven mode: each item in responses_list is one submission
+        if responses_list:
+            num_submissions = len(responses_list)
+            self.responses_queue = list(responses_list)
+            self.responses_lock = threading.Lock()
+            self.data_driven_mode = True
+        else:
+            self.responses_queue = None
+            self.data_driven_mode = False
+
         # Reset status
         self.status = {
             "running": True,
@@ -130,19 +168,20 @@ class FormSubmitter:
             "end_time": None,
             "success_rate": 0
         }
-        
+
         self.stop_flag.clear()
-        
-        # Generate responses if not provided
-        self.responses = responses or self.form_processor.generate_random_responses()
-        
+
+        # Generate responses if not provided (for non-data-driven mode)
+        if not self.data_driven_mode:
+            self.responses = responses or self.form_processor.generate_random_responses()
+
         # Start submission threads
         for i in range(min(concurrent_threads, num_submissions)):
             submissions_per_thread = num_submissions // concurrent_threads
-            
+
             if i < num_submissions % concurrent_threads:
                 submissions_per_thread += 1
-            
+
             thread = threading.Thread(
                 target=self._submission_worker,
                 args=(submissions_per_thread, min_delay, max_delay, callback)
@@ -180,14 +219,14 @@ class FormSubmitter:
         
         return submission
     
-    def _submission_worker(self, 
-                          num_submissions: int, 
-                          min_delay: int, 
+    def _submission_worker(self,
+                          num_submissions: int,
+                          min_delay: int,
                           max_delay: int,
                           callback: Optional[Callable] = None) -> None:
         """
         Worker thread function for submitting forms.
-        
+
         Args:
             num_submissions (int): Number of submissions for this thread
             min_delay (int): Minimum delay between submissions (seconds)
@@ -195,25 +234,33 @@ class FormSubmitter:
             callback (Callable, optional): Function to call after each submission
         """
         driver = None
-        
+
         try:
             driver = self.initialize_driver()
-            
+
             for _ in range(num_submissions):
                 if self.stop_flag.is_set():
                     logger.info("Submission worker stopped early due to stop flag")
                     break
-                
+
+                # In data-driven mode, get next response from queue
+                if self.data_driven_mode:
+                    with self.responses_lock:
+                        if not self.responses_queue:
+                            logger.info("No more responses in queue")
+                            break
+                        self.responses = self.responses_queue.pop(0)
+
                 success = self._submit_single_form(driver)
-                
+
                 if success:
                     self.status["success"] += 1
                 else:
                     self.status["failed"] += 1
-                
+
                 if callback:
                     callback(success)
-                
+
                 # Random delay between submissions
                 if _ < num_submissions - 1 and not self.stop_flag.is_set():
                     delay = random.uniform(min_delay, max_delay)
@@ -328,10 +375,11 @@ class FormSubmitter:
         
         return True
     
+    @retry_on_stale(max_retries=3, delay=0.3)
     def _fill_question(self, driver, question: Question) -> None:
         """
         Fill a single question based on its type and the response data.
-        
+
         Args:
             driver (webdriver.Chrome): WebDriver instance to use
             question (Question): The question to fill

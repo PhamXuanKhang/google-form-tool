@@ -1,0 +1,150 @@
+# Vietnamese translations for Google Form Automation Tool
+# Copyright (C) 2024
+# This file is distributed under the same license as the project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language: vi\n"
+"Language-Team: vi\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Navigation
+msgid "Home"
+msgstr "Trang chu"
+
+msgid "Form Filling"
+msgstr "Dien bieu mau"
+
+msgid "About"
+msgstr "Gioi thieu"
+
+# Home page
+msgid "Recent Forms"
+msgstr "Bieu mau gan day"
+
+msgid "New Form"
+msgstr "Bieu mau moi"
+
+msgid "Search forms by title or description"
+msgstr "Tim kiem bieu mau theo tieu de hoac mo ta"
+
+msgid "Cannot find any available form."
+msgstr "Khong tim thay bieu mau nao."
+
+msgid "submissions"
+msgstr "lan gui"
+
+msgid "Delete"
+msgstr "Xoa"
+
+msgid "Export History"
+msgstr "Xuat lich su"
+
+msgid "Fill This Form"
+msgstr "Dien bieu mau nay"
+
+msgid "Last used"
+msgstr "Lan cuoi su dung"
+
+# Form filling page
+msgid "Extract Form"
+msgstr "Trich xuat bieu mau"
+
+msgid "Enter Google Form URL"
+msgstr "Nhap URL Google Form"
+
+msgid "Extracting..."
+msgstr "Dang trich xuat..."
+
+msgid "Start Submission"
+msgstr "Bat dau gui"
+
+msgid "Stop Submission"
+msgstr "Dung gui"
+
+msgid "Number of submissions"
+msgstr "So lan gui"
+
+msgid "Delay between submissions (seconds)"
+msgstr "Thoi gian cho giua cac lan gui (giay)"
+
+msgid "Questions"
+msgstr "Cau hoi"
+
+msgid "Required"
+msgstr "Bat buoc"
+
+msgid "Optional"
+msgstr "Tuy chon"
+
+msgid "Probability"
+msgstr "Xac suat"
+
+msgid "Custom Answers"
+msgstr "Cau tra loi tuy chinh"
+
+# AI features
+msgid "Generate with AI"
+msgstr "Tao bang AI"
+
+msgid "Enter your Gemini API key"
+msgstr "Nhap API key Gemini"
+
+msgid "Validate API Key"
+msgstr "Xac thuc API key"
+
+msgid "API key validated successfully"
+msgstr "Xac thuc API key thanh cong"
+
+msgid "Invalid API key"
+msgstr "API key khong hop le"
+
+# Submission status
+msgid "Success"
+msgstr "Thanh cong"
+
+msgid "Failed"
+msgstr "That bai"
+
+msgid "In Progress"
+msgstr "Dang xu ly"
+
+msgid "Completed"
+msgstr "Hoan thanh"
+
+msgid "Stopped"
+msgstr "Da dung"
+
+# About page
+msgid "About This Tool"
+msgstr "Gioi thieu cong cu"
+
+msgid "Google Form Automation Tool"
+msgstr "Cong cu tu dong hoa Google Form"
+
+# Common
+msgid "Save"
+msgstr "Luu"
+
+msgid "Cancel"
+msgstr "Huy"
+
+msgid "Close"
+msgstr "Dong"
+
+msgid "Error"
+msgstr "Loi"
+
+msgid "Loading..."
+msgstr "Dang tai..."
+
+msgid "Language"
+msgstr "Ngon ngu"

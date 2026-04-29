@@ -6,7 +6,7 @@ Google Form Automation Tool. Each section is grouped and separated
 for easier navigation and documentation.
 """
 
-from flask import Blueprint, render_template, request, session, jsonify
+from flask import Blueprint, render_template, request, session, jsonify, current_app, Response
 from app.services import get_storage_service
 from datetime import datetime
 from app.core import FormExtractor
@@ -147,49 +147,62 @@ def load_data():
     Load Data File
 
     POST /load_data
-    - Uploads and maps data file (CSV/Excel) to form fields
+    - Uploads CSV/JSON file and returns parsed response rows
+    - Each row becomes one submission's responses
     """
     form_id = request.form.get('form_id')
     if not form_id:
         return jsonify({"error": "No form_id provided"}), 400
-    
-    if 'data_file' not in request.files:
+
+    if 'answer_file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
-        
-    file = request.files['data_file']
+
+    file = request.files['answer_file']
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
-    
-    mappings = {}
-    for key, value in request.form.items():
-        if key.startswith('mapping_'):
-            field_id = key.replace('mapping_', '')
-            mappings[field_id] = value
-    
-    file_path = f"temp_{form_id}_{file.filename}"
-    file.save(file_path)
-    
+
+    import os
+    import tempfile
+    suffix = os.path.splitext(file.filename)[1].lower()
+    if suffix not in ('.csv', '.json'):
+        return jsonify({"error": "Unsupported file format. Use .csv or .json"}), 400
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        file_path = tmp.name
+        file.save(file_path)
+
     try:
         with get_storage_service() as storage:
             form = storage._load_form(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
-            
+
             from app.core.form_processor import FormProcessor
             processor = FormProcessor(form)
-            processor.load_data_from_file(file_path, mappings)
-            
+
+            mapping = None
+            mapping_json = request.form.get('mapping')
+            if mapping_json:
+                import json
+                mapping = json.loads(mapping_json)
+
+            responses_list = processor.load_data_from_file(file_path, mapping)
+
             return jsonify({
                 "success": True,
-                "data_loaded": True,
-                "message": "Data loaded successfully"
+                "rows_loaded": len(responses_list),
+                "responses": responses_list,
+                "message": f"Loaded {len(responses_list)} response sets"
             })
-    
+
+    except FileNotFoundError as e:
+        return jsonify({"error": str(e)}), 404
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
+        logger.error(f"Error loading data: {e}")
         return jsonify({"error": f"Error loading data: {str(e)}"}), 500
-    
     finally:
-        import os
         if os.path.exists(file_path):
             os.remove(file_path)
 
@@ -197,36 +210,101 @@ def load_data():
 @bp.route('/generate_response', methods=['POST'])
 def generate_response():
     """
-    Generate AI Responses
+    Generate Responses
 
     POST /generate_response
-    - Generates random/AI-driven responses for a form
+    - Generates random or AI-driven responses for a form
+    - Set use_ai=true and provide api_key for AI mode
     """
     data = request.get_json()
     form_id = data.get('form_id')
     fill_percentage = data.get('fill_percentage', 100)
-    
+    use_ai = data.get('use_ai', False)
+    api_key = data.get('api_key')
+
     if not form_id:
         return jsonify({"error": "No form_id provided"}), 400
-    
+
     try:
         with get_storage_service() as storage:
             form = storage._load_form(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
-            
-            from app.core.form_processor import FormProcessor
-            processor = FormProcessor(form)
-            responses = processor.generate_random_responses(fill_percentage)
-            
+
+            if use_ai and api_key:
+                from app.core.ai_responder import AIResponder, is_ai_available
+                if not is_ai_available():
+                    return jsonify({"error": "AI not available. Install google-generativeai package."}), 400
+
+                responder = AIResponder(api_key)
+                questions = []
+                for page in (form.response_config.pages or []):
+                    questions.extend(page.questions or [])
+                responses = responder.generate_responses_batch(questions, context=form.title)
+                mode = "ai"
+            else:
+                from app.core.form_processor import FormProcessor
+                processor = FormProcessor(form)
+                responses = processor.generate_random_responses(fill_percentage)
+                mode = "random"
+
             return jsonify({
                 "success": True,
                 "form_id": form_id,
+                "mode": mode,
                 "responses": responses
             })
-    
+
     except Exception as e:
+        logger.error(f"Error generating responses: {e}")
         return jsonify({"error": f"Error generating responses: {str(e)}"}), 500
+
+
+@bp.route('/validate_api_key', methods=['POST'])
+def validate_api_key():
+    """
+    Validate Gemini API Key
+
+    POST /validate_api_key
+    - Tests if the provided API key is valid
+    """
+    data = request.get_json()
+    api_key = data.get('api_key')
+
+    if not api_key:
+        return jsonify({"valid": False, "error": "No API key provided"}), 400
+
+    try:
+        from app.core.ai_responder import AIResponder, is_ai_available
+        if not is_ai_available():
+            return jsonify({"valid": False, "error": "AI not available. Install google-generativeai."}), 400
+
+        responder = AIResponder(api_key)
+        is_valid = responder.validate_api_key()
+
+        return jsonify({
+            "valid": is_valid,
+            "message": "API key is valid" if is_valid else "API key validation failed"
+        })
+
+    except Exception as e:
+        logger.error(f"API key validation error: {e}")
+        return jsonify({"valid": False, "error": str(e)}), 400
+
+
+@bp.route('/ai_status', methods=['GET'])
+def ai_status():
+    """
+    Check AI Availability
+
+    GET /ai_status
+    - Returns whether AI functionality is available
+    """
+    from app.core.ai_responder import is_ai_available
+    return jsonify({
+        "available": is_ai_available(),
+        "message": "AI available" if is_ai_available() else "Install google-generativeai package"
+    })
 
 
 @bp.route('/save_edit', methods=['POST'])
@@ -271,7 +349,15 @@ def save_edit():
 ###### Form Submission ######
 #############################
 
-active_submitter = None
+active_submitters: dict = {}
+
+
+def _cleanup_finished_submitters():
+    """Remove submitters that are no longer running."""
+    finished = [fid for fid, sub in active_submitters.items() if not sub.status.get("running", False)]
+    for fid in finished:
+        del active_submitters[fid]
+
 
 @bp.route('/start_submission', methods=['POST'])
 def start_submission():
@@ -280,67 +366,84 @@ def start_submission():
 
     POST /start_submission
     - Begins automated form submissions in background threads
+    - Supports concurrent submissions for different forms
+    - Accepts optional responses_list for data-driven submission
     """
-    global active_submitter
     data = request.get_json()
-    
+
     form_id = data.get('form_id')
     num_submissions = data.get('num_submissions', 1)
     concurrent_threads = data.get('concurrent_threads', 1)
     min_delay = data.get('min_delay', 1)
     max_delay = data.get('max_delay', 5)
-    
+    responses_list = data.get('responses_list')
+    responses = data.get('responses')
+    use_file_data = data.get('use_file_data', False)
+    use_ai_responses = data.get('use_ai_responses', False)
+
     if not form_id:
         return jsonify({"error": "No form_id provided"}), 400
-    
-    if active_submitter and active_submitter.status["running"]:
-        active_submitter.stop()
-    
+
+    _cleanup_finished_submitters()
+
+    if form_id in active_submitters and active_submitters[form_id].status.get("running", False):
+        active_submitters[form_id].stop()
+
     try:
         with get_storage_service() as storage:
             form = storage._load_form(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
-            
+
             from app.core.form_submitter import FormSubmitter
-            
-            active_submitter = FormSubmitter(
+
+            submitter = FormSubmitter(
                 form=form,
-                chromebinary_path=r"D:\application\chrome-win64\chrome-win64\chrome.exe",
-                chromedriver_path=r"D:\application\chromedriver-win64\chromedriver-win64\chromedriver.exe",
+                chromebinary_path=Config.CHROME_BINARY_PATH,
+                chromedriver_path=Config.CHROME_DRIVER_PATH,
                 headless=True
             )
-            
+            active_submitters[form_id] = submitter
+
             import threading
             submission_thread = threading.Thread(
                 target=_run_submission,
-                args=(active_submitter, form, storage, num_submissions, concurrent_threads, min_delay, max_delay)
+                args=(submitter, form, storage, num_submissions, concurrent_threads, min_delay, max_delay, responses_list, responses)
             )
             submission_thread.daemon = True
             submission_thread.start()
-            
+
+            if use_file_data:
+                mode = "data-driven"
+            elif use_ai_responses:
+                mode = "AI-generated"
+            else:
+                mode = "random"
+
             return jsonify({
                 "success": True,
-                "message": f"Started {num_submissions} form submissions with {concurrent_threads} concurrent threads"
+                "message": f"Started {num_submissions} form submissions ({mode} mode) with {concurrent_threads} threads"
             })
-    
+
     except Exception as e:
         return jsonify({"error": f"Error starting submission: {str(e)}"}), 500
 
 
-def _run_submission(submitter, form, storage, num_submissions, concurrent_threads, min_delay, max_delay):
+def _run_submission(submitter, form, storage, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None):
     """Internal helper: Runs submission in background thread"""
     try:
         submission_result = submitter.submit_form(
             num_submissions=num_submissions,
+            responses_list=responses_list,
+            responses=responses,
             concurrent_threads=concurrent_threads,
             min_delay=min_delay,
             max_delay=max_delay
         )
-        
+
         storage.add_submission(form.id, submission_result)
         logger.info(f"Submission complete: {submission_result.success_rate}% success rate")
-    
+
     except Exception as e:
         logger.error(f"Error in submission thread: {str(e)}")
 
@@ -351,17 +454,27 @@ def stop_submission():
     Stop Form Submission
 
     POST /stop_submission
-    - Stops any active submission process
+    - Stops submission for a specific form (pass form_id in body)
+    - If no form_id provided, stops all active submissions
     """
-    global active_submitter
-    if not active_submitter:
-        return jsonify({"success": False, "message": "No active submission to stop"})
-    
-    try:
-        active_submitter.stop()
-        return jsonify({"success": True, "message": "Submission stopped successfully"})
-    except Exception as e:
-        return jsonify({"error": f"Error stopping submission: {str(e)}"}), 500
+    data = request.get_json() or {}
+    form_id = data.get('form_id')
+
+    if form_id:
+        if form_id not in active_submitters:
+            return jsonify({"success": False, "message": f"No active submission for form {form_id}"})
+        try:
+            active_submitters[form_id].stop()
+            return jsonify({"success": True, "message": f"Submission for form {form_id} stopped"})
+        except Exception as e:
+            return jsonify({"error": f"Error stopping submission: {str(e)}"}), 500
+    else:
+        stopped = 0
+        for sub in active_submitters.values():
+            if sub.status.get("running", False):
+                sub.stop()
+                stopped += 1
+        return jsonify({"success": True, "message": f"Stopped {stopped} active submission(s)"})
 
 
 @bp.route('/submission_status', methods=['GET'])
@@ -369,15 +482,84 @@ def submission_status():
     """
     Submission Status
 
-    GET /submission_status
-    - Returns the current status of form submission
+    GET /submission_status?form_id=xxx
+    - Returns the current status of form submission for a specific form
+    - If no form_id provided, returns status of all active submissions
     """
-    global active_submitter
-    if not active_submitter:
-        return jsonify({"running": False, "message": "No submission has been started"})
-    
-    status = active_submitter.get_status()
-    return jsonify(status)
+    form_id = request.args.get('form_id')
+
+    if form_id:
+        if form_id not in active_submitters:
+            return jsonify({"running": False, "message": f"No submission for form {form_id}"})
+        return jsonify(active_submitters[form_id].get_status())
+    else:
+        _cleanup_finished_submitters()
+        all_status = {fid: sub.get_status() for fid, sub in active_submitters.items()}
+        return jsonify({"active_submissions": all_status, "count": len(all_status)})
+
+
+@bp.route('/export_history/<form_id>', methods=['GET'])
+def export_history(form_id):
+    """
+    Export Submission History
+
+    GET /export_history/<form_id>?format=csv|json
+    - Exports submission history for a form
+    - Default format: csv
+    """
+    export_format = request.args.get('format', 'csv').lower()
+
+    try:
+        with get_storage_service() as storage:
+            form = storage._load_form(form_id)
+            if not form:
+                return jsonify({"error": "Form not found"}), 404
+
+            submissions = form.submissions or []
+
+            if export_format == 'json':
+                import json
+                data = [s.model_dump() for s in submissions]
+                response = Response(
+                    response=json.dumps(data, indent=2, default=str),
+                    status=200,
+                    mimetype='application/json'
+                )
+                response.headers['Content-Disposition'] = f'attachment; filename=submissions_{form_id}.json'
+                return response
+
+            else:  # CSV
+                import csv
+                import io
+                output = io.StringIO()
+                writer = csv.writer(output)
+
+                # Header
+                writer.writerow(['submission_id', 'num_submission', 'concurrent_thread',
+                               'time_used', 'success_rate', 'network_status'])
+
+                # Data rows
+                for sub in submissions:
+                    writer.writerow([
+                        sub.submission_id,
+                        sub.num_submission,
+                        sub.concurrent_thread,
+                        sub.time_used,
+                        sub.success_rate,
+                        sub.network_status
+                    ])
+
+                response = Response(
+                    response=output.getvalue(),
+                    status=200,
+                    mimetype='text/csv'
+                )
+                response.headers['Content-Disposition'] = f'attachment; filename=submissions_{form_id}.csv'
+                return response
+
+    except Exception as e:
+        logger.error(f"Error exporting history: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 #############################

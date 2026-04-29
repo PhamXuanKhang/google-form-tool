@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang=vi>
+<html lang="{{ current_locale|default('en') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,11 +36,20 @@
                     </li>
                 </ul>
                 <div class="d-flex align-items-center ms-3">
+                    <!-- Language selector -->
+                    <div class="dropdown me-2">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-globe"></i> {{ current_locale|default('en')|upper }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
+                            <li><a class="dropdown-item {% if current_locale == 'en' %}active{% endif %}" href="?lang=en">English</a></li>
+                            <li><a class="dropdown-item {% if current_locale == 'vi' %}active{% endif %}" href="?lang=vi">Tieng Viet</a></li>
+                        </ul>
+                    </div>
                     <!-- Button to transfer between dark/light mode -->
                     <button class="btn btn-sm btn-light me-2" onclick="toggleDarkMode()">
                         <i id= "darkModeIcon" class="fas fa-moon"></i>
                     </button>
-
                 </div>
             </div>
 

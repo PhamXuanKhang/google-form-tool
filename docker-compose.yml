@@ -1,0 +1,25 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - form_data:/app/data
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - FLASK_DEBUG=0
+      - DB_PATH=/app/data/db.json
+      - CHROME_BINARY_PATH=/usr/bin/chromium
+      - CHROME_DRIVER_PATH=/usr/bin/chromedriver
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+volumes:
+  form_data:
+    driver: local

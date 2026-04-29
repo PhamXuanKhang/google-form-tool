@@ -103,7 +103,6 @@ def sample_form(sample_config, sample_submission):
         url="https://example.com/test",
         created_at=datetime.now(),
         last_used=datetime.now(),
-        priority_tags=["test", "unit"],
         response_config=sample_config,
         submissions=[sample_submission]
     )

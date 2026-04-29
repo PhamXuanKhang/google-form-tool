@@ -3,13 +3,39 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.support import expected_conditions as EC
 from app.models import Form, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from typing import Optional, List
 from datetime import datetime
-import time, html, ast
+from functools import wraps
+import time
+import html
+import ast
 from app.logging_config import logger
+
+
+def retry_on_stale(max_retries: int = 3, delay: float = 0.5):
+    """Decorator that retries function on StaleElementReferenceException."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except StaleElementReferenceException as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        logger.debug(f"Stale element, retry {attempt + 1}/{max_retries}")
+                        time.sleep(delay)
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class FormExtractor:
