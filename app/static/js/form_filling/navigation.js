@@ -3,6 +3,10 @@ import { showPopup } from './form_extract.js';
 let currentStep = 1;
 const totalSteps = 4;
 
+function t(key, fallback) {
+    return window.i18n?.[key] || fallback;
+}
+
 // Get references to global variables
 let answerMethod;
 let fileUploaded;
@@ -37,8 +41,8 @@ function nextStep() {
         const urlValue = urlInput.value.trim();
         const hasPreview = previewContainer.classList.contains("preview-loaded");
 
-        if (!urlValue) return showPopup("Please enter a Google Form URL.");
-        if (!hasPreview) return showPopup("Please extract the form before continuing.");
+        if (!urlValue) return showPopup(t("pleaseEnterGoogleFormUrl", "Please enter a Google Form URL."));
+        if (!hasPreview) return showPopup(t("pleaseExtractBeforeContinuing", "Please extract the form before continuing."));
 
         // Get current values from window
         answerMethod = window.answerMethod || "manual";
@@ -47,7 +51,7 @@ function nextStep() {
         if (answerMethod === "manual" && window.formQuestionsData) {
             window.renderQuestionsStep2(window.formQuestionsData);
         } else if (answerMethod === "fileUpload" && !fileUploaded) {
-            return showPopup("Please upload a file with answer data.");
+            return showPopup(t("pleaseUploadAnswerFile", "Please upload a file with answer data."));
         }
     }else if (currentStep === 2) {
         // Get current value from window
@@ -55,7 +59,7 @@ function nextStep() {
         answerMethod = window.answerMethod || "manual";
         
         if (answerMethod === "fileUpload" && !fileUploaded) {
-            return showPopup("Please upload a file with answer data.");
+            return showPopup(t("pleaseUploadAnswerFile", "Please upload a file with answer data."));
         }
     }
 

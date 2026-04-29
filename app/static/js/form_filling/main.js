@@ -25,6 +25,10 @@
 import { extractFromUrl } from './form_extract.js';
 import { startSubmission, stopSubmission } from './submission.js';
 
+function t(key, fallback) {
+    return window.i18n?.[key] || fallback;
+}
+
 /**
  * Global application state variables.
  * These variables maintain the current state of the form filling interface.
@@ -156,11 +160,11 @@ function setupAIFeatures() {
     validateBtn?.addEventListener('click', async () => {
         const apiKey = apiKeyInput?.value?.trim();
         if (!apiKey) {
-            statusDiv.innerHTML = '<span class="text-warning"><i class="fas fa-exclamation-triangle"></i> Please enter an API key</span>';
+            statusDiv.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle"></i> ${t("pleaseEnterApiKey", "Please enter an API key")}</span>`;
             return;
         }
 
-        statusDiv.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin"></i> Validating...</span>';
+        statusDiv.innerHTML = `<span class="text-info"><i class="fas fa-spinner fa-spin"></i> ${t("validating", "Validating...")}</span>`;
 
         try {
             const response = await fetch('/validate_api_key', {
@@ -171,12 +175,12 @@ function setupAIFeatures() {
             const result = await response.json();
 
             if (result.valid) {
-                statusDiv.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> API key is valid!</span>';
+                statusDiv.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> ${t("apiKeyValid", "API key is valid!")}</span>`;
                 generateBtn.disabled = false;
                 window.geminiApiKey = apiKey;
                 localStorage.setItem('gemini_api_key', apiKey);
             } else {
-                statusDiv.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> ${result.error || 'Invalid API key'}</span>`;
+                statusDiv.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> ${result.error || t("invalidApiKey", "Invalid API key")}</span>`;
                 generateBtn.disabled = true;
             }
         } catch (error) {
@@ -188,18 +192,18 @@ function setupAIFeatures() {
     // Generate AI responses button
     generateBtn?.addEventListener('click', async () => {
         if (!window.currentFormId) {
-            window.showPopup?.("Please extract a form first.");
+            window.showPopup?.(t("pleaseExtractFormFirst", "Please extract a form first."));
             return;
         }
 
         const apiKey = window.geminiApiKey || apiKeyInput?.value?.trim();
         if (!apiKey) {
-            window.showPopup?.("Please enter and validate your API key first.");
+            window.showPopup?.(t("pleaseEnterValidateApiKey", "Please enter and validate your API key first."));
             return;
         }
 
         generateBtn.disabled = true;
-        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+        generateBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> ${t("generating", "Generating...")}`;
 
         try {
             const response = await fetch('/generate_response', {
@@ -215,7 +219,7 @@ function setupAIFeatures() {
 
             if (result.success) {
                 window.aiGeneratedResponses = result.responses;
-                window.showPopup?.(`AI generated ${Object.keys(result.responses).length} responses!`, 'success');
+                window.showPopup?.(`${t("aiResponsesGenerated", "AI responses generated!")} (${Object.keys(result.responses).length})`, 'success');
 
                 // Show preview of generated responses
                 const questionsContainer = document.getElementById("step-2-questions");
@@ -223,22 +227,22 @@ function setupAIFeatures() {
                     questionsContainer.innerHTML = `
                         <div class="alert alert-success">
                             <i class="fas fa-check-circle me-2"></i>
-                            <strong>AI responses generated!</strong>
+                            <strong>${t("aiResponsesGenerated", "AI responses generated!")}</strong>
                         </div>
                         <div class="card p-3">
-                            <h6>Generated Responses Preview:</h6>
+                            <h6>${t("generatedResponsesPreview", "Generated Responses Preview:")}</h6>
                             <pre style="max-height: 300px; overflow: auto; font-size: 12px;">${JSON.stringify(result.responses, null, 2)}</pre>
                         </div>
                     `;
                 }
             } else {
-                window.showPopup?.(result.error || "Failed to generate responses", 'error');
+                window.showPopup?.(result.error || t("failedToGenerateResponses", "Failed to generate responses"), 'error');
             }
         } catch (error) {
             window.showPopup?.("Error: " + error.message, 'error');
         } finally {
             generateBtn.disabled = false;
-            generateBtn.innerHTML = '<i class="fas fa-magic me-1"></i> Generate AI Responses';
+            generateBtn.innerHTML = `<i class="fas fa-magic me-1"></i> ${t("generateAiResponses", "Generate AI Responses")}`;
         }
     });
 
@@ -259,13 +263,13 @@ document.getElementById('file-upload-form')?.addEventListener('submit', async fu
     event.preventDefault();
 
     if (!window.currentFormId) {
-        window.showPopup("Please extract a form first before uploading data.");
+        window.showPopup(t("pleaseExtractBeforeUpload", "Please extract a form first before uploading data."));
         return;
     }
 
     const fileInput = document.getElementById('answer-file-input');
     if (!fileInput.files.length) {
-        window.showPopup("Please select a file to upload.");
+        window.showPopup(t("pleaseSelectFile", "Please select a file to upload."));
         return;
     }
 
@@ -291,22 +295,22 @@ document.getElementById('file-upload-form')?.addEventListener('submit', async fu
             questionsContainer.innerHTML = `
                 <div class="alert alert-success">
                     <i class="fas fa-check-circle me-2"></i>
-                    <strong>File loaded successfully!</strong><br>
-                    ${result.rows_loaded} response sets ready for submission.
+                    <strong>${t("fileLoadedSuccessfully", "File loaded successfully!")}</strong><br>
+                    ${result.rows_loaded} ${t("responseSetsReady", "response sets ready for submission.")}
                 </div>
                 <div class="card p-3">
-                    <h6>Preview (first 3 rows):</h6>
+                    <h6>${t("previewFirstRows", "Preview (first 3 rows):")}</h6>
                     <pre style="max-height: 200px; overflow: auto; font-size: 12px;">${JSON.stringify(result.responses.slice(0, 3), null, 2)}</pre>
                 </div>
             `;
 
             window.showPopup(result.message, 'success');
         } else {
-            window.showPopup(result.error || "Failed to load file", 'error');
+            window.showPopup(result.error || t("failedToLoadFile", "Failed to load file"), 'error');
         }
     } catch (error) {
         console.error('File upload error:', error);
-        window.showPopup("Error uploading file: " + error.message, 'error');
+        window.showPopup(`${t("errorUploadingFile", "Error uploading file:")} ${error.message}`, 'error');
     }
 });
 
@@ -318,7 +322,7 @@ function initializeCharts() {
         window.submissionChart = new Chart(submissionCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Success', 'Failed', 'Pending'],
+                labels: [t("success", "Success"), t("failed", "Failed"), t("pending", "Pending")],
                 datasets: [{
                     data: [0, 0, 0],
                     backgroundColor: ['#28a745', '#dc3545', '#6c757d']

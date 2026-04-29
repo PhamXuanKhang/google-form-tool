@@ -1,5 +1,9 @@
 import { setCurrentFormId } from './main.js';
 
+function t(key, fallback) {
+    return window.i18n?.[key] || fallback;
+}
+
 async function extractFromUrl(url) {
     const container = document.getElementById('form-preview-container');
     showSpinner();
@@ -13,7 +17,7 @@ async function extractFromUrl(url) {
         const extractData = await readJsonResponse(extractRes);
 
         if (!extractRes.ok || extractData.error) {
-            const message = extractData.error || "Failed to extract form data.";
+            const message = extractData.error || t("failedToExtractFormData", "Failed to extract form data.");
             showPopup(message);
             showPreviewError(container, message);
             return;
@@ -23,7 +27,7 @@ async function extractFromUrl(url) {
         const data = await readJsonResponse(previewRes);
 
         if (!previewRes.ok || data.error) {
-            const message = data.error || "Failed to load form preview.";
+            const message = data.error || t("failedToLoadFormPreview", "Failed to load form preview.");
             showPopup(message);
             showPreviewError(container, message);
             return;
@@ -39,7 +43,7 @@ async function extractFromUrl(url) {
         }
     } catch (error) {
         console.error('Error during extraction:', error);
-        const message = "Failed to extract form. Please check the URL and try again.";
+        const message = t("failedToExtractForm", "Failed to extract form. Please check the URL and try again.");
         showPopup(message);
         showPreviewError(container, message);
     } finally {
@@ -86,7 +90,7 @@ function renderFormPreview(form) {
         form.response_config.pages.forEach((page, pageIndex) => {
             html += `
             <div class="page-block">
-                <h6 class="text-primary mb-3 bold">Page ${pageIndex + 1}</h6>
+                <h6 class="text-primary mb-3 bold">${t("page", "Page")} ${pageIndex + 1}</h6>
             `;
 
             if (page.questions) {
@@ -94,7 +98,7 @@ function renderFormPreview(form) {
                     html += `
                     <div class="question-block">
                         <div class="question-title">Q${qIndex + 1}: ${q.text}</div>
-                        <div class="question-type">Type: ${q.type}</div>
+                        <div class="question-type">${t("type", "Type")}: ${q.type}</div>
                     `;
 
                     if (
@@ -114,13 +118,13 @@ function renderFormPreview(form) {
                     html += `</div>`; // close question
                 });
             } else {
-                html += "<p class='text-muted'>No questions on this page.</p>";
+                html += `<p class='text-muted'>${t("noQuestionsOnThisPage", "No questions on this page.")}</p>`;
             }
 
             html += `</div>`; // close page
         });
     } else {
-        html += "<p class='text-muted'>No page/question structure found.</p>";
+        html += `<p class='text-muted'>${t("noPageQuestionStructure", "No page/question structure found.")}</p>`;
     }
 
     html += "</div></div>";

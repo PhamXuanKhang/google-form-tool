@@ -1,13 +1,9 @@
-# Vietnamese translations for Google Form Automation Tool
-# Copyright (C) 2024
-# This file is distributed under the same license as the project.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: 1.0\n"
+"Project-Id-Version: Google Form Automation Tool 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-01 00:00+0000\n"
-"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"POT-Creation-Date: 2026-04-29 12:43+0700\n"
+"PO-Revision-Date: 2026-04-29 12:43+0700\n"
 "Last-Translator: \n"
 "Language: vi\n"
 "Language-Team: vi\n"
@@ -15,136 +11,322 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-
-# Navigation
-msgid "Home"
-msgstr "Trang chu"
-
-msgid "Form Filling"
-msgstr "Dien bieu mau"
+"Generated-By: Babel 2.17.0\n"
 
 msgid "About"
-msgstr "Gioi thieu"
-
-# Home page
-msgid "Recent Forms"
-msgstr "Bieu mau gan day"
-
-msgid "New Form"
-msgstr "Bieu mau moi"
-
-msgid "Search forms by title or description"
-msgstr "Tim kiem bieu mau theo tieu de hoac mo ta"
-
-msgid "Cannot find any available form."
-msgstr "Khong tim thay bieu mau nao."
-
-msgid "submissions"
-msgstr "lan gui"
-
-msgid "Delete"
-msgstr "Xoa"
-
-msgid "Export History"
-msgstr "Xuat lich su"
-
-msgid "Fill This Form"
-msgstr "Dien bieu mau nay"
-
-msgid "Last used"
-msgstr "Lan cuoi su dung"
-
-# Form filling page
-msgid "Extract Form"
-msgstr "Trich xuat bieu mau"
-
-msgid "Enter Google Form URL"
-msgstr "Nhap URL Google Form"
-
-msgid "Extracting..."
-msgstr "Dang trich xuat..."
-
-msgid "Start Submission"
-msgstr "Bat dau gui"
-
-msgid "Stop Submission"
-msgstr "Dung gui"
-
-msgid "Number of submissions"
-msgstr "So lan gui"
-
-msgid "Delay between submissions (seconds)"
-msgstr "Thoi gian cho giua cac lan gui (giay)"
-
-msgid "Questions"
-msgstr "Cau hoi"
-
-msgid "Required"
-msgstr "Bat buoc"
-
-msgid "Optional"
-msgstr "Tuy chon"
-
-msgid "Probability"
-msgstr "Xac suat"
-
-msgid "Custom Answers"
-msgstr "Cau tra loi tuy chinh"
-
-# AI features
-msgid "Generate with AI"
-msgstr "Tao bang AI"
-
-msgid "Enter your Gemini API key"
-msgstr "Nhap API key Gemini"
-
-msgid "Validate API Key"
-msgstr "Xac thuc API key"
-
-msgid "API key validated successfully"
-msgstr "Xac thuc API key thanh cong"
-
-msgid "Invalid API key"
-msgstr "API key khong hop le"
-
-# Submission status
-msgid "Success"
-msgstr "Thanh cong"
-
-msgid "Failed"
-msgstr "That bai"
-
-msgid "In Progress"
-msgstr "Dang xu ly"
-
-msgid "Completed"
-msgstr "Hoan thanh"
-
-msgid "Stopped"
-msgstr "Da dung"
-
-# About page
-msgid "About This Tool"
-msgstr "Gioi thieu cong cu"
+msgstr "Giới thiệu"
 
 msgid "Google Form Automation Tool"
-msgstr "Cong cu tu dong hoa Google Form"
+msgstr "Công cụ tự động hóa Google Form"
 
-# Common
-msgid "Save"
-msgstr "Luu"
+msgid "About This Tool"
+msgstr "Giới thiệu công cụ"
 
-msgid "Cancel"
-msgstr "Huy"
+msgid "Google Form Automation Tool helps extract, configure, and automate Google Form submissions."
+msgstr "Công cụ tự động hóa Google Form giúp trích xuất, cấu hình và tự động gửi biểu mẫu Google Form."
+
+msgid "Home"
+msgstr "Trang chủ"
+
+msgid "Form Filling"
+msgstr "Điền biểu mẫu"
+
+msgid "English"
+msgstr "Tiếng Anh"
+
+msgid "Vietnamese"
+msgstr "Tiếng Việt"
+
+msgid "Made with"
+msgstr "Được tạo với"
+
+msgid "by KhangPham"
+msgstr "bởi KhangPham"
+
+msgid "©2025 All rights reserved"
+msgstr "©2025 Bảo lưu mọi quyền"
+
+msgid "Form Automation Steps"
+msgstr "Các bước tự động hóa"
+
+msgid "Enter Form URL"
+msgstr "Nhập URL biểu mẫu"
+
+msgid "Configure Answers"
+msgstr "Cấu hình câu trả lời"
+
+msgid "Settings"
+msgstr "Cài đặt"
+
+msgid "Monitor Progress"
+msgstr "Theo dõi tiến trình"
+
+msgid "Need help? Check our"
+msgstr "Cần trợ giúp? Xem"
+
+msgid "documentation"
+msgstr "tài liệu"
+
+msgid "Step 1: Enter Google Form URL"
+msgstr "Bước 1: Nhập URL Google Form"
+
+msgid "Extract"
+msgstr "Trích xuất"
+
+msgid "Enter a valid Google Form URL to extract form fields"
+msgstr "Nhập URL Google Form hợp lệ để trích xuất các trường"
+
+msgid "Form Preview"
+msgstr "Xem trước biểu mẫu"
+
+msgid "Enter a form URL to see preview"
+msgstr "Nhập URL biểu mẫu để xem trước"
+
+msgid "Next Step"
+msgstr "Bước tiếp theo"
+
+msgid "Step 2: Configure Form Answers"
+msgstr "Bước 2: Cấu hình câu trả lời"
+
+msgid "Answer Method"
+msgstr "Cách trả lời"
+
+msgid "Manual Input"
+msgstr "Nhập thủ công"
+
+msgid "Configure answers for each field manually"
+msgstr "Cấu hình câu trả lời thủ công cho từng trường"
+
+msgid "File Upload"
+msgstr "Tải tệp lên"
+
+msgid "Upload CSV/JSON/XLSX with answer data"
+msgstr "Tải lên CSV/JSON/XLSX chứa dữ liệu trả lời"
+
+msgid "AI Generate"
+msgstr "Tạo bằng AI"
+
+msgid "Use Gemini AI for smart responses"
+msgstr "Dùng Gemini AI để tạo câu trả lời thông minh"
+
+msgid "Upload"
+msgstr "Tải lên"
+
+msgid "Upload a CSV, JSON, or XLSX file with answer data."
+msgstr "Tải lên tệp CSV, JSON hoặc XLSX chứa dữ liệu trả lời."
+
+msgid "Gemini AI Configuration"
+msgstr "Cấu hình Gemini AI"
+
+msgid "Enter your Gemini API key"
+msgstr "Nhập khóa API Gemini"
+
+msgid "Validate"
+msgstr "Kiểm tra"
+
+msgid "Get your API key from"
+msgstr "Lấy khóa API tại"
+
+msgid "Generate AI Responses"
+msgstr "Tạo câu trả lời bằng AI"
+
+msgid "Previous"
+msgstr "Quay lại"
+
+msgid "Step 3: Automation Settings"
+msgstr "Bước 3: Cài đặt tự động hóa"
+
+msgid "Review and Start"
+msgstr "Kiểm tra và bắt đầu"
+
+msgid "Step 4: Monitor Progress"
+msgstr "Bước 4: Theo dõi tiến trình"
+
+msgid "Start Automation"
+msgstr "Bắt đầu tự động hóa"
+
+msgid "Stop Automation"
+msgstr "Dừng tự động hóa"
+
+msgid "Submission Progress"
+msgstr "Tiến trình gửi"
+
+msgid "Completed"
+msgstr "Đã hoàn thành"
+
+msgid "Total"
+msgstr "Tổng"
+
+msgid "Success Rate"
+msgstr "Tỷ lệ thành công"
+
+msgid "Elapsed Time"
+msgstr "Thời gian đã chạy"
+
+msgid "Submission Status"
+msgstr "Trạng thái gửi"
+
+msgid "System Resources"
+msgstr "Tài nguyên hệ thống"
+
+msgid "Failed to extract form data."
+msgstr "Không thể trích xuất dữ liệu biểu mẫu."
+
+msgid "Failed to load form preview."
+msgstr "Không thể tải bản xem trước biểu mẫu."
+
+msgid "Failed to extract form. Please check the URL and try again."
+msgstr "Không thể trích xuất biểu mẫu. Vui lòng kiểm tra URL và thử lại."
+
+msgid "Page"
+msgstr "Trang"
+
+msgid "Type"
+msgstr "Loại"
+
+msgid "No questions on this page."
+msgstr "Trang này không có câu hỏi."
+
+msgid "No page/question structure found."
+msgstr "Không tìm thấy cấu trúc trang hoặc câu hỏi."
+
+msgid "Please enter an API key"
+msgstr "Vui lòng nhập khóa API"
+
+msgid "Validating..."
+msgstr "Đang kiểm tra..."
+
+msgid "API key is valid!"
+msgstr "Khóa API hợp lệ!"
+
+msgid "Invalid API key"
+msgstr "Khóa API không hợp lệ"
+
+msgid "Please extract a form first."
+msgstr "Vui lòng trích xuất biểu mẫu trước."
+
+msgid "Please enter and validate your API key first."
+msgstr "Vui lòng nhập và kiểm tra khóa API trước."
+
+msgid "Generating..."
+msgstr "Đang tạo..."
+
+msgid "AI responses generated!"
+msgstr "Đã tạo câu trả lời bằng AI!"
+
+msgid "Generated Responses Preview:"
+msgstr "Xem trước câu trả lời đã tạo:"
+
+msgid "Failed to generate responses"
+msgstr "Không thể tạo câu trả lời"
+
+msgid "Please extract a form first before uploading data."
+msgstr "Vui lòng trích xuất biểu mẫu trước khi tải dữ liệu lên."
+
+msgid "Please select a file to upload."
+msgstr "Vui lòng chọn tệp để tải lên."
+
+msgid "File loaded successfully!"
+msgstr "Đã tải tệp thành công!"
+
+msgid "response sets ready for submission."
+msgstr "bộ câu trả lời sẵn sàng để gửi."
+
+msgid "Preview (first 3 rows):"
+msgstr "Xem trước (3 dòng đầu):"
+
+msgid "Failed to load file"
+msgstr "Không thể tải tệp"
+
+msgid "Error uploading file:"
+msgstr "Lỗi khi tải tệp lên:"
+
+msgid "Please enter a Google Form URL."
+msgstr "Vui lòng nhập URL Google Form."
+
+msgid "Please extract the form before continuing."
+msgstr "Vui lòng trích xuất biểu mẫu trước khi tiếp tục."
+
+msgid "Please upload a file with answer data."
+msgstr "Vui lòng tải lên tệp chứa dữ liệu trả lời."
+
+msgid "Submission started successfully"
+msgstr "Đã bắt đầu gửi biểu mẫu"
+
+msgid "Failed to start submission. Check console for details."
+msgstr "Không thể bắt đầu gửi. Xem console để biết chi tiết."
+
+msgid "Submission stopped"
+msgstr "Đã dừng gửi"
+
+msgid "Failed to stop submission. Check console for details."
+msgstr "Không thể dừng gửi. Xem console để biết chi tiết."
+
+msgid "Success"
+msgstr "Thành công"
+
+msgid "Failed"
+msgstr "Thất bại"
+
+msgid "Pending"
+msgstr "Đang chờ"
+
+msgid "Recent Forms"
+msgstr "Biểu mẫu gần đây"
+
+msgid "New Form"
+msgstr "Biểu mẫu mới"
+
+msgid "Search forms by title or description"
+msgstr "Tìm biểu mẫu theo tiêu đề hoặc mô tả"
+
+msgid "Cannot find any available form."
+msgstr "Không tìm thấy biểu mẫu nào."
+
+msgid "submissions"
+msgstr "lần gửi"
 
 msgid "Close"
-msgstr "Dong"
+msgstr "Đóng"
 
-msgid "Error"
-msgstr "Loi"
+msgid "Delete"
+msgstr "Xóa"
 
-msgid "Loading..."
-msgstr "Dang tai..."
+msgid "Export History"
+msgstr "Xuất lịch sử"
 
-msgid "Language"
-msgstr "Ngon ngu"
+msgid "Fill This Form"
+msgstr "Điền biểu mẫu này"
+
+msgid "Last used"
+msgstr "Lần sử dụng gần nhất"
+
+msgid "Never"
+msgstr "Chưa từng"
+
+msgid "Submission History"
+msgstr "Lịch sử gửi"
+
+msgid "Loading submission history..."
+msgstr "Đang tải lịch sử gửi..."
+
+msgid "Could not load submission history."
+msgstr "Không thể tải lịch sử gửi."
+
+msgid "No submission history yet."
+msgstr "Chưa có lịch sử gửi."
+
+msgid "Submission ID"
+msgstr "Mã lần gửi"
+
+msgid "Threads"
+msgstr "Luồng"
+
+msgid "Time used"
+msgstr "Thời gian dùng"
+
+msgid "Success rate"
+msgstr "Tỷ lệ thành công"
+
+msgid "Network/status"
+msgstr "Mạng/trạng thái"

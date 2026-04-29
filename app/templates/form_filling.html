@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Form Filling - Google Form Automation Tool{% endblock%}
+{% block title %}{{ _('Form Filling') }} - {{ _('Google Form Automation Tool') }}{% endblock%}
 {% block css %} 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/preview.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/spinner.css') }}">
@@ -12,13 +12,13 @@
     <!-- Sidebar -->
     <div class="col-md-3">
         <div class="card shadow-sm h-100 p-3">
-            <h4 class="card-title">Form Automation Steps</h4>
+            <h4 class="card-title">{{ _('Form Automation Steps') }}</h4>
             <div class="list-group">
                 {% set step_titles = {
-                    1: "Enter Form URL",
-                    2: "Configure Answers",
-                    3: "Settings",
-                    4: "Monitor Progress"
+                    1: _("Enter Form URL"),
+                    2: _("Configure Answers"),
+                    3: _("Settings"),
+                    4: _("Monitor Progress")
                 } %}
 
                 {% for step_num, step_title in step_titles.items() %}
@@ -33,7 +33,7 @@
                 {% endfor %}
             </div>
             <div class="mt-4">
-                <i class="fas fa-info-circle"></i> Need help? Check our <a href="{{ (url_for('main.about')) }}">documentation</a>.
+                <i class="fas fa-info-circle"></i> {{ _('Need help? Check our') }} <a href="{{ (url_for('main.about')) }}">{{ _('documentation') }}</a>.
             </div>
         </div>
     </div>
@@ -43,28 +43,28 @@
         <!-- Step 1 -->
         <div id="step-1" class="step-section">
             <div class="card shadow-sm p-4">
-                <h3 class="card-title">Step 1: Enter Google Form URL</h3>
+                <h3 class="card-title">{{ _('Step 1: Enter Google Form URL') }}</h3>
                 <form id="extract-form" method="POST" action="/form_filling">
                     <div class="input-group mb-3">
                         <span class="input-group-text"><i class="fas fa-link"></i></span>
                         <input type="text" name="form_url" class="form-control" placeholder="https://docs.google.com/forms" id="form-url-input" required>
                         <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-download me-1"></i> Extract
+                            <i class="fas fa-download me-1"></i> {{ _('Extract') }}
                         </button>
                     </div>
                 </form>
-                <p><i class="fas fa-info-circle"></i> Enter a valid Google Form URL to extract form fields</p>
+                <p><i class="fas fa-info-circle"></i> {{ _('Enter a valid Google Form URL to extract form fields') }}</p>
                 <div class="card p-3 mt-3">
-                    <h5 class="card-title">Form Preview</h5>
+                    <h5 class="card-title">{{ _('Form Preview') }}</h5>
                         <div id="form-preview-container-wrapper" style="max-height: 400px; overflow-y: auto;">
                             <div id="form-preview-container" class="text-center py-4 text-muted">
                                 <i class="fas fa-file-import fs-2 mb-2"></i>
-                                <p>Enter a form URL to see preview</p>
+                                <p>{{ _('Enter a form URL to see preview') }}</p>
                             </div>
                         </div>
                     </div>
                 <div class="d-flex justify-content-end mt-3">
-                    <button class="btn btn-primary" onclick="nextStep()">Next Step <i class="fas fa-arrow-right ms-2"></i></button>
+                    <button class="btn btn-primary" onclick="nextStep()">{{ _('Next Step') }} <i class="fas fa-arrow-right ms-2"></i></button>
                 </div>
             </div>
         </div>
@@ -72,37 +72,37 @@
         <!-- Step 2 -->
         <div id="step-2" class="step-section d-none">
             <div class="card shadow-sm p-4">
-                <h3 class="card-title">Step 2: Configure Form Answers</h3>
+                <h3 class="card-title">{{ _('Step 2: Configure Form Answers') }}</h3>
 
                 <!-- Answer method -->
                 <div class="card bg-light p-3 mb-4">
-                    <h5 class="card-title">Answer Method</h5>
+                    <h5 class="card-title">{{ _('Answer Method') }}</h5>
                     <div class="row">
                         <div class="col-md-4">
                             <div class="card border-primary p-3 h-100">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="answerMethod" id="manual" value="manual" checked onchange="toggleAnswerMethod()">
-                                    <label class="form-check-label" for="manual"><strong>Manual Input</strong></label>
+                                    <label class="form-check-label" for="manual"><strong>{{ _('Manual Input') }}</strong></label>
                                 </div>
-                                <p class="text-muted small mb-0">Configure answers for each field manually</p>
+                                <p class="text-muted small mb-0">{{ _('Configure answers for each field manually') }}</p>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card border-secondary p-3 h-100">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="answerMethod" id="fileUpload" value="fileUpload" onchange="toggleAnswerMethod()">
-                                    <label class="form-check-label" for="fileUpload"><strong>File Upload</strong></label>
+                                    <label class="form-check-label" for="fileUpload"><strong>{{ _('File Upload') }}</strong></label>
                                 </div>
-                                <p class="text-muted small mb-0">Upload CSV/JSON with answer data</p>
+                                <p class="text-muted small mb-0">{{ _('Upload CSV/JSON/XLSX with answer data') }}</p>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card border-info p-3 h-100">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="answerMethod" id="aiGenerate" value="aiGenerate" onchange="toggleAnswerMethod()">
-                                    <label class="form-check-label" for="aiGenerate"><strong>AI Generate</strong></label>
+                                    <label class="form-check-label" for="aiGenerate"><strong>{{ _('AI Generate') }}</strong></label>
                                 </div>
-                                <p class="text-muted small mb-0">Use Gemini AI for smart responses</p>
+                                <p class="text-muted small mb-0">{{ _('Use Gemini AI for smart responses') }}</p>
                             </div>
                         </div>
                     </div>
@@ -114,31 +114,31 @@
                         <div class="input-group mb-3">
                             <input type="file" name="answer_file" class="form-control" id="answer-file-input" accept=".csv,.json,.xlsx" required>
                             <button class="btn btn-primary" type="submit">
-                                <i class="fas fa-upload me-1"></i> Upload
+                                <i class="fas fa-upload me-1"></i> {{ _('Upload') }}
                             </button>
                         </div>
-                        <p class="text-muted"><i class="fas fa-info-circle"></i> Upload a CSV, JSON, or XLSX file with answer data.</p>
+                        <p class="text-muted"><i class="fas fa-info-circle"></i> {{ _('Upload a CSV, JSON, or XLSX file with answer data.') }}</p>
                     </form>
                 </div>
 
                 <!-- AI Generate Section (Hidden by Default) -->
                 <div id="ai-generate-section" class="mt-3 d-none">
                     <div class="card border-info p-3">
-                        <h6><i class="fas fa-robot me-2"></i>Gemini AI Configuration</h6>
+                        <h6><i class="fas fa-robot me-2"></i>{{ _('Gemini AI Configuration') }}</h6>
                         <div class="input-group mb-3">
                             <span class="input-group-text"><i class="fas fa-key"></i></span>
-                            <input type="password" class="form-control" id="gemini-api-key" placeholder="Enter your Gemini API key">
+                            <input type="password" class="form-control" id="gemini-api-key" placeholder="{{ _('Enter your Gemini API key') }}">
                             <button class="btn btn-outline-info" type="button" id="validate-api-key-btn">
-                                <i class="fas fa-check-circle me-1"></i> Validate
+                                <i class="fas fa-check-circle me-1"></i> {{ _('Validate') }}
                             </button>
                         </div>
                         <div id="api-key-status" class="mb-3"></div>
                         <p class="text-muted small mb-2">
-                            <i class="fas fa-info-circle"></i> Get your API key from
+                            <i class="fas fa-info-circle"></i> {{ _('Get your API key from') }}
                             <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
                         </p>
                         <button class="btn btn-info" type="button" id="generate-ai-responses-btn" disabled>
-                            <i class="fas fa-magic me-1"></i> Generate AI Responses
+                            <i class="fas fa-magic me-1"></i> {{ _('Generate AI Responses') }}
                         </button>
                     </div>
                 </div>
@@ -151,10 +151,10 @@
                 <!-- Navigation buttons -->
                 <div class="d-flex justify-content-between mt-4">
                     <button class="btn btn-outline-secondary" onclick="prevStep()">
-                        <i class="fas fa-arrow-left me-2"></i> Previous
+                        <i class="fas fa-arrow-left me-2"></i> {{ _('Previous') }}
                     </button>
                     <button class="btn btn-primary" onclick="nextStep()">
-                        Next Step <i class="fas fa-arrow-right ms-2"></i>
+                        {{ _('Next Step') }} <i class="fas fa-arrow-right ms-2"></i>
                     </button>
                 </div>
             </div>
@@ -163,12 +163,12 @@
         <!-- Step 3 --> 
         <div id="step-3" class="step-section d-none">
             <div class="card shadow-sm p-4">
-                <h3 class="card-title">Step 3: Automation Settings</h3>
+                <h3 class="card-title">{{ _('Step 3: Automation Settings') }}</h3>
                 <!-- Settings content remains the same -->
                 ...
                 <div class="d-flex justify-content-between mt-3">
-                    <button class="btn" onclick="prevStep()"><i class="fas fa-arrow-left me-2"></i> Previous</button>
-                    <button class="btn btn-primary" onclick="nextStep()">Review and Start <i class="fas fa-arrow-right ms-2"></i></button>
+                    <button class="btn" onclick="prevStep()"><i class="fas fa-arrow-left me-2"></i> {{ _('Previous') }}</button>
+                    <button class="btn btn-primary" onclick="nextStep()">{{ _('Review and Start') }} <i class="fas fa-arrow-right ms-2"></i></button>
                 </div>
             </div>
         </div>
@@ -177,13 +177,13 @@
         <div id="step-4" class="step-section d-none">
             <div class="card shadow-sm p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="card-title">Step 4: Monitor Progress</h3>
+                    <h3 class="card-title">{{ _('Step 4: Monitor Progress') }}</h3>
                     <div>
                         <button id="start-button" class="btn btn-success" onclick="startFormSubmission()">
-                            <i class="fas fa-play me-1"></i> Start Automation
+                            <i class="fas fa-play me-1"></i> {{ _('Start Automation') }}
                         </button>
                         <button id="stop-button" class="btn btn-danger d-none" onclick="stopFormSubmission()">
-                            <i class="fas fa-stop me-1"></i> Stop Automation
+                            <i class="fas fa-stop me-1"></i> {{ _('Stop Automation') }}
                         </button>
                     </div>
                 </div>
@@ -191,7 +191,7 @@
                 <div class="submission-status-section">
                     <div class="card bg-light mb-3">
                         <div class="card-body">
-                            <h5>Submission Progress</h5>
+                            <h5>{{ _('Submission Progress') }}</h5>
                             <div class="progress mb-3">
                                 <div id="submission-progress" class="progress-bar progress-bar-striped progress-bar-animated" 
                                      role="progressbar" style="width: 0%" 
@@ -202,25 +202,25 @@
                                 <div class="col-md-3">
                                     <div class="stat-card">
                                         <div class="stat-value" id="completed-count">0</div>
-                                        <div class="stat-label">Completed</div>
+                                        <div class="stat-label">{{ _('Completed') }}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="stat-card">
                                         <div class="stat-value" id="total-count">0</div>
-                                        <div class="stat-label">Total</div>
+                                        <div class="stat-label">{{ _('Total') }}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="stat-card">
                                         <div class="stat-value" id="success-rate">0%</div>
-                                        <div class="stat-label">Success Rate</div>
+                                        <div class="stat-label">{{ _('Success Rate') }}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="stat-card">
                                         <div class="stat-value" id="elapsed-time">00:00:00</div>
-                                        <div class="stat-label">Elapsed Time</div>
+                                        <div class="stat-label">{{ _('Elapsed Time') }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -231,7 +231,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5>Submission Status</h5>
+                                    <h5>{{ _('Submission Status') }}</h5>
                                     <canvas id="submission-chart" height="200"></canvas>
                                 </div>
                             </div>
@@ -239,7 +239,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5>System Resources</h5>
+                                    <h5>{{ _('System Resources') }}</h5>
                                     <canvas id="resource-chart" height="200"></canvas>
                                 </div>
                             </div>
@@ -249,7 +249,7 @@
                 
                 <div class="d-flex justify-content-between mt-4">
                     <button class="btn btn-outline-secondary" onclick="prevStep()">
-                        <i class="fas fa-arrow-left me-2"></i> Previous
+                        <i class="fas fa-arrow-left me-2"></i> {{ _('Previous') }}
                     </button>
                 </div>
             </div>
@@ -268,6 +268,45 @@
 </div>
 {% endblock %}
 {% block scripts %}
+<script>
+window.i18n = {
+    failedToExtractFormData: {{ _('Failed to extract form data.') | tojson }},
+    failedToLoadFormPreview: {{ _('Failed to load form preview.') | tojson }},
+    failedToExtractForm: {{ _('Failed to extract form. Please check the URL and try again.') | tojson }},
+    page: {{ _('Page') | tojson }},
+    type: {{ _('Type') | tojson }},
+    noQuestionsOnThisPage: {{ _('No questions on this page.') | tojson }},
+    noPageQuestionStructure: {{ _('No page/question structure found.') | tojson }},
+    pleaseEnterApiKey: {{ _('Please enter an API key') | tojson }},
+    validating: {{ _('Validating...') | tojson }},
+    apiKeyValid: {{ _('API key is valid!') | tojson }},
+    invalidApiKey: {{ _('Invalid API key') | tojson }},
+    pleaseExtractFormFirst: {{ _('Please extract a form first.') | tojson }},
+    pleaseEnterValidateApiKey: {{ _('Please enter and validate your API key first.') | tojson }},
+    generating: {{ _('Generating...') | tojson }},
+    aiResponsesGenerated: {{ _('AI responses generated!') | tojson }},
+    generatedResponsesPreview: {{ _('Generated Responses Preview:') | tojson }},
+    failedToGenerateResponses: {{ _('Failed to generate responses') | tojson }},
+    generateAiResponses: {{ _('Generate AI Responses') | tojson }},
+    pleaseExtractBeforeUpload: {{ _('Please extract a form first before uploading data.') | tojson }},
+    pleaseSelectFile: {{ _('Please select a file to upload.') | tojson }},
+    fileLoadedSuccessfully: {{ _('File loaded successfully!') | tojson }},
+    responseSetsReady: {{ _('response sets ready for submission.') | tojson }},
+    previewFirstRows: {{ _('Preview (first 3 rows):') | tojson }},
+    failedToLoadFile: {{ _('Failed to load file') | tojson }},
+    errorUploadingFile: {{ _('Error uploading file:') | tojson }},
+    pleaseEnterGoogleFormUrl: {{ _('Please enter a Google Form URL.') | tojson }},
+    pleaseExtractBeforeContinuing: {{ _('Please extract the form before continuing.') | tojson }},
+    pleaseUploadAnswerFile: {{ _('Please upload a file with answer data.') | tojson }},
+    submissionStartedSuccessfully: {{ _('Submission started successfully') | tojson }},
+    failedToStartSubmission: {{ _('Failed to start submission. Check console for details.') | tojson }},
+    submissionStopped: {{ _('Submission stopped') | tojson }},
+    failedToStopSubmission: {{ _('Failed to stop submission. Check console for details.') | tojson }},
+    success: {{ _('Success') | tojson }},
+    failed: {{ _('Failed') | tojson }},
+    pending: {{ _('Pending') | tojson }}
+};
+</script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/main.js') }}"></script>

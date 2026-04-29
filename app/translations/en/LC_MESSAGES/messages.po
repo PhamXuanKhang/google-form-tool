@@ -1,13 +1,9 @@
-# English translations for Google Form Automation Tool
-# Copyright (C) 2024
-# This file is distributed under the same license as the project.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: 1.0\n"
+"Project-Id-Version: Google Form Automation Tool 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-01 00:00+0000\n"
-"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"POT-Creation-Date: 2026-04-29 12:43+0700\n"
+"PO-Revision-Date: 2026-04-29 12:43+0700\n"
 "Last-Translator: \n"
 "Language: en\n"
 "Language-Team: en\n"
@@ -15,18 +11,266 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
 
-# Navigation
+msgid "About"
+msgstr "About"
+
+msgid "Google Form Automation Tool"
+msgstr "Google Form Automation Tool"
+
+msgid "About This Tool"
+msgstr "About This Tool"
+
+msgid "Google Form Automation Tool helps extract, configure, and automate Google Form submissions."
+msgstr "Google Form Automation Tool helps extract, configure, and automate Google Form submissions."
+
 msgid "Home"
 msgstr "Home"
 
 msgid "Form Filling"
 msgstr "Form Filling"
 
-msgid "About"
-msgstr "About"
+msgid "English"
+msgstr "English"
 
-# Home page
+msgid "Vietnamese"
+msgstr "Vietnamese"
+
+msgid "Made with"
+msgstr "Made with"
+
+msgid "by KhangPham"
+msgstr "by KhangPham"
+
+msgid "©2025 All rights reserved"
+msgstr "©2025 All rights reserved"
+
+msgid "Form Automation Steps"
+msgstr "Form Automation Steps"
+
+msgid "Enter Form URL"
+msgstr "Enter Form URL"
+
+msgid "Configure Answers"
+msgstr "Configure Answers"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Monitor Progress"
+msgstr "Monitor Progress"
+
+msgid "Need help? Check our"
+msgstr "Need help? Check our"
+
+msgid "documentation"
+msgstr "documentation"
+
+msgid "Step 1: Enter Google Form URL"
+msgstr "Step 1: Enter Google Form URL"
+
+msgid "Extract"
+msgstr "Extract"
+
+msgid "Enter a valid Google Form URL to extract form fields"
+msgstr "Enter a valid Google Form URL to extract form fields"
+
+msgid "Form Preview"
+msgstr "Form Preview"
+
+msgid "Enter a form URL to see preview"
+msgstr "Enter a form URL to see preview"
+
+msgid "Next Step"
+msgstr "Next Step"
+
+msgid "Step 2: Configure Form Answers"
+msgstr "Step 2: Configure Form Answers"
+
+msgid "Answer Method"
+msgstr "Answer Method"
+
+msgid "Manual Input"
+msgstr "Manual Input"
+
+msgid "Configure answers for each field manually"
+msgstr "Configure answers for each field manually"
+
+msgid "File Upload"
+msgstr "File Upload"
+
+msgid "Upload CSV/JSON/XLSX with answer data"
+msgstr "Upload CSV/JSON/XLSX with answer data"
+
+msgid "AI Generate"
+msgstr "AI Generate"
+
+msgid "Use Gemini AI for smart responses"
+msgstr "Use Gemini AI for smart responses"
+
+msgid "Upload"
+msgstr "Upload"
+
+msgid "Upload a CSV, JSON, or XLSX file with answer data."
+msgstr "Upload a CSV, JSON, or XLSX file with answer data."
+
+msgid "Gemini AI Configuration"
+msgstr "Gemini AI Configuration"
+
+msgid "Enter your Gemini API key"
+msgstr "Enter your Gemini API key"
+
+msgid "Validate"
+msgstr "Validate"
+
+msgid "Get your API key from"
+msgstr "Get your API key from"
+
+msgid "Generate AI Responses"
+msgstr "Generate AI Responses"
+
+msgid "Previous"
+msgstr "Previous"
+
+msgid "Step 3: Automation Settings"
+msgstr "Step 3: Automation Settings"
+
+msgid "Review and Start"
+msgstr "Review and Start"
+
+msgid "Step 4: Monitor Progress"
+msgstr "Step 4: Monitor Progress"
+
+msgid "Start Automation"
+msgstr "Start Automation"
+
+msgid "Stop Automation"
+msgstr "Stop Automation"
+
+msgid "Submission Progress"
+msgstr "Submission Progress"
+
+msgid "Completed"
+msgstr "Completed"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Success Rate"
+msgstr "Success Rate"
+
+msgid "Elapsed Time"
+msgstr "Elapsed Time"
+
+msgid "Submission Status"
+msgstr "Submission Status"
+
+msgid "System Resources"
+msgstr "System Resources"
+
+msgid "Failed to extract form data."
+msgstr "Failed to extract form data."
+
+msgid "Failed to load form preview."
+msgstr "Failed to load form preview."
+
+msgid "Failed to extract form. Please check the URL and try again."
+msgstr "Failed to extract form. Please check the URL and try again."
+
+msgid "Page"
+msgstr "Page"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "No questions on this page."
+msgstr "No questions on this page."
+
+msgid "No page/question structure found."
+msgstr "No page/question structure found."
+
+msgid "Please enter an API key"
+msgstr "Please enter an API key"
+
+msgid "Validating..."
+msgstr "Validating..."
+
+msgid "API key is valid!"
+msgstr "API key is valid!"
+
+msgid "Invalid API key"
+msgstr "Invalid API key"
+
+msgid "Please extract a form first."
+msgstr "Please extract a form first."
+
+msgid "Please enter and validate your API key first."
+msgstr "Please enter and validate your API key first."
+
+msgid "Generating..."
+msgstr "Generating..."
+
+msgid "AI responses generated!"
+msgstr "AI responses generated!"
+
+msgid "Generated Responses Preview:"
+msgstr "Generated Responses Preview:"
+
+msgid "Failed to generate responses"
+msgstr "Failed to generate responses"
+
+msgid "Please extract a form first before uploading data."
+msgstr "Please extract a form first before uploading data."
+
+msgid "Please select a file to upload."
+msgstr "Please select a file to upload."
+
+msgid "File loaded successfully!"
+msgstr "File loaded successfully!"
+
+msgid "response sets ready for submission."
+msgstr "response sets ready for submission."
+
+msgid "Preview (first 3 rows):"
+msgstr "Preview (first 3 rows):"
+
+msgid "Failed to load file"
+msgstr "Failed to load file"
+
+msgid "Error uploading file:"
+msgstr "Error uploading file:"
+
+msgid "Please enter a Google Form URL."
+msgstr "Please enter a Google Form URL."
+
+msgid "Please extract the form before continuing."
+msgstr "Please extract the form before continuing."
+
+msgid "Please upload a file with answer data."
+msgstr "Please upload a file with answer data."
+
+msgid "Submission started successfully"
+msgstr "Submission started successfully"
+
+msgid "Failed to start submission. Check console for details."
+msgstr "Failed to start submission. Check console for details."
+
+msgid "Submission stopped"
+msgstr "Submission stopped"
+
+msgid "Failed to stop submission. Check console for details."
+msgstr "Failed to stop submission. Check console for details."
+
+msgid "Success"
+msgstr "Success"
+
+msgid "Failed"
+msgstr "Failed"
+
+msgid "Pending"
+msgstr "Pending"
+
 msgid "Recent Forms"
 msgstr "Recent Forms"
 
@@ -42,6 +286,9 @@ msgstr "Cannot find any available form."
 msgid "submissions"
 msgstr "submissions"
 
+msgid "Close"
+msgstr "Close"
+
 msgid "Delete"
 msgstr "Delete"
 
@@ -54,100 +301,32 @@ msgstr "Fill This Form"
 msgid "Last used"
 msgstr "Last used"
 
-# Form filling page
-msgid "Extract Form"
-msgstr "Extract Form"
+msgid "Never"
+msgstr "Never"
 
-msgid "Enter Google Form URL"
-msgstr "Enter Google Form URL"
+msgid "Submission History"
+msgstr "Submission History"
 
-msgid "Extracting..."
-msgstr "Extracting..."
+msgid "Loading submission history..."
+msgstr "Loading submission history..."
 
-msgid "Start Submission"
-msgstr "Start Submission"
+msgid "Could not load submission history."
+msgstr "Could not load submission history."
 
-msgid "Stop Submission"
-msgstr "Stop Submission"
+msgid "No submission history yet."
+msgstr "No submission history yet."
 
-msgid "Number of submissions"
-msgstr "Number of submissions"
+msgid "Submission ID"
+msgstr "Submission ID"
 
-msgid "Delay between submissions (seconds)"
-msgstr "Delay between submissions (seconds)"
+msgid "Threads"
+msgstr "Threads"
 
-msgid "Questions"
-msgstr "Questions"
+msgid "Time used"
+msgstr "Time used"
 
-msgid "Required"
-msgstr "Required"
+msgid "Success rate"
+msgstr "Success rate"
 
-msgid "Optional"
-msgstr "Optional"
-
-msgid "Probability"
-msgstr "Probability"
-
-msgid "Custom Answers"
-msgstr "Custom Answers"
-
-# AI features
-msgid "Generate with AI"
-msgstr "Generate with AI"
-
-msgid "Enter your Gemini API key"
-msgstr "Enter your Gemini API key"
-
-msgid "Validate API Key"
-msgstr "Validate API Key"
-
-msgid "API key validated successfully"
-msgstr "API key validated successfully"
-
-msgid "Invalid API key"
-msgstr "Invalid API key"
-
-# Submission status
-msgid "Success"
-msgstr "Success"
-
-msgid "Failed"
-msgstr "Failed"
-
-msgid "In Progress"
-msgstr "In Progress"
-
-msgid "Completed"
-msgstr "Completed"
-
-msgid "Stopped"
-msgstr "Stopped"
-
-# About page
-msgid "About This Tool"
-msgstr "About This Tool"
-
-msgid "Google Form Automation Tool"
-msgstr "Google Form Automation Tool"
-
-# Common
-msgid "Save"
-msgstr "Save"
-
-msgid "Cancel"
-msgstr "Cancel"
-
-msgid "Close"
-msgstr "Close"
-
-msgid "Error"
-msgstr "Error"
-
-msgid "Success"
-msgstr "Success"
-
-msgid "Loading..."
-msgstr "Loading..."
-
-msgid "Language"
-msgstr "Language"
+msgid "Network/status"
+msgstr "Network/status"

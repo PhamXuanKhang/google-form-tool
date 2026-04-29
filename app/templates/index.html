@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Home - Google Form Automation Tool{% endblock%}
+{% block title %}{{ _('Home') }} - {{ _('Google Form Automation Tool') }}{% endblock%}
 {% block css %} <link rel="stylesheet" href="{{ url_for('static', filename='css/components/card.css') }}"> {% endblock %}
 {% block content %}
 <!-- Search Form -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-	<h2 class="h3 fw-bold mb-0">Recent Forms</h2>
+	<h2 class="h3 fw-bold mb-0">{{ _('Recent Forms') }}</h2>
 	<a href="{{ url_for('main.form_filling') }}" class="btn btn-primary">
-		<i class="fas fa-plus me-1"></i> New Form
+		<i class="fas fa-plus me-1"></i> {{ _('New Form') }}
 	</a>
 </div>
 <form method="GET" action="/">
 	<div class="input-group mb-3">
-		<input type="text" name="search" class="form-control" placeholder="Search forms by title or description ..." value="{{ search_query | default('') }}" class="form-control">
+		<input type="text" name="search" class="form-control" placeholder="{{ _('Search forms by title or description') }}" value="{{ search_query | default('') }}" class="form-control">
 		<button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
 	</div>
 </form>
@@ -21,7 +21,7 @@
 	<!-- Can't find available form in database -->
 	<div class="text-center my-5">
 		<i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-			<h4 class="text-muted">Cannot find any available form.</h4>
+			<h4 class="text-muted">{{ _('Cannot find any available form.') }}</h4>
   	</div>
 {% else %}
   	<!-- Form List -->
@@ -38,7 +38,7 @@
 						<div>
 							<h5 class="card-title">{{ form.title }}</h5>
 							<p class="card-text">{{ form.created_at }}</p>
-							<p class="card-text"><i class="fas fa-paper-plane"></i> {{ form.total_fill }} submissions</p>
+							<p class="card-text"><i class="fas fa-paper-plane"></i> {{ form.total_fill }} {{ _('submissions') }}</p>
 						</div>
 					</div>
 				</div>
@@ -54,14 +54,14 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="formModalLabel">{{ selected_form.title if selected_form else '' }}</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
 			</div>
 			<div class="modal-body">
 			</div>
 			<div class="modal-footer">
-				<a href="#" class="btn btn-secondary" id="deleteFormBtn">Delete</a>
-				<a href="#" class="btn btn-outline-info" id="exportHistoryBtn">Export History</a>
-				<a href="#" class="btn btn-primary" id="fillFormBtn">Fill This Form</a>
+				<a href="#" class="btn btn-secondary" id="deleteFormBtn">{{ _('Delete') }}</a>
+				<a href="#" class="btn btn-outline-info" id="exportHistoryBtn">{{ _('Export History') }}</a>
+				<a href="#" class="btn btn-primary" id="fillFormBtn">{{ _('Fill This Form') }}</a>
 			</div>
 		</div>
 	</div>
@@ -75,6 +75,20 @@
 </script>
 <script>
 	window.recentForms = JSON.parse(document.getElementById("recentFormsJson").textContent);
+	window.i18n = {
+		submissions: {{ _('submissions') | tojson }},
+		lastUsed: {{ _('Last used') | tojson }},
+		never: {{ _('Never') | tojson }},
+		submissionHistory: {{ _('Submission History') | tojson }},
+		loadingSubmissionHistory: {{ _('Loading submission history...') | tojson }},
+		couldNotLoadSubmissionHistory: {{ _('Could not load submission history.') | tojson }},
+		noSubmissionHistoryYet: {{ _('No submission history yet.') | tojson }},
+		submissionId: {{ _('Submission ID') | tojson }},
+		threads: {{ _('Threads') | tojson }},
+		timeUsed: {{ _('Time used') | tojson }},
+		successRate: {{ _('Success rate') | tojson }},
+		networkStatus: {{ _('Network/status') | tojson }}
+	};
 </script>
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 {% endblock %}

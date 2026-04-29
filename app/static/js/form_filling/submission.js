@@ -9,6 +9,10 @@ let submissionActive = false;
 let submissionInterval;
 const DEFAULT_REFRESH_INTERVAL = 2000; // 2 seconds
 
+function t(key, fallback) {
+    return window.i18n?.[key] || fallback;
+}
+
 /**
  * Start form submission automation
  * @param {object} settings - Submission settings object
@@ -40,11 +44,11 @@ export async function startSubmission(settings) {
         // Start monitoring
         startStatusMonitoring();
         
-        showStatusMessage(data.message || 'Submission started successfully', 'success');
+        showStatusMessage(data.message || t("submissionStartedSuccessfully", "Submission started successfully"), 'success');
         return true;
     } catch (error) {
         console.error('Error starting submission:', error);
-        showStatusMessage('Failed to start submission. Check console for details.', 'error');
+        showStatusMessage(t("failedToStartSubmission", "Failed to start submission. Check console for details."), 'error');
         return false;
     }
 }
@@ -72,11 +76,11 @@ export async function stopSubmission() {
         
         updateUIForStoppedSubmission();
         
-        showStatusMessage(data.message || 'Submission stopped', 'info');
+        showStatusMessage(data.message || t("submissionStopped", "Submission stopped"), 'info');
         return true;
     } catch (error) {
         console.error('Error stopping submission:', error);
-        showStatusMessage('Failed to stop submission. Check console for details.', 'error');
+        showStatusMessage(t("failedToStopSubmission", "Failed to stop submission. Check console for details."), 'error');
         return false;
     }
 }

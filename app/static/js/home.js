@@ -6,6 +6,7 @@
 function openFormModal(formId) {
     const forms = window.recentForms || [];
     const selected = forms.find(f => f.id == formId);
+    const i18n = window.i18n || {};
     if (selected) {
         window.selected_form = selected;
 
@@ -17,11 +18,11 @@ function openFormModal(formId) {
                     <i class="fas fa-link me-1"></i>${escapeHtml(selected.url || '')}
                 </a>
             </p>
-            <p><i class="fas fa-paper-plane"></i> ${selected.total_fill || 0} submissions</p>
-            <p><i class="fas fa-clock"></i> Last used: ${escapeHtml(selected.last_used || 'Never')}</p>
+            <p><i class="fas fa-paper-plane"></i> ${selected.total_fill || 0} ${escapeHtml(i18n.submissions || 'submissions')}</p>
+            <p><i class="fas fa-clock"></i> ${escapeHtml(i18n.lastUsed || 'Last used')}: ${escapeHtml(selected.last_used || i18n.never || 'Never')}</p>
             <hr>
-            <h6 class="fw-bold">Submission History</h6>
-            <div id="submissionHistoryContainer" class="text-muted">Loading submission history...</div>
+            <h6 class="fw-bold">${escapeHtml(i18n.submissionHistory || 'Submission History')}</h6>
+            <div id="submissionHistoryContainer" class="text-muted">${escapeHtml(i18n.loadingSubmissionHistory || 'Loading submission history...')}</div>
         `;
 
         document.getElementById('deleteFormBtn').href = `/?form_url=${encodeURIComponent(selected.url)}`;
@@ -46,7 +47,7 @@ async function loadSubmissionHistory(formId) {
         const data = await readJsonResponse(response);
 
         if (!response.ok || data.error) {
-            throw new Error(data.error || "Could not load submission history.");
+            throw new Error(data.error || window.i18n?.couldNotLoadSubmissionHistory || "Could not load submission history.");
         }
 
         container.innerHTML = renderSubmissionHistory(data.submissions || []);
@@ -66,7 +67,7 @@ async function readJsonResponse(response) {
 
 function renderSubmissionHistory(submissions) {
     if (!submissions.length) {
-        return `<p class="text-muted mb-0">No submission history yet.</p>`;
+        return `<p class="text-muted mb-0">${escapeHtml(window.i18n?.noSubmissionHistoryYet || 'No submission history yet.')}</p>`;
     }
 
     const rows = submissions.map((submission) => {
@@ -91,12 +92,12 @@ function renderSubmissionHistory(submissions) {
             <table class="table table-sm align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Submission ID</th>
-                        <th>Submissions</th>
-                        <th>Threads</th>
-                        <th>Time used</th>
-                        <th>Success rate</th>
-                        <th>Network/status</th>
+                        <th>${escapeHtml(window.i18n?.submissionId || 'Submission ID')}</th>
+                        <th>${escapeHtml(window.i18n?.submissions || 'Submissions')}</th>
+                        <th>${escapeHtml(window.i18n?.threads || 'Threads')}</th>
+                        <th>${escapeHtml(window.i18n?.timeUsed || 'Time used')}</th>
+                        <th>${escapeHtml(window.i18n?.successRate || 'Success rate')}</th>
+                        <th>${escapeHtml(window.i18n?.networkStatus || 'Network/status')}</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
