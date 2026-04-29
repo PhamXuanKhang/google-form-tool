@@ -382,5 +382,5 @@ msgstr "Tính năng này đang được phát triển và sẽ có trong bản c
 msgid "Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link."
 msgstr "Câu hỏi '{q}' thiếu thông tin entry; vui lòng extract lại form. Bản cập nhật sau có thể yêu cầu bạn nhập prefill link để dự phòng."
 
-msgid "The default email field is not supported in prefill-link mode. Configured email answers will be skipped."
-msgstr "Trường email mặc định chưa hỗ trợ trong chế độ prefill-link. Câu trả lời email đã cấu hình sẽ bị bỏ qua khi submit."
+msgid "The default email field is not supported in prefill-link mode yet. Remove the email column/answer or use a form question with real entry metadata."
+msgstr "Trường email mặc định chưa hỗ trợ trong chế độ prefill-link. Vui lòng xoá cột/câu trả lời email, hoặc dùng câu hỏi form có entry thật."

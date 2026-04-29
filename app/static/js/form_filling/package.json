@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "description": "Marker so Node treats local .js files in this folder as ES modules during testing. Browsers ignore this file."
+}

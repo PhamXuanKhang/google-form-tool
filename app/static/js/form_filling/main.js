@@ -24,6 +24,7 @@
 
 import { extractFromUrl } from './form_extract.js';
 import { startSubmission, stopSubmission } from './submission.js';
+import { validatePrefillCompatibility } from './prefill_validator.js';
 
 function t(key, fallback) {
     return window.i18n?.[key] || fallback;
@@ -92,89 +93,20 @@ function getFormSettings() {
 }
 
 window.getFormSettings = getFormSettings;
-
-const UNSUPPORTED_BETA_TYPES = new Set(["rank", "file_upload", "rating"]);
-
-function hasEntryParam(question) {
-    if (question?.entry_id) return true;
-    if (question?.question_id && /^\d+$/.test(question.question_id)) return true;
-    return false;
-}
-
-/**
- * Validate that the extracted form is compatible with prefill-link mode.
- *
- * Returns an object describing the first problem found:
- *   { ok: false, blocking: true, message }   -> show popup, abort submit
- *   { ok: true,  warning: "..." }            -> non-blocking warning toast
- *   { ok: true }                             -> proceed silently
- *
- * q_email is treated softly per TIP-005 follow-up: a missing entry mapping for
- * the email pseudo-question never blocks the whole form. If the user has
- * actually configured email answers we surface a clear warning so they know
- * those answers won't be transmitted via prefill mode.
- */
-function validatePrefillCompatibility(formData, settings) {
-    if (settings?.submission_mode !== "prefill_link") {
-        return { ok: true };
-    }
-    if (!formData || !formData.response_config?.pages) {
-        return { ok: true };
-    }
-
-    let emailWarning = null;
-
-    for (const page of formData.response_config.pages) {
-        for (const question of (page.questions || [])) {
-            if (UNSUPPORTED_BETA_TYPES.has(question.type)) {
-                return {
-                    ok: false,
-                    blocking: true,
-                    message: `${t("unsupportedFeaturePopup", "This feature is being developed and will be available in the next update.")} (${question.type})`,
-                };
-            }
-
-            if (hasEntryParam(question)) continue;
-
-            if (question.question_id === "q_email") {
-                const cfg = question.answer_config || {};
-                const fill = cfg.fill_percentage;
-                const answers = cfg.answers || [];
-                if ((fill ?? 0) > 0 && answers.length > 0) {
-                    emailWarning = t(
-                        "prefillEmailNotSupported",
-                        "The default email field is not supported in prefill-link mode. Configured email answers will be skipped."
-                    );
-                }
-                continue;
-            }
-
-            return {
-                ok: false,
-                blocking: true,
-                message: t(
-                    "prefillMissingEntry",
-                    "Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link."
-                ).replace("{q}", question.text || question.question_id),
-            };
-        }
-    }
-
-    return emailWarning ? { ok: true, warning: emailWarning } : { ok: true };
-}
-
 window.validatePrefillCompatibility = validatePrefillCompatibility;
 
 // Function to start form submission
 window.startFormSubmission = async function() {
     const settings = getFormSettings();
-    const check = validatePrefillCompatibility(window.formQuestionsData, settings);
+    const manualEdits = window.collectManualEdits?.();
+    const check = validatePrefillCompatibility(
+        window.formQuestionsData,
+        settings,
+        { manualEdits, t }
+    );
     if (check && check.blocking) {
         window.showPopup?.(check.message, "warning");
         return;
-    }
-    if (check && check.warning) {
-        window.showPopup?.(check.warning, "warning");
     }
     await startSubmission(settings);
 }

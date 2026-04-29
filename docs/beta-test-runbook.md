@@ -241,6 +241,25 @@ Sai mapping cau hoi nao:
 
 Danh gia: PASS / FAIL / NEEDS REVIEW / NOT IMPLEMENTED
 
+## 6.1. Prefill Compatibility Gate (Frontend)
+
+Su dung sau khi TIP-005 / TIP-005.1 da apply. Co Node.js: bo qua, da co unit test
+chay tu dong qua pytest (`tests/test_js_prefill_validator.py`).
+
+Khong co Node tren may homeowner: kiem tra tay nhung case sau truoc khi submit.
+
+```text
+Case A - Form binh thuong, du entry: Start Automation -> chay binh thuong.
+Case B - Form co cau hoi `rank`:      Start -> popup "developing soon (rank)", khong call backend.
+Case C - Cau hoi thieu entry_id:      Start -> popup "missing entry metadata", khong call backend.
+Case D - q_email khong cau hinh:      Start -> chay binh thuong, email bi bo qua.
+Case E - q_email + manual answers:    Start -> popup "default email field is not supported in prefill-link mode yet".
+Case F - q_email + CSV co cot q_email: Start -> popup giong Case E.
+Case G - q_email + AI/single response: Start -> popup giong Case E.
+```
+
+Danh gia: PASS / FAIL / NEEDS REVIEW
+
 ## 7. Unsupported / Later Features
 
 Trong beta, neu gap type/tinh nang chua ho tro, UI nen hien popup:
