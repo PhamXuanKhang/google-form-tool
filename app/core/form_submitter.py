@@ -29,6 +29,11 @@ from datetime import datetime
 from functools import wraps
 from typing import Dict, List, Any, Optional, Callable
 
+HIGH_FAILURE_WARNING_THRESHOLD = 80
+HIGH_FAILURE_WARNING_MESSAGE = (
+    "Many submissions failed. Check required answers, form changes, or extract the form again."
+)
+
 
 def retry_on_stale(max_retries: int = 3, delay: float = 0.5):
     """Decorator that retries function on StaleElementReferenceException."""
@@ -82,7 +87,8 @@ class FormSubmitter:
             "current_threads": 0,
             "start_time": None,
             "end_time": None,
-            "success_rate": 0
+            "success_rate": 0,
+            "warning": None
         }
         
         self.stop_flag = threading.Event()
@@ -166,7 +172,8 @@ class FormSubmitter:
             "current_threads": 0,
             "start_time": datetime.now(),
             "end_time": None,
-            "success_rate": 0
+            "success_rate": 0,
+            "warning": None
         }
 
         self.stop_flag.clear()
@@ -200,6 +207,15 @@ class FormSubmitter:
         
         if self.status["total"] > 0:
             self.status["success_rate"] = (self.status["success"] / self.status["total"]) * 100
+
+        if self.status["success_rate"] < HIGH_FAILURE_WARNING_THRESHOLD:
+            self.status["warning"] = HIGH_FAILURE_WARNING_MESSAGE
+            logger.warning(
+                f"{HIGH_FAILURE_WARNING_MESSAGE} Success rate: {self.status['success_rate']:.2f}% "
+                f"({self.status['success']}/{self.status['total']})"
+            )
+        else:
+            self.status["warning"] = None
         
         # Create submission record
         time_used = 0
@@ -543,5 +559,6 @@ class FormSubmitter:
             "failed": self.status["failed"],
             "current_threads": self.status["current_threads"],
             "elapsed_time": elapsed_time,
-            "success_rate": success_rate
+            "success_rate": success_rate,
+            "warning": self.status.get("warning")
         }
