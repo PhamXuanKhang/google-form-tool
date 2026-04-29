@@ -31,6 +31,10 @@ function goToStep(step) {
     document.getElementById(`badge-step-${step}`).classList.replace("bg-secondary", "bg-dark");
 
     currentStep = step;
+
+    if (step === 3) {
+        syncSettingsFromExistingFormCount();
+    }
 }
 
 
@@ -53,13 +57,18 @@ function nextStep() {
         } else if (answerMethod === "fileUpload" && !fileUploaded) {
             return showPopup(t("pleaseUploadAnswerFile", "Please upload a file with answer data."));
         }
-    }else if (currentStep === 2) {
+    } else if (currentStep === 2) {
         // Get current value from window
         fileUploaded = window.fileUploaded || false;
         answerMethod = window.answerMethod || "manual";
         
         if (answerMethod === "fileUpload" && !fileUploaded) {
             return showPopup(t("pleaseUploadAnswerFile", "Please upload a file with answer data."));
+        }
+    } else if (currentStep === 3) {
+        const validationError = validateSettingsStep();
+        if (validationError) {
+            return showPopup(validationError);
         }
     }
 
@@ -70,6 +79,48 @@ function nextStep() {
 function prevStep() {
     goToStep(currentStep - 1);
 }
+
+function syncSettingsFromExistingFormCount() {
+    const settingsFormCount = document.getElementById("settings-form-count");
+    const existingFormCount = document.getElementById("form-count");
+
+    if (settingsFormCount && existingFormCount && !settingsFormCount.dataset.syncedFromStep2) {
+        settingsFormCount.value = existingFormCount.value || settingsFormCount.value;
+        settingsFormCount.dataset.syncedFromStep2 = "true";
+    }
+}
+
+function validateSettingsStep() {
+    const settings = window.getFormSettings?.();
+    if (!settings) {
+        return null;
+    }
+
+    const submissions = settings.num_submissions;
+    const threads = settings.concurrent_threads;
+    const minDelay = settings.min_delay;
+    const maxDelay = settings.max_delay;
+
+    if (!Number.isInteger(submissions) || submissions < 1 || submissions > 500) {
+        return t("settingsSubmissionsRange", "Number of submissions must be between 1 and 500.");
+    }
+    if (!Number.isInteger(threads) || threads < 1 || threads > 10) {
+        return t("settingsThreadsRange", "Concurrent threads must be between 1 and 10.");
+    }
+    if (threads > submissions) {
+        return t("settingsThreadsTooHigh", "Concurrent threads cannot be greater than submissions.");
+    }
+    if (!Number.isFinite(minDelay) || !Number.isFinite(maxDelay) || minDelay < 0 || maxDelay < 0) {
+        return t("settingsDelayInvalid", "Delays must be non-negative numbers.");
+    }
+    if (maxDelay < minDelay) {
+        return t("settingsDelayRange", "Maximum delay must be greater than or equal to minimum delay.");
+    }
+
+    return null;
+}
+
+window.validateSettingsStep = validateSettingsStep;
 
 // Make the functions globally available
 window.goToStep = goToStep;

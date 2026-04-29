@@ -48,8 +48,12 @@ window.loadedResponses = null;
 
 // Function to collect form settings from the UI
 function getFormSettings() {
-    // Get form count (default 10, or use loaded responses count if file uploaded)
-    let formCount = parseInt(document.getElementById("form-count")?.value || 10);
+    const formCountInput = document.getElementById("settings-form-count");
+    const concurrentThreadsInput = document.getElementById("settings-concurrent-threads");
+    const minDelayInput = document.getElementById("settings-min-delay");
+    const maxDelayInput = document.getElementById("settings-max-delay");
+
+    let formCount = parseInt(formCountInput?.value || 10, 10);
 
     // If file uploaded, use the number of loaded responses
     if (window.fileUploaded && window.loadedResponses) {
@@ -64,9 +68,9 @@ function getFormSettings() {
         form_url: formUrl,
         form_id: window.currentFormId,
         num_submissions: formCount,
-        concurrent_threads: 2,
-        min_delay: 1,
-        max_delay: 5,
+        concurrent_threads: parseInt(concurrentThreadsInput?.value || 2, 10),
+        min_delay: parseFloat(minDelayInput?.value || 1),
+        max_delay: parseFloat(maxDelayInput?.value || 5),
     };
 
     // Include loaded responses if file was uploaded
@@ -83,6 +87,8 @@ function getFormSettings() {
 
     return settings;
 }
+
+window.getFormSettings = getFormSettings;
 
 // Function to start form submission
 window.startFormSubmission = async function() {

@@ -39,6 +39,11 @@ def test_form_filling_renders_in_english(client):
     assert response.status_code == 200
     assert b"Step 1: Enter Google Form URL" in response.data
     assert b"Upload a CSV, JSON, or XLSX file with answer data." in response.data
+    assert b'id="settings-form-count"' in response.data
+    assert b'id="settings-concurrent-threads"' in response.data
+    assert b'id="settings-min-delay"' in response.data
+    assert b'id="settings-max-delay"' in response.data
+    assert b"Settings content remains the same" not in response.data
     assert b'id="statusToast"' in response.data
     assert b"No active submission for this form." in response.data
 
@@ -50,4 +55,6 @@ def test_form_filling_renders_in_vietnamese(client):
     assert response.status_code == 200
     assert "Bước 1: Nhập URL Google Form" in text
     assert "Tải lên tệp CSV, JSON hoặc XLSX chứa dữ liệu trả lời." in text
+    assert "Số lần gửi" in text
+    assert "Số luồng đồng thời" in text
     assert 'pleaseExtractFormFirst: "Vui l\\u00f2ng tr\\u00edch xu\\u1ea5t' in text

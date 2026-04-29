@@ -136,6 +136,27 @@ msgstr "Previous"
 msgid "Step 3: Automation Settings"
 msgstr "Step 3: Automation Settings"
 
+msgid "Number of submissions"
+msgstr "Number of submissions"
+
+msgid "Maximum 500 submissions per batch."
+msgstr "Maximum 500 submissions per batch."
+
+msgid "Concurrent threads"
+msgstr "Concurrent threads"
+
+msgid "Maximum 10 threads. Threads should not exceed submissions."
+msgstr "Maximum 10 threads. Threads should not exceed submissions."
+
+msgid "Minimum delay seconds"
+msgstr "Minimum delay seconds"
+
+msgid "Maximum delay seconds"
+msgstr "Maximum delay seconds"
+
+msgid "Backend limits still apply: max 500 submissions, max 10 threads, and threads cannot exceed submissions."
+msgstr "Backend limits still apply: max 500 submissions, max 10 threads, and threads cannot exceed submissions."
+
 msgid "Review and Start"
 msgstr "Review and Start"
 
@@ -264,6 +285,21 @@ msgstr "Failed to stop submission. Check console for details."
 
 msgid "No active submission for this form."
 msgstr "No active submission for this form."
+
+msgid "Number of submissions must be between 1 and 500."
+msgstr "Number of submissions must be between 1 and 500."
+
+msgid "Concurrent threads must be between 1 and 10."
+msgstr "Concurrent threads must be between 1 and 10."
+
+msgid "Concurrent threads cannot be greater than submissions."
+msgstr "Concurrent threads cannot be greater than submissions."
+
+msgid "Delays must be non-negative numbers."
+msgstr "Delays must be non-negative numbers."
+
+msgid "Maximum delay must be greater than or equal to minimum delay."
+msgstr "Maximum delay must be greater than or equal to minimum delay."
 
 msgid "Success"
 msgstr "Success"

@@ -164,8 +164,30 @@
         <div id="step-3" class="step-section d-none">
             <div class="card shadow-sm p-4">
                 <h3 class="card-title">{{ _('Step 3: Automation Settings') }}</h3>
-                <!-- Settings content remains the same -->
-                ...
+                <div class="row g-3 submission-controls">
+                    <div class="col-md-6">
+                        <label for="settings-form-count" class="form-label">{{ _('Number of submissions') }}</label>
+                        <input type="number" class="form-control" id="settings-form-count" min="1" max="500" value="10" step="1">
+                        <div class="form-text">{{ _('Maximum 500 submissions per batch.') }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="settings-concurrent-threads" class="form-label">{{ _('Concurrent threads') }}</label>
+                        <input type="number" class="form-control" id="settings-concurrent-threads" min="1" max="10" value="2" step="1">
+                        <div class="form-text">{{ _('Maximum 10 threads. Threads should not exceed submissions.') }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="settings-min-delay" class="form-label">{{ _('Minimum delay seconds') }}</label>
+                        <input type="number" class="form-control" id="settings-min-delay" min="0" value="1" step="0.1">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="settings-max-delay" class="form-label">{{ _('Maximum delay seconds') }}</label>
+                        <input type="number" class="form-control" id="settings-max-delay" min="0" value="5" step="0.1">
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">
+                    <i class="fas fa-info-circle"></i>
+                    {{ _('Backend limits still apply: max 500 submissions, max 10 threads, and threads cannot exceed submissions.') }}
+                </p>
                 <div class="d-flex justify-content-between mt-3">
                     <button class="btn" onclick="prevStep()"><i class="fas fa-arrow-left me-2"></i> {{ _('Previous') }}</button>
                     <button class="btn btn-primary" onclick="nextStep()">{{ _('Review and Start') }} <i class="fas fa-arrow-right ms-2"></i></button>
@@ -303,6 +325,11 @@ window.i18n = {
     submissionStopped: {{ _('Submission stopped') | tojson }},
     failedToStopSubmission: {{ _('Failed to stop submission. Check console for details.') | tojson }},
     noActiveSubmissionForThisForm: {{ _('No active submission for this form.') | tojson }},
+    settingsSubmissionsRange: {{ _('Number of submissions must be between 1 and 500.') | tojson }},
+    settingsThreadsRange: {{ _('Concurrent threads must be between 1 and 10.') | tojson }},
+    settingsThreadsTooHigh: {{ _('Concurrent threads cannot be greater than submissions.') | tojson }},
+    settingsDelayInvalid: {{ _('Delays must be non-negative numbers.') | tojson }},
+    settingsDelayRange: {{ _('Maximum delay must be greater than or equal to minimum delay.') | tojson }},
     success: {{ _('Success') | tojson }},
     failed: {{ _('Failed') | tojson }},
     pending: {{ _('Pending') | tojson }}

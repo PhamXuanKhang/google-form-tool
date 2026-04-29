@@ -136,6 +136,27 @@ msgstr "Quay lại"
 msgid "Step 3: Automation Settings"
 msgstr "Bước 3: Cài đặt tự động hóa"
 
+msgid "Number of submissions"
+msgstr "Số lần gửi"
+
+msgid "Maximum 500 submissions per batch."
+msgstr "Tối đa 500 lần gửi mỗi lượt."
+
+msgid "Concurrent threads"
+msgstr "Số luồng đồng thời"
+
+msgid "Maximum 10 threads. Threads should not exceed submissions."
+msgstr "Tối đa 10 luồng. Số luồng không nên lớn hơn số lần gửi."
+
+msgid "Minimum delay seconds"
+msgstr "Độ trễ tối thiểu (giây)"
+
+msgid "Maximum delay seconds"
+msgstr "Độ trễ tối đa (giây)"
+
+msgid "Backend limits still apply: max 500 submissions, max 10 threads, and threads cannot exceed submissions."
+msgstr "Giới hạn backend vẫn được áp dụng: tối đa 500 lần gửi, tối đa 10 luồng, và số luồng không được lớn hơn số lần gửi."
+
 msgid "Review and Start"
 msgstr "Kiểm tra và bắt đầu"
 
@@ -264,6 +285,21 @@ msgstr "Không thể dừng gửi. Xem console để biết chi tiết."
 
 msgid "No active submission for this form."
 msgstr "Không có phiên gửi nào đang chạy cho biểu mẫu này."
+
+msgid "Number of submissions must be between 1 and 500."
+msgstr "Số lần gửi phải nằm trong khoảng 1 đến 500."
+
+msgid "Concurrent threads must be between 1 and 10."
+msgstr "Số luồng đồng thời phải nằm trong khoảng 1 đến 10."
+
+msgid "Concurrent threads cannot be greater than submissions."
+msgstr "Số luồng đồng thời không được lớn hơn số lần gửi."
+
+msgid "Delays must be non-negative numbers."
+msgstr "Độ trễ phải là số không âm."
+
+msgid "Maximum delay must be greater than or equal to minimum delay."
+msgstr "Độ trễ tối đa phải lớn hơn hoặc bằng độ trễ tối thiểu."
 
 msgid "Success"
 msgstr "Thành công"
