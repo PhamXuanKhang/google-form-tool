@@ -20,7 +20,12 @@ from selenium.common.exceptions import (
 
 from app.models import Form, Question, Submission
 from app.core.form_processor import FormProcessor
+from app.core.prefill_link_generator import PrefillLinkGenerator
 from app.logging_config import logger
+
+SUBMISSION_MODE_PREFILL = "prefill_link"
+SUBMISSION_MODE_DOM_FILL = "dom_fill"
+VALID_SUBMISSION_MODES = (SUBMISSION_MODE_PREFILL, SUBMISSION_MODE_DOM_FILL)
 
 import threading
 import time
@@ -137,6 +142,7 @@ class FormSubmitter:
                     max_delay: int = 5,
                     responses: Optional[Dict[str, Any]] = None,
                     responses_list: Optional[List[Dict[str, Any]]] = None,
+                    submission_mode: str = SUBMISSION_MODE_PREFILL,
                     callback: Optional[Callable] = None) -> Submission:
         """
         Start the form submission process with specified parameters.
@@ -153,6 +159,13 @@ class FormSubmitter:
         Returns:
             Submission: Submission record with results
         """
+        if submission_mode not in VALID_SUBMISSION_MODES:
+            raise ValueError(
+                f"Unknown submission_mode '{submission_mode}'. "
+                f"Expected one of: {VALID_SUBMISSION_MODES}"
+            )
+        self.submission_mode = submission_mode
+
         # Data-driven mode: each item in responses_list is one submission
         if responses_list:
             num_submissions = len(responses_list)
@@ -162,6 +175,21 @@ class FormSubmitter:
         else:
             self.responses_queue = None
             self.data_driven_mode = False
+
+        # Prefill mode: generate URLs up-front and let workers pop from queue.
+        self.urls_queue = None
+        self.urls_lock = None
+        if submission_mode == SUBMISSION_MODE_PREFILL:
+            response_dicts = self._build_response_dicts(
+                num_submissions, responses, responses_list
+            )
+            num_submissions = len(response_dicts)
+            generator = PrefillLinkGenerator(self.form)
+            self.urls_queue = generator.build_prefill_urls(response_dicts)
+            self.urls_lock = threading.Lock()
+            logger.info(
+                f"Prepared {len(self.urls_queue)} prefill URLs for submission"
+            )
 
         # Reset status
         self.status = {
@@ -178,9 +206,15 @@ class FormSubmitter:
 
         self.stop_flag.clear()
 
-        # Generate responses if not provided (for non-data-driven mode)
-        if not self.data_driven_mode:
+        # Generate responses if not provided (for non-data-driven dom-fill mode)
+        if submission_mode == SUBMISSION_MODE_DOM_FILL and not self.data_driven_mode:
             self.responses = responses or self.form_processor.generate_random_responses()
+
+        worker_target = (
+            self._prefill_worker
+            if submission_mode == SUBMISSION_MODE_PREFILL
+            else self._submission_worker
+        )
 
         # Start submission threads
         for i in range(min(concurrent_threads, num_submissions)):
@@ -190,7 +224,7 @@ class FormSubmitter:
                 submissions_per_thread += 1
 
             thread = threading.Thread(
-                target=self._submission_worker,
+                target=worker_target,
                 args=(submissions_per_thread, min_delay, max_delay, callback)
             )
             self.threads.append(thread)
@@ -290,6 +324,152 @@ class FormSubmitter:
             if driver:
                 driver.quit()
     
+    def _build_response_dicts(
+        self,
+        num_submissions: int,
+        responses: Optional[Dict[str, Any]],
+        responses_list: Optional[List[Dict[str, Any]]],
+    ) -> List[Dict[str, Any]]:
+        """Materialize the response dictionaries used to build prefill URLs.
+
+        - Data-driven: use ``responses_list`` directly.
+        - Single response (e.g. AI mode): replicate ``responses`` N times.
+        - Manual/random: generate N random responses using FormProcessor.
+        """
+        if responses_list:
+            return list(responses_list)
+        if responses is not None:
+            return [dict(responses) for _ in range(num_submissions)]
+        return [
+            self.form_processor.generate_random_responses()
+            for _ in range(num_submissions)
+        ]
+
+    def _prefill_worker(self,
+                        num_submissions: int,
+                        min_delay: int,
+                        max_delay: int,
+                        callback: Optional[Callable] = None) -> None:
+        """Worker thread: open prefill URLs from the shared queue and submit."""
+        driver = None
+        try:
+            driver = self.initialize_driver()
+
+            for iteration in range(num_submissions):
+                if self.stop_flag.is_set():
+                    logger.info("Prefill worker stopped early due to stop flag")
+                    break
+
+                with self.urls_lock:
+                    if not self.urls_queue:
+                        logger.info("No more prefill URLs in queue")
+                        break
+                    url = self.urls_queue.pop(0)
+
+                success = self._submit_prefilled_url(driver, url)
+
+                if success:
+                    self.status["success"] += 1
+                else:
+                    self.status["failed"] += 1
+
+                if callback:
+                    callback(success)
+
+                if iteration < num_submissions - 1 and not self.stop_flag.is_set():
+                    time.sleep(random.uniform(min_delay, max_delay))
+
+        except Exception as e:
+            logger.error(f"Error in prefill worker: {str(e)}")
+
+        finally:
+            self.status["current_threads"] -= 1
+            if driver:
+                driver.quit()
+
+    def submit_prefilled_urls(
+        self,
+        urls: List[str],
+        concurrent_threads: int = 1,
+        min_delay: int = 1,
+        max_delay: int = 5,
+        callback: Optional[Callable] = None,
+    ) -> Submission:
+        """Public helper: submit a prepared list of prefill URLs.
+
+        Useful when callers (e.g. tests, scripts) already have prefill URLs
+        and don't need the full ``submit_form`` orchestration.
+        """
+        self.urls_queue = list(urls)
+        self.urls_lock = threading.Lock()
+        return self.submit_form(
+            num_submissions=len(urls),
+            concurrent_threads=concurrent_threads,
+            min_delay=min_delay,
+            max_delay=max_delay,
+            responses_list=None,
+            responses=None,
+            submission_mode=SUBMISSION_MODE_PREFILL,
+            callback=callback,
+        )
+
+    def _submit_prefilled_url(self, driver, url: str) -> bool:
+        """Open a prefill URL and click through Next/Submit pages.
+
+        Success is detected when either:
+            * Confirmation text ("response", "submitted", "gửi") appears, or
+            * The URL changes to a submitted/response state (``formResponse`` /
+              ``/closedform`` etc.).
+        """
+        try:
+            driver.get(url)
+
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "form"))
+            )
+
+            start_url = driver.current_url
+
+            while True:
+                try:
+                    next_button = driver.find_element(
+                        By.XPATH,
+                        "//div[@role='button']//span[contains(text(), 'Next') or contains(text(), 'Tiếp')]"
+                    )
+                    driver.execute_script("arguments[0].click();", next_button)
+                    time.sleep(1)
+                except NoSuchElementException:
+                    try:
+                        submit_button = driver.find_element(
+                            By.XPATH,
+                            "//div[@role='button']//span[contains(text(), 'Submit') or contains(text(), 'Gửi')]"
+                        )
+                        driver.execute_script("arguments[0].click();", submit_button)
+
+                        WebDriverWait(driver, 10).until(
+                            lambda d: (
+                                d.current_url != start_url
+                                or d.find_elements(
+                                    By.XPATH,
+                                    "//*[contains(text(), 'response') or "
+                                    "contains(text(), 'submitted') or "
+                                    "contains(text(), 'gửi') or "
+                                    "contains(text(), 'recorded')]"
+                                )
+                            )
+                        )
+
+                        logger.info("Prefill URL submitted successfully")
+                        return True
+
+                    except (NoSuchElementException, TimeoutException) as e:
+                        logger.error(f"Prefill submit failed: {e}")
+                        return False
+
+        except Exception as e:
+            logger.error(f"Error submitting prefill URL: {str(e)}")
+            return False
+
     def _submit_single_form(self, driver) -> bool:
         """
         Submit a single form instance with the current response data.

@@ -464,6 +464,11 @@ def start_submission():
     - Supports concurrent submissions for different forms
     - Accepts optional responses_list for data-driven submission
     """
+    from app.core.form_submitter import (
+        SUBMISSION_MODE_PREFILL,
+        VALID_SUBMISSION_MODES,
+    )
+
     data = request.get_json() or {}
 
     form_id = data.get('form_id')
@@ -471,9 +476,18 @@ def start_submission():
     responses = data.get('responses')
     use_file_data = data.get('use_file_data', False)
     use_ai_responses = data.get('use_ai_responses', False)
+    submission_mode = data.get('submission_mode') or SUBMISSION_MODE_PREFILL
 
     if not form_id:
         return jsonify({"error": "No form_id provided"}), 400
+
+    if submission_mode not in VALID_SUBMISSION_MODES:
+        return jsonify({
+            "error": (
+                f"Unknown submission_mode '{submission_mode}'. "
+                f"Expected one of: {list(VALID_SUBMISSION_MODES)}"
+            )
+        }), 400
 
     try:
         num_submissions, concurrent_threads, min_delay, max_delay = _validate_submission_request(data)
@@ -504,7 +518,7 @@ def start_submission():
             import threading
             submission_thread = threading.Thread(
                 target=_run_submission,
-                args=(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list, responses)
+                args=(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list, responses, submission_mode)
             )
             submission_thread.daemon = True
             submission_thread.start()
@@ -525,17 +539,20 @@ def start_submission():
         return jsonify({"error": f"Error starting submission: {str(e)}"}), 500
 
 
-def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None):
+def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None):
     """Internal helper: Runs submission in background thread"""
     try:
-        submission_result = submitter.submit_form(
+        submit_kwargs = dict(
             num_submissions=num_submissions,
             responses_list=responses_list,
             responses=responses,
             concurrent_threads=concurrent_threads,
             min_delay=min_delay,
-            max_delay=max_delay
+            max_delay=max_delay,
         )
+        if submission_mode is not None:
+            submit_kwargs["submission_mode"] = submission_mode
+        submission_result = submitter.submit_form(**submit_kwargs)
 
         try:
             with get_storage_service() as storage:

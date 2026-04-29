@@ -67,6 +67,7 @@ def test_low_success_rate_sets_and_logs_warning(sample_form, monkeypatch, caplog
         concurrent_threads=1,
         min_delay=0,
         max_delay=0,
+        submission_mode="dom_fill",
     )
 
     assert submission.success_rate == 70
@@ -88,6 +89,7 @@ def test_normal_success_rate_does_not_set_warning(sample_form, monkeypatch):
         concurrent_threads=1,
         min_delay=0,
         max_delay=0,
+        submission_mode="dom_fill",
     )
 
     assert submission.success_rate == 80
