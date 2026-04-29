@@ -138,12 +138,26 @@ function hideSpinner() {
   document.getElementById("spinner").style.display = "none";
 }
 
-function showPopup(message) {
+function showPopup(message, type = "info") {
     const toastMessage = document.getElementById("toast-message");
     if (toastMessage) {
         toastMessage.textContent = message;
         const toastElement = document.getElementById("statusToast") || document.getElementById("warningToast");
         if (toastElement) {
+            toastElement.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-info', 'text-bg-warning');
+            switch (type) {
+                case "success":
+                    toastElement.classList.add('text-bg-success');
+                    break;
+                case "error":
+                    toastElement.classList.add('text-bg-danger');
+                    break;
+                case "warning":
+                    toastElement.classList.add('text-bg-warning');
+                    break;
+                default:
+                    toastElement.classList.add('text-bg-info');
+            }
             const toast = new bootstrap.Toast(toastElement);
             toast.show();
         }
@@ -151,5 +165,7 @@ function showPopup(message) {
         alert(message);
     }
 }
+
+window.showPopup = showPopup;
 
 export { extractFromUrl, showSpinner, hideSpinner, showPopup };

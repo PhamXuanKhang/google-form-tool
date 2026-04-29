@@ -60,14 +60,14 @@ Dat khi:
 Can ghi lai:
 
 ```text
-Form title:
-So page:
-So cau hoi:
-Type nao sai/khong extract duoc:
-Screenshot/loi neu co:
+Form title:Khảo sát trải nghiệm khách hàng
+So page:4
+So cau hoi:19
+Type nao sai/khong extract duoc:Không có
+Screenshot/loi neu co:Không có lỗi
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW
+Danh gia: PASS
 
 ## 2. Manual Configure Answers
 
@@ -97,12 +97,12 @@ Dat khi:
 Can ghi lai:
 
 ```text
-Question IDs/type nao config OK:
-Question IDs/type nao config loi:
-Popup/message neu co:
+Question IDs/type nao config OK: hầu hết đều ok, nhưng không biết validation có chạy không (cho 1 số câu hỏi mà user cho nhiều câu hơn hoặc )
+Question IDs/type nao config loi: Question có emails không dùng được auto generate email. AI nhập API rồi mà không work. Giờ và ngày đang bị tách rời khi bị auto gen, trong khi hiện tại đang có gen giờ riêng và ngày riêng.
+Popup/message neu co: popup yêu cầu nhập api key nhưng thực ra cũng không hoạt động
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW
+Danh gia: FAIL
 
 ## 3. File Upload Data-Driven Submission
 
@@ -138,7 +138,7 @@ Mapping/cot da dung:
 Row nao bi sai/khong load:
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW
+Danh gia: PASS / FAIL / NEEDS REVIEW (Chưa test được vì tính năng này chưa cần thiết lắm)
 
 ## 4. AI Text Generation Dropdown Gating (TIP-006.1)
 
@@ -152,7 +152,7 @@ Cau hoi date        -> dropdown KHONG co option "AI Generate"
 Cau hoi time        -> dropdown KHONG co option "AI Generate"
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW
+Danh gia: FAIL - tôi đã mô tả vấn đề ở phần 2
 
 ## 4.1. AI Text Generation
 
@@ -167,13 +167,13 @@ Trang thai mong muon cho beta sap toi:
 Test sau khi da implement:
 
 ```text
-Question text:
-API key popup co hien khong:
-Output AI co dien vao dung textarea khong:
-Output co phu hop cau hoi khong:
+Question text: Bạn sẽ giới thiệu dịch vụ này cho người khác không? Tại sao?
+API key popup co hien khong: Có
+Output AI co dien vao dung textarea khong: Không có gì
+Output co phu hop cau hoi khong: Không có gì
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW / NOT IMPLEMENTED
+Danh gia: FAIL với lỗi '2026-04-29 21:04:23 INFO: 127.0.0.1 - - [29/Apr/2026 21:04:23] "POST /validate_api_key HTTP/1.1" 400 -' ở server mặc dù API key của tôi chuẩn api của gemini
 
 ## 5. Current DOM Fill Submission
 
@@ -213,7 +213,7 @@ Loai cau hoi nao gay fail:
 Log/error neu co:
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW
+Danh gia: FAIL (fail từ lúc submit vì tôi ấn vào không có gì xảy ra, chả có gì gửi vào server cả)
 
 ## 6. Prefill-Link Mode - Real Form Smoke Test
 
