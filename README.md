@@ -114,3 +114,13 @@ Run real Selenium/Google Forms integration tests explicitly:
 ```
 
 Integration tests require a working Chrome and ChromeDriver setup.
+
+### Test Google Form URL
+
+To point integration tests at your own real Google Form (recommended for beta verification), add this to `.env`:
+
+```env
+TEST_GOOGLE_FORM_URL=https://docs.google.com/forms/d/e/<your-form-id>/viewform
+```
+
+When set, the `sample_form_url` fixture in `tests/conftest.py` uses it. If unset, tests fall back to the bundled sample form URL. Unit tests do not require this variable.

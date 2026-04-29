@@ -455,6 +455,7 @@ class FormExtractor:
 
                 questions.append(Question(
                     question_id=str(entry_id),
+                    entry_id=f"entry.{entry_id}",
                     type=qtype,
                     text=question_text,
                     answer_config=AnswerConfig(
@@ -464,11 +465,13 @@ class FormExtractor:
                         answers=None
                     )
                 ))
-                
+
             elif qtype in ["checkbox_grid", "multiple_choice_grid"]:
                 for id in data[4]:
+                    row_entry_id = id[0]
                     questions.append(Question(
-                        question_id=str(id[0]),
+                        question_id=str(row_entry_id),
+                        entry_id=f"entry.{row_entry_id}",
                         type=qtype.replace("_grid", ""),
                         text=question_text + " - " + str(id[3][0]),
                         answer_config=AnswerConfig(
@@ -481,6 +484,7 @@ class FormExtractor:
             else:
                 questions.append(Question(
                     question_id=str(entry_id),
+                    entry_id=f"entry.{entry_id}",
                     type=qtype,
                     text=question_text,
                     answer_config=AnswerConfig(options=None,

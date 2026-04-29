@@ -117,6 +117,14 @@ def extractor():
     return FormExtractor(chromebinary_path=Config.CHROME_BINARY_PATH, chromedriver_path=Config.CHROME_DRIVER_PATH, headless=True)
 
 # Fixture URL Google Form mẫu
+# Prefer Config.TEST_GOOGLE_FORM_URL (set via .env) so the homeowner's real test
+# form is used for integration runs; fall back to the bundled sample URL.
+_DEFAULT_SAMPLE_FORM_URL = (
+    "https://docs.google.com/forms/d/e/"
+    "1FAIpQLSdV6-LCcldiBEMpUkrjen2i7ek7z8zkzDsUIulCAYfiPBcI5Q/formResponse"
+)
+
+
 @pytest.fixture(scope="module")
 def sample_form_url():
-    return "https://docs.google.com/forms/d/e/1FAIpQLSdV6-LCcldiBEMpUkrjen2i7ek7z8zkzDsUIulCAYfiPBcI5Q/formResponse"
+    return Config.TEST_GOOGLE_FORM_URL or _DEFAULT_SAMPLE_FORM_URL

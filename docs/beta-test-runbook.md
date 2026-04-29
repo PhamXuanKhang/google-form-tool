@@ -7,7 +7,7 @@ Nguoi test:
 May/OS: 
 Chrome path dang dung: 
 ChromeDriver path dang dung: 
-Google Form test URL: 
+Google Form test URL: (dat trong `.env` bang bien `TEST_GOOGLE_FORM_URL=https://docs.google.com/forms/d/e/<id>/viewform`; neu de trong, integration test fallback ve sample URL co san trong `tests/conftest.py`)
 
 ## 0. Setup Check
 

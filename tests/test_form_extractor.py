@@ -26,6 +26,12 @@ def test_extract_form_data_structure(extractor, sample_form_url):
                 "dropdown", "checkbox", "linear_scale", "rank",
                 "textarea", "date", "time", "unknown"
             ]
+            # TIP-002: real extracted questions (except the q_email pseudo
+            # question, which Google does not assign an entry to) must carry
+            # an entry_id of the form "entry.<number>" for prefill-link mode.
+            if question.question_id != "q_email":
+                assert question.entry_id is not None
+                assert question.entry_id.startswith("entry.")
 
 
 def test_extract_form_data_cleanup_when_driver_startup_fails(monkeypatch):

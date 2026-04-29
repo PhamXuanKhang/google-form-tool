@@ -19,3 +19,4 @@ class Config:
     DB_PATH = os.getenv("DB_PATH")
     CHROME_BINARY_PATH = os.getenv("CHROME_BINARY_PATH")
     CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH")
+    TEST_GOOGLE_FORM_URL = os.getenv("TEST_GOOGLE_FORM_URL")

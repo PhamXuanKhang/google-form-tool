@@ -45,11 +45,29 @@ class Question(BaseModel):
         type (str): Type of the question.
         text (str): The question content.
         answer_config (AnswerConfig): Configuration for how the question should be answered.
+        entry_id (Optional[str]): Google Forms prefill parameter name (e.g. "entry.123456").
+            Optional for backward compatibility with forms stored before prefill-link mode.
     """
     question_id: str
     type: str
     text: str
     answer_config: Optional[AnswerConfig]
+    entry_id: Optional[str] = None
+
+    def get_entry_param(self) -> Optional[str]:
+        """
+        Return the prefill parameter name (e.g. "entry.123456") for this question.
+
+        Prefers ``entry_id`` when set. Falls back to ``entry.<question_id>`` only
+        if ``question_id`` is numeric (the raw Google Forms entry number). Returns
+        ``None`` when no usable mapping is available, so callers can detect and
+        surface a clear error to the user.
+        """
+        if self.entry_id:
+            return self.entry_id
+        if self.question_id and self.question_id.isdigit():
+            return f"entry.{self.question_id}"
+        return None
 
 
 class Page(BaseModel):
