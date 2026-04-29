@@ -343,7 +343,10 @@ window.i18n = {
     noManualConfigToSave: {{ _('No manual configuration to save.') | tojson }},
     success: {{ _('Success') | tojson }},
     failed: {{ _('Failed') | tojson }},
-    pending: {{ _('Pending') | tojson }}
+    pending: {{ _('Pending') | tojson }},
+    unsupportedFeaturePopup: {{ _('This feature is being developed and will be available in the next update.') | tojson }},
+    prefillMissingEntry: {{ _("Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link.") | tojson }},
+    prefillEmailNotSupported: {{ _('The default email field is not supported in prefill-link mode. Configured email answers will be skipped.') | tojson }}
 };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>

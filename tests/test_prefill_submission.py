@@ -385,6 +385,45 @@ def test_submit_form_rejects_unknown_mode():
         )
 
 
+def test_submit_prefilled_urls_uses_caller_provided_urls(monkeypatch):
+    """submit_prefilled_urls(["u1","u2"]) must submit exactly u1 and u2 in order
+    and must NOT invoke PrefillLinkGenerator (the URLs are already prepared)."""
+    form = _build_prefill_form()
+    submitter = FormSubmitter(form)
+
+    # Fail loudly if the generator is touched.
+    class ExplodingGenerator:
+        def __init__(self, *a, **kw):
+            raise AssertionError(
+                "PrefillLinkGenerator must not be called when caller "
+                "supplies URLs to submit_prefilled_urls"
+            )
+
+    monkeypatch.setattr(
+        form_submitter_module, "PrefillLinkGenerator", ExplodingGenerator
+    )
+    monkeypatch.setattr(form_submitter_module, "WebDriverWait", FakeWebDriverWait)
+    monkeypatch.setattr(
+        FormSubmitter, "initialize_driver", lambda self: FakeDriver([])
+    )
+
+    received = []
+
+    def fake_submit(self, driver, url):
+        received.append(url)
+        return True
+
+    monkeypatch.setattr(FormSubmitter, "_submit_prefilled_url", fake_submit)
+
+    submission = submitter.submit_prefilled_urls(
+        ["u1", "u2"], concurrent_threads=1, min_delay=0, max_delay=0
+    )
+
+    assert received == ["u1", "u2"]
+    assert submission.num_submission == 2
+    assert submission.success_rate == 100.0
+
+
 def test_prefill_worker_respects_stop_flag(monkeypatch):
     form = _build_prefill_form()
     submitter = FormSubmitter(form)

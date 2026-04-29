@@ -375,3 +375,12 @@ msgstr "Tỷ lệ thành công"
 
 msgid "Network/status"
 msgstr "Mạng/trạng thái"
+
+msgid "This feature is being developed and will be available in the next update."
+msgstr "Tính năng này đang được phát triển và sẽ có trong bản cập nhật tiếp theo."
+
+msgid "Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link."
+msgstr "Câu hỏi '{q}' thiếu thông tin entry; vui lòng extract lại form. Bản cập nhật sau có thể yêu cầu bạn nhập prefill link để dự phòng."
+
+msgid "The default email field is not supported in prefill-link mode. Configured email answers will be skipped."
+msgstr "Trường email mặc định chưa hỗ trợ trong chế độ prefill-link. Câu trả lời email đã cấu hình sẽ bị bỏ qua khi submit."

@@ -375,3 +375,12 @@ msgstr "Success rate"
 
 msgid "Network/status"
 msgstr "Network/status"
+
+msgid "This feature is being developed and will be available in the next update."
+msgstr "This feature is being developed and will be available in the next update."
+
+msgid "Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link."
+msgstr "Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link."
+
+msgid "The default email field is not supported in prefill-link mode. Configured email answers will be skipped."
+msgstr "The default email field is not supported in prefill-link mode. Configured email answers will be skipped."

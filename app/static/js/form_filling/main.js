@@ -63,7 +63,9 @@ function getFormSettings() {
     // Get form URL from session (was entered in step 1)
     const formUrl = document.getElementById('form-url-input').value;
 
-    // Create settings object
+    // Create settings object. submission_mode is sent explicitly even though
+    // the backend defaults to prefill_link, so the request shape is unambiguous
+    // and a future debug selector cannot accidentally drop the field.
     const settings = {
         form_url: formUrl,
         form_id: window.currentFormId,
@@ -71,6 +73,7 @@ function getFormSettings() {
         concurrent_threads: parseInt(concurrentThreadsInput?.value || 2, 10),
         min_delay: parseFloat(minDelayInput?.value || 1),
         max_delay: parseFloat(maxDelayInput?.value || 5),
+        submission_mode: window.submissionMode || "prefill_link",
     };
 
     // Include loaded responses if file was uploaded
@@ -90,9 +93,89 @@ function getFormSettings() {
 
 window.getFormSettings = getFormSettings;
 
+const UNSUPPORTED_BETA_TYPES = new Set(["rank", "file_upload", "rating"]);
+
+function hasEntryParam(question) {
+    if (question?.entry_id) return true;
+    if (question?.question_id && /^\d+$/.test(question.question_id)) return true;
+    return false;
+}
+
+/**
+ * Validate that the extracted form is compatible with prefill-link mode.
+ *
+ * Returns an object describing the first problem found:
+ *   { ok: false, blocking: true, message }   -> show popup, abort submit
+ *   { ok: true,  warning: "..." }            -> non-blocking warning toast
+ *   { ok: true }                             -> proceed silently
+ *
+ * q_email is treated softly per TIP-005 follow-up: a missing entry mapping for
+ * the email pseudo-question never blocks the whole form. If the user has
+ * actually configured email answers we surface a clear warning so they know
+ * those answers won't be transmitted via prefill mode.
+ */
+function validatePrefillCompatibility(formData, settings) {
+    if (settings?.submission_mode !== "prefill_link") {
+        return { ok: true };
+    }
+    if (!formData || !formData.response_config?.pages) {
+        return { ok: true };
+    }
+
+    let emailWarning = null;
+
+    for (const page of formData.response_config.pages) {
+        for (const question of (page.questions || [])) {
+            if (UNSUPPORTED_BETA_TYPES.has(question.type)) {
+                return {
+                    ok: false,
+                    blocking: true,
+                    message: `${t("unsupportedFeaturePopup", "This feature is being developed and will be available in the next update.")} (${question.type})`,
+                };
+            }
+
+            if (hasEntryParam(question)) continue;
+
+            if (question.question_id === "q_email") {
+                const cfg = question.answer_config || {};
+                const fill = cfg.fill_percentage;
+                const answers = cfg.answers || [];
+                if ((fill ?? 0) > 0 && answers.length > 0) {
+                    emailWarning = t(
+                        "prefillEmailNotSupported",
+                        "The default email field is not supported in prefill-link mode. Configured email answers will be skipped."
+                    );
+                }
+                continue;
+            }
+
+            return {
+                ok: false,
+                blocking: true,
+                message: t(
+                    "prefillMissingEntry",
+                    "Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link."
+                ).replace("{q}", question.text || question.question_id),
+            };
+        }
+    }
+
+    return emailWarning ? { ok: true, warning: emailWarning } : { ok: true };
+}
+
+window.validatePrefillCompatibility = validatePrefillCompatibility;
+
 // Function to start form submission
 window.startFormSubmission = async function() {
     const settings = getFormSettings();
+    const check = validatePrefillCompatibility(window.formQuestionsData, settings);
+    if (check && check.blocking) {
+        window.showPopup?.(check.message, "warning");
+        return;
+    }
+    if (check && check.warning) {
+        window.showPopup?.(check.warning, "warning");
+    }
     await startSubmission(settings);
 }
 

@@ -98,6 +98,10 @@ class FormSubmitter:
         
         self.stop_flag = threading.Event()
         self.threads = []
+
+        # Prefill-mode queue (populated by submit_form or submit_prefilled_urls).
+        self.urls_queue: Optional[List[str]] = None
+        self.urls_lock: Optional[threading.Lock] = None
         
         self.form_processor = FormProcessor(self.form)
         
@@ -177,19 +181,27 @@ class FormSubmitter:
             self.data_driven_mode = False
 
         # Prefill mode: generate URLs up-front and let workers pop from queue.
-        self.urls_queue = None
-        self.urls_lock = None
+        # If a caller (e.g. submit_prefilled_urls) has pre-populated
+        # self.urls_queue, respect it and skip the generator entirely.
         if submission_mode == SUBMISSION_MODE_PREFILL:
-            response_dicts = self._build_response_dicts(
-                num_submissions, responses, responses_list
-            )
-            num_submissions = len(response_dicts)
-            generator = PrefillLinkGenerator(self.form)
-            self.urls_queue = generator.build_prefill_urls(response_dicts)
-            self.urls_lock = threading.Lock()
+            if not self.urls_queue:
+                response_dicts = self._build_response_dicts(
+                    num_submissions, responses, responses_list
+                )
+                num_submissions = len(response_dicts)
+                generator = PrefillLinkGenerator(self.form)
+                self.urls_queue = generator.build_prefill_urls(response_dicts)
+                self.urls_lock = threading.Lock()
+            else:
+                num_submissions = len(self.urls_queue)
+                if self.urls_lock is None:
+                    self.urls_lock = threading.Lock()
             logger.info(
                 f"Prepared {len(self.urls_queue)} prefill URLs for submission"
             )
+        else:
+            self.urls_queue = None
+            self.urls_lock = None
 
         # Reset status
         self.status = {
