@@ -384,3 +384,21 @@ msgstr "Câu hỏi '{q}' thiếu thông tin entry; vui lòng extract lại form.
 
 msgid "The default email field is not supported in prefill-link mode yet. Remove the email column/answer or use a form question with real entry metadata."
 msgstr "Trường email mặc định chưa hỗ trợ trong chế độ prefill-link. Vui lòng xoá cột/câu trả lời email, hoặc dùng câu hỏi form có entry thật."
+
+msgid "AI generation is now inline: select \"AI Generate\" inside any text question card below."
+msgstr "AI generation hiện đã tích hợp inline: chọn \"AI Generate\" ngay trong từng card câu hỏi text bên dưới."
+
+msgid "Enter your Google Gemini API key (get one at https://aistudio.google.com/apikey):"
+msgstr "Nhập Google Gemini API key (lấy tại https://aistudio.google.com/apikey):"
+
+msgid "API key saved."
+msgstr "Đã lưu API key."
+
+msgid "Failed to generate AI answers"
+msgstr "Tạo câu trả lời AI thất bại"
+
+msgid "An API key is required to use AI Generate."
+msgstr "Cần API key để dùng AI Generate."
+
+msgid "AI Generate only supports text-like questions in this beta."
+msgstr "AI Generate trong beta này chỉ hỗ trợ câu hỏi dạng text."

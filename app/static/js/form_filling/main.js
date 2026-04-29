@@ -83,12 +83,6 @@ function getFormSettings() {
         settings.use_file_data = true;
     }
 
-    // Include AI-generated responses
-    if (window.answerMethod === "aiGenerate" && window.aiGeneratedResponses) {
-        settings.responses = window.aiGeneratedResponses;
-        settings.use_ai_responses = true;
-    }
-
     return settings;
 }
 
@@ -119,23 +113,18 @@ window.stopFormSubmission = async function() {
 function toggleAnswerMethod() {
     const manualRadio = document.getElementById("manual");
     const fileUploadRadio = document.getElementById("fileUpload");
-    const aiGenerateRadio = document.getElementById("aiGenerate");
     const fileUploadSection = document.getElementById("file-upload-section");
-    const aiGenerateSection = document.getElementById("ai-generate-section");
     const questionsContainer = document.getElementById("step-2-questions");
 
-    // Determine selected method
+    // Determine selected method (AI is no longer a separate top-level tab —
+    // it lives inline inside each text question card now).
     if (manualRadio?.checked) {
         window.answerMethod = "manual";
     } else if (fileUploadRadio?.checked) {
         window.answerMethod = "fileUpload";
-    } else if (aiGenerateRadio?.checked) {
-        window.answerMethod = "aiGenerate";
     }
 
-    // Hide all optional sections first
     fileUploadSection?.classList.add("d-none");
-    aiGenerateSection?.classList.add("d-none");
 
     if (window.answerMethod === "manual") {
         questionsContainer?.classList.remove("d-none");
@@ -146,12 +135,6 @@ function toggleAnswerMethod() {
         fileUploadSection?.classList.remove("d-none");
         questionsContainer?.classList.add("d-none");
         window.fileUploaded = false;
-    } else if (window.answerMethod === "aiGenerate") {
-        aiGenerateSection?.classList.remove("d-none");
-        questionsContainer?.classList.remove("d-none");
-        if (window.formQuestionsData) {
-            window.renderQuestionsStep2?.(window.formQuestionsData);
-        }
     }
 }
 
@@ -166,113 +149,44 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Initialize charts for submission monitoring
     initializeCharts();
-
-    // Setup AI functionality
-    setupAIFeatures();
 });
 
-function setupAIFeatures() {
-    const validateBtn = document.getElementById('validate-api-key-btn');
-    const generateBtn = document.getElementById('generate-ai-responses-btn');
-    const apiKeyInput = document.getElementById('gemini-api-key');
-    const statusDiv = document.getElementById('api-key-status');
+/**
+ * Resolve a Gemini API key for inline AI generation.
+ *
+ * Returns localStorage value when present; otherwise prompts the user via a
+ * native popup. Newly entered keys are validated through /validate_api_key
+ * and persisted to localStorage on success. Returns null when the user
+ * cancels or validation fails so callers can short-circuit.
+ */
+window.getOrAskGeminiKey = async function () {
+    const stored = localStorage.getItem('gemini_api_key');
+    if (stored && stored.trim()) return stored.trim();
 
-    // Validate API key button
-    validateBtn?.addEventListener('click', async () => {
-        const apiKey = apiKeyInput?.value?.trim();
-        if (!apiKey) {
-            statusDiv.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle"></i> ${t("pleaseEnterApiKey", "Please enter an API key")}</span>`;
-            return;
-        }
-
-        statusDiv.innerHTML = `<span class="text-info"><i class="fas fa-spinner fa-spin"></i> ${t("validating", "Validating...")}</span>`;
-
-        try {
-            const response = await fetch('/validate_api_key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ api_key: apiKey })
-            });
-            const result = await response.json();
-
-            if (result.valid) {
-                statusDiv.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> ${t("apiKeyValid", "API key is valid!")}</span>`;
-                generateBtn.disabled = false;
-                window.geminiApiKey = apiKey;
-                localStorage.setItem('gemini_api_key', apiKey);
-            } else {
-                statusDiv.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> ${result.error || t("invalidApiKey", "Invalid API key")}</span>`;
-                generateBtn.disabled = true;
-            }
-        } catch (error) {
-            statusDiv.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> Error: ${error.message}</span>`;
-            generateBtn.disabled = true;
-        }
-    });
-
-    // Generate AI responses button
-    generateBtn?.addEventListener('click', async () => {
-        if (!window.currentFormId) {
-            window.showPopup?.(t("pleaseExtractFormFirst", "Please extract a form first."));
-            return;
-        }
-
-        const apiKey = window.geminiApiKey || apiKeyInput?.value?.trim();
-        if (!apiKey) {
-            window.showPopup?.(t("pleaseEnterValidateApiKey", "Please enter and validate your API key first."));
-            return;
-        }
-
-        generateBtn.disabled = true;
-        generateBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> ${t("generating", "Generating...")}`;
-
-        try {
-            const response = await fetch('/generate_response', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    form_id: window.currentFormId,
-                    use_ai: true,
-                    api_key: apiKey
-                })
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                window.aiGeneratedResponses = result.responses;
-                window.showPopup?.(`${t("aiResponsesGenerated", "AI responses generated!")} (${Object.keys(result.responses).length})`, 'success');
-
-                // Show preview of generated responses
-                const questionsContainer = document.getElementById("step-2-questions");
-                if (questionsContainer) {
-                    questionsContainer.innerHTML = `
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle me-2"></i>
-                            <strong>${t("aiResponsesGenerated", "AI responses generated!")}</strong>
-                        </div>
-                        <div class="card p-3">
-                            <h6>${t("generatedResponsesPreview", "Generated Responses Preview:")}</h6>
-                            <pre style="max-height: 300px; overflow: auto; font-size: 12px;">${JSON.stringify(result.responses, null, 2)}</pre>
-                        </div>
-                    `;
-                }
-            } else {
-                window.showPopup?.(result.error || t("failedToGenerateResponses", "Failed to generate responses"), 'error');
-            }
-        } catch (error) {
-            window.showPopup?.("Error: " + error.message, 'error');
-        } finally {
-            generateBtn.disabled = false;
-            generateBtn.innerHTML = `<i class="fas fa-magic me-1"></i> ${t("generateAiResponses", "Generate AI Responses")}`;
-        }
-    });
-
-    // Load saved API key from localStorage
-    const savedKey = localStorage.getItem('gemini_api_key');
-    if (savedKey && apiKeyInput) {
-        apiKeyInput.value = savedKey;
+    const entered = window.prompt(t("aiKeyPrompt", "Enter your Google Gemini API key (get one at https://aistudio.google.com/apikey):"));
+    if (!entered || !entered.trim()) {
+        window.showPopup?.(t("aiKeyRequired", "An API key is required to use AI Generate."), 'warning');
+        return null;
     }
-}
+    const key = entered.trim();
+    try {
+        const res = await fetch('/validate_api_key', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: key })
+        });
+        const result = await res.json().catch(() => ({}));
+        if (res.ok && result.valid) {
+            localStorage.setItem('gemini_api_key', key);
+            window.showPopup?.(t("aiKeySaved", "API key saved."), 'success');
+            return key;
+        }
+        window.showPopup?.(result.error || t("invalidApiKey", "Invalid API key"), 'error');
+    } catch (e) {
+        window.showPopup?.(`${t("invalidApiKey", "Invalid API key")}: ${e.message}`, 'error');
+    }
+    return null;
+};
 
 document.getElementById('extract-form').addEventListener('submit', function (event) {
     event.preventDefault();

@@ -85,6 +85,85 @@ class AIResponder:
             responses[question.question_id] = self.generate_response(question, context)
         return responses
 
+    def generate_text_variations(
+        self,
+        question: Question,
+        count: int,
+        context: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Generate ``count`` distinct text answers for one text-like question.
+
+        Used by the inline AI option on each text/textarea question card
+        (TIP-006). Bypasses ``self._cache`` so repeated clicks return fresh
+        variations rather than the previously cached single answer.
+
+        Falls back to ``count`` copies of ``_fallback_response`` if Gemini
+        returns malformed output.
+        """
+        if count <= 0:
+            return []
+        if question.type not in ("input_text", "textarea"):
+            raise ValueError(
+                f"AI text variations are only supported for input_text/textarea, "
+                f"got '{question.type}'"
+            )
+
+        base = self._build_prompt(question, context).rstrip()
+        if base.endswith("Your response:"):
+            base = base[: -len("Your response:")].rstrip()
+
+        prompt = (
+            f"{base}\n\n"
+            f"Generate {count} distinct realistic answers as a JSON array of "
+            f'strings. Example: ["answer one", "answer two"]. Respond with ONLY '
+            f"the JSON array, no extra commentary.\n\nYour response:"
+        )
+
+        try:
+            response = self.model.generate_content(prompt)
+            answers = self._parse_text_array(response.text)
+            if answers:
+                # Pad/truncate to the exact count requested.
+                if len(answers) < count:
+                    answers = answers + [
+                        self._fallback_response(question)
+                        for _ in range(count - len(answers))
+                    ]
+                return [str(a) for a in answers[:count]]
+        except Exception as e:
+            logger.error(
+                f"AI text variation generation failed for "
+                f"{question.question_id}: {e}"
+            )
+
+        return [str(self._fallback_response(question)) for _ in range(count)]
+
+    @staticmethod
+    def _parse_text_array(text: str) -> Optional[List[str]]:
+        """Best-effort parser: accept a JSON array, possibly surrounded by prose."""
+        if not text:
+            return None
+        candidate = text.strip()
+        try:
+            data = json.loads(candidate)
+            if isinstance(data, list) and data:
+                return [str(x) for x in data]
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+        import re
+
+        match = re.search(r"\[.*\]", candidate, re.DOTALL)
+        if match:
+            try:
+                data = json.loads(match.group(0))
+                if isinstance(data, list) and data:
+                    return [str(x) for x in data]
+            except (json.JSONDecodeError, ValueError):
+                pass
+        return None
+
     def _build_prompt(self, question: Question, context: Optional[str]) -> str:
         """Build the prompt for Gemini based on question type."""
         q_type = question.type

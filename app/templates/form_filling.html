@@ -78,7 +78,7 @@
                 <div class="card bg-light p-3 mb-4">
                     <h5 class="card-title">{{ _('Answer Method') }}</h5>
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="card border-primary p-3 h-100">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="answerMethod" id="manual" value="manual" checked onchange="toggleAnswerMethod()">
@@ -87,7 +87,7 @@
                                 <p class="text-muted small mb-0">{{ _('Configure answers for each field manually') }}</p>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="card border-secondary p-3 h-100">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="answerMethod" id="fileUpload" value="fileUpload" onchange="toggleAnswerMethod()">
@@ -96,16 +96,11 @@
                                 <p class="text-muted small mb-0">{{ _('Upload CSV/JSON/XLSX with answer data') }}</p>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card border-info p-3 h-100">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="answerMethod" id="aiGenerate" value="aiGenerate" onchange="toggleAnswerMethod()">
-                                    <label class="form-check-label" for="aiGenerate"><strong>{{ _('AI Generate') }}</strong></label>
-                                </div>
-                                <p class="text-muted small mb-0">{{ _('Use Gemini AI for smart responses') }}</p>
-                            </div>
-                        </div>
                     </div>
+                    <p class="text-muted small mt-2 mb-0">
+                        <i class="fas fa-robot me-1"></i>
+                        {{ _('AI generation is now inline: select "AI Generate" inside any text question card below.') }}
+                    </p>
                 </div>
 
                 <!-- File Upload Section (Hidden by Default) -->
@@ -121,27 +116,7 @@
                     </form>
                 </div>
 
-                <!-- AI Generate Section (Hidden by Default) -->
-                <div id="ai-generate-section" class="mt-3 d-none">
-                    <div class="card border-info p-3">
-                        <h6><i class="fas fa-robot me-2"></i>{{ _('Gemini AI Configuration') }}</h6>
-                        <div class="input-group mb-3">
-                            <span class="input-group-text"><i class="fas fa-key"></i></span>
-                            <input type="password" class="form-control" id="gemini-api-key" placeholder="{{ _('Enter your Gemini API key') }}">
-                            <button class="btn btn-outline-info" type="button" id="validate-api-key-btn">
-                                <i class="fas fa-check-circle me-1"></i> {{ _('Validate') }}
-                            </button>
-                        </div>
-                        <div id="api-key-status" class="mb-3"></div>
-                        <p class="text-muted small mb-2">
-                            <i class="fas fa-info-circle"></i> {{ _('Get your API key from') }}
-                            <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
-                        </p>
-                        <button class="btn btn-info" type="button" id="generate-ai-responses-btn" disabled>
-                            <i class="fas fa-magic me-1"></i> {{ _('Generate AI Responses') }}
-                        </button>
-                    </div>
-                </div>
+                <!-- AI Generate is now inline per text question (TIP-006) -->
 
                 <!-- ✅ Đây là chỗ sẽ render các câu hỏi -->
                 <div id="step-2-questions" class="mt-3">    
@@ -346,7 +321,12 @@ window.i18n = {
     pending: {{ _('Pending') | tojson }},
     unsupportedFeaturePopup: {{ _('This feature is being developed and will be available in the next update.') | tojson }},
     prefillMissingEntry: {{ _("Question '{q}' is missing entry metadata; please re-extract the form. A future fallback may ask you for a prefill link.") | tojson }},
-    prefillEmailNotSupportedBlock: {{ _('The default email field is not supported in prefill-link mode yet. Remove the email column/answer or use a form question with real entry metadata.') | tojson }}
+    prefillEmailNotSupportedBlock: {{ _('The default email field is not supported in prefill-link mode yet. Remove the email column/answer or use a form question with real entry metadata.') | tojson }},
+    aiKeyPrompt: {{ _('Enter your Google Gemini API key (get one at https://aistudio.google.com/apikey):') | tojson }},
+    aiKeySaved: {{ _('API key saved.') | tojson }},
+    aiGenerateFailed: {{ _('Failed to generate AI answers') | tojson }},
+    aiKeyRequired: {{ _('An API key is required to use AI Generate.') | tojson }},
+    aiOnlyForText: {{ _('AI Generate only supports text-like questions in this beta.') | tojson }}
 };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>

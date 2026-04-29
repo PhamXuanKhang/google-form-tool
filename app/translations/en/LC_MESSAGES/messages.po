@@ -384,3 +384,21 @@ msgstr "Question '{q}' is missing entry metadata; please re-extract the form. A 
 
 msgid "The default email field is not supported in prefill-link mode yet. Remove the email column/answer or use a form question with real entry metadata."
 msgstr "The default email field is not supported in prefill-link mode yet. Remove the email column/answer or use a form question with real entry metadata."
+
+msgid "AI generation is now inline: select \"AI Generate\" inside any text question card below."
+msgstr "AI generation is now inline: select \"AI Generate\" inside any text question card below."
+
+msgid "Enter your Google Gemini API key (get one at https://aistudio.google.com/apikey):"
+msgstr "Enter your Google Gemini API key (get one at https://aistudio.google.com/apikey):"
+
+msgid "API key saved."
+msgstr "API key saved."
+
+msgid "Failed to generate AI answers"
+msgstr "Failed to generate AI answers"
+
+msgid "An API key is required to use AI Generate."
+msgstr "An API key is required to use AI Generate."
+
+msgid "AI Generate only supports text-like questions in this beta."
+msgstr "AI Generate only supports text-like questions in this beta."

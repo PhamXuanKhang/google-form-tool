@@ -26,13 +26,16 @@ Dat khi:
 - App mo duoc tai `http://localhost:5000`.
 - Neu integration fail vi Chrome crash trong sandbox, chay lai ngoai sandbox/terminal thuong.
 
-Ket qua thuc te:
+Ket qua thuc te (TIP-007 verification):
 
 ```text
-Paste output o day.
+pytest -q                    -> 121 passed, 1 deselected in 2.77s
+pytest -m integration -q     -> 1 passed, 121 deselected in 32.39s
+                                (test_extract_form_data_structure against TEST_GOOGLE_FORM_URL real)
+run_local.ps1                -> UNTESTED automatically; chay tay tren may homeowner.
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW
+Danh gia: PASS (automated) / NEEDS REVIEW (run_local manual)
 
 ## 1. Extract Form
 
@@ -137,7 +140,21 @@ Row nao bi sai/khong load:
 
 Danh gia: PASS / FAIL / NEEDS REVIEW
 
-## 4. AI Text Generation
+## 4. AI Text Generation Dropdown Gating (TIP-006.1)
+
+Sau khi extract form co du 4 loai cau hoi text-like, kiem tra dropdown
+"Answer Type" trong tung card cau hoi tai Step 2:
+
+```text
+Cau hoi input_text  -> dropdown CO option "AI Generate"
+Cau hoi textarea    -> dropdown CO option "AI Generate"
+Cau hoi date        -> dropdown KHONG co option "AI Generate"
+Cau hoi time        -> dropdown KHONG co option "AI Generate"
+```
+
+Danh gia: PASS / FAIL / NEEDS REVIEW
+
+## 4.1. AI Text Generation
 
 Trang thai mong muon cho beta sap toi:
 
@@ -198,48 +215,107 @@ Log/error neu co:
 
 Danh gia: PASS / FAIL / NEEDS REVIEW
 
-## 6. Prefill-Link Mode - Target Beta Flow
+## 6. Prefill-Link Mode - Real Form Smoke Test
 
-Quyet dinh san pham: uu tien prefill-link mode nhung khong bat user tu nhap prefill link neu co the lay entry tu extract.
+**MUST start with `num_submissions=2-3`, `concurrent_threads=1`.** Increase only after a clean run. Verification requires checking Google Form actual response count, NOT just app status.
 
-Target UX:
+### 6.0 Pre-conditions
 
-1. User paste Google Form URL va bam `Extract`.
-2. Backend extract luon `entry.<id>` tu Google Forms DOM/data-params.
-3. Step 2 dung config hien co: answers, option percentages, file data, AI text.
-4. Backend sinh prefill URLs noi bo.
-5. Submitter mo tung prefill URL, click Next/Submit, va verify success.
+- `.env` has `TEST_GOOGLE_FORM_URL=<owned-test-form-viewform-url>`.
+- Test form is owned by you so you can read response count.
+- Chrome/ChromeDriver paths set in `.env`.
+- App running at `http://localhost:5000`.
 
-Fallback neu khong lay duoc entry tu DOM:
+### 6.1 Steps
 
-- Hien popup huong dan user lay prefill link tu Google Form:
-  - Mo form owner UI.
-  - Bam menu ba cham.
-  - Chon `Get pre-filled link`.
-  - Dien moi cau hoi mot gia tri mau.
-  - Bam `Get link`.
-  - Paste link vao app.
-- App parse `entry.<id>` tu link va map lai voi cau hoi da extract.
+1. Open `http://localhost:5000/form_filling`.
+2. Paste the test form URL → click `Extract`. Confirm Step 1 preview shows title/pages/questions.
+3. Open Google Form responses page in another tab. Note **response count BEFORE**.
+4. Click `Next Step` → choose `Manual Input` → fill at least one text answer + one option distribution → click `Next Step` → Step 3.
+5. Step 3: set `Number of submissions = 2`, `Concurrent threads = 1`, `Minimum delay = 1`, `Maximum delay = 2`. Click `Review and Start`.
+6. Step 4: click `Start Automation`. Watch progress to 100%, success/fail, elapsed.
+7. Refresh Google Form responses page. Note **response count AFTER**.
+8. Open `/submission_history?form_id=<id>` (or app history UI) — confirm a new batch row exists.
 
-Dat khi:
+### 6.2 Expected request payload (devtools Network -> /start_submission)
 
-- User binh thuong khong can nhap prefill link.
-- Chi form nao extract entry that bai moi can fallback.
-- Distribution tu Step 2 sinh ra dung so link va dung ty le.
-- Checkbox co the sinh nhieu value tren cung mot `entry`.
-- Other option duoc danh dau la tinh nang sau neu chua implement.
-
-Can ghi lai sau khi implement:
-
-```text
-Lay entry tu extract: YES/NO
-Neu NO, fallback prefill link co parse duoc khong:
-So prefill URLs sinh ra:
-Submit thanh cong:
-Sai mapping cau hoi nao:
+```json
+{
+  "form_id": "f_<deterministic-id>",
+  "form_url": "https://docs.google.com/forms/d/e/.../viewform",
+  "num_submissions": 2,
+  "concurrent_threads": 1,
+  "min_delay": 1,
+  "max_delay": 2,
+  "submission_mode": "prefill_link"
+}
 ```
 
-Danh gia: PASS / FAIL / NEEDS REVIEW / NOT IMPLEMENTED
+`submission_mode` MUST be present and equal to `"prefill_link"` — sent explicitly by `getFormSettings()` even though the backend defaults to it (TIP-005).
+
+### 6.3 Acceptance
+
+- App reports `Completed = Total`, success rate >= 80%.
+- **Google Form response count increased by exactly the success count** (not by Total - the failed ones must NOT have created responses).
+- `/submission_history` lists the new batch with matching `success_rate` and `time_used`.
+- Browser visit to one of the prefill URLs (paste manually if you grabbed it from logs) shows fields pre-filled.
+
+### 6.4 Paste result here
+
+```text
+Form URL used:
+Response count BEFORE:
+Response count AFTER:
+Delta (AFTER - BEFORE):
+App-reported success/total:
+App-reported success_rate:
+Submission history row appeared: YES/NO
+Any error in app log:
+```
+
+Danh gia: PASS / FAIL / NEEDS REVIEW / UNTESTED
+
+## 6.1.b Per-question-type matrix
+
+For each type below, configure 1 question of that type (Manual mode), submit 2-3 responses with prefill mode, and check the Google Form response page.
+
+```text
+Type             | Configured value(s)         | Response shows correctly? (Y/N)
+---------------- | --------------------------- | -------------------------------
+input_text       |                             |
+textarea         |                             |
+input_email      |                             |
+multiple_choice  |                             |
+checkbox         |                             |
+dropdown         |                             |
+linear_scale     |                             |
+date             | YYYY-MM-DD                  |
+time             | HH:MM                       |
+unsupported popup (rank present): triggered? Y/N
+q_email gate (manual answer typed for default email): popup shown? Y/N
+```
+
+Danh gia: PASS / FAIL / NEEDS REVIEW / UNTESTED
+
+## 6.5 Inline AI flow (TIP-006) — only if Gemini API key available
+
+1. Step 2, on a text/textarea card, change `Answer Type` to `AI Generate`.
+2. Click `Generate`. With no key in localStorage, expect a popup asking for the key.
+3. Cancel once → expect "API key required" popup, no answers generated.
+4. Click again → enter a valid key → expect "API key saved" toast → textarea fills with N answers.
+5. Reload the page → click Generate again → expect NO popup (key reused from localStorage).
+
+Paste result here:
+
+```text
+Popup appeared with no key: Y/N
+Cancel produced "API key required": Y/N
+Valid key saved + answers populated: Y/N
+Reload reused key (no popup): Y/N
+Notes/error if any:
+```
+
+Danh gia: PASS / FAIL / NEEDS REVIEW / UNTESTED (no API key)
 
 ## 6.1. Prefill Compatibility Gate (Frontend)
 
@@ -291,15 +367,19 @@ Danh gia: PASS / FAIL / NEEDS REVIEW
 Tong hop:
 
 ```text
-Setup check:
-Extract:
-Manual config:
-File upload:
-AI text generation:
-DOM fill submit:
-Prefill-link mode:
-Unsupported feature popup:
-History/export:
+Setup check:                  PASS (automated unit + integration extract)
+Extract:                      PASS (integration extract against TEST_GOOGLE_FORM_URL)
+Manual config:                UNTESTED (manual run required)
+File upload:                  UNTESTED (manual run required)
+AI dropdown gating:           PASS (test_ai_generator_gating, source-level)
+Inline AI text generation:    UNTESTED (requires Gemini key)
+DOM fill submit:              UNTESTED (legacy path, manual run required)
+Prefill-link mode (real form): UNTESTED (requires response-count check by homeowner)
+Per-question-type matrix:     UNTESTED (manual run required)
+Prefill compatibility gate:   PASS (Node JS suite via pytest, 20 assertions)
+Unsupported feature popup:    PASS (covered by gate suite)
+q_email gate:                 PASS (covered by gate suite)
+History/export:               PASS (test_submission_persistence covers history; UI verify pending)
 ```
 
 Quyet dinh:

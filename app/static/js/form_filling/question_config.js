@@ -57,6 +57,11 @@ function renderQuestionsStep2(formData) {
                 `;
 
             } else if (["input_text", "textarea", "date", "time"].includes(type)) {
+                // AI Generate is only meaningful for free-text questions (TIP-006).
+                // date/time keep the deterministic generators only.
+                const aiOption = (type === "input_text" || type === "textarea")
+                    ? `<option>AI Generate</option>`
+                    : "";
                 qEl.innerHTML = `
                     ${qTitle}
                     <div class="d-flex align-items-center mb-2">
@@ -67,7 +72,7 @@ function renderQuestionsStep2(formData) {
                             <option>Date</option>
                             <option>Hour</option>
                             <option>Minute</option>
-                            <option>AI Generate</option>
+                            ${aiOption}
                         </select>
                         <button class="btn btn-sm btn-outline-primary generate-answer-btn"><i class="fas fa-magic me-1"></i> Generate</button>
                     </div>
@@ -146,15 +151,66 @@ function renderQuestionsStep2(formData) {
     });
 
     document.querySelectorAll(".generate-answer-btn").forEach(button => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
             const card = button.closest(".card");
             const generatorType = card.querySelector(".answer-generator-type")?.value || "Text";
             const textarea = card.querySelector(".answer-textarea");
             if (!textarea) return;
 
+            if (String(generatorType).toLowerCase() === "ai generate") {
+                await runInlineAIGenerate(card, button, textarea);
+                return;
+            }
+
             textarea.value = generateValues(generatorType, getTargetCount()).join("\n");
         });
     });
+}
+
+async function runInlineAIGenerate(card, button, textarea) {
+    const t = (key, fallback) => window.i18n?.[key] || fallback;
+    const questionType = card.dataset.questionType;
+    const questionId = card.dataset.questionId;
+
+    if (!["input_text", "textarea"].includes(questionType)) {
+        window.showPopup?.(t("aiOnlyForText", "AI Generate only supports text-like questions in this beta."), 'warning');
+        return;
+    }
+    if (!window.currentFormId) {
+        window.showPopup?.(t("pleaseExtractFormFirst", "Please extract a form first."), 'warning');
+        return;
+    }
+
+    const apiKey = await (window.getOrAskGeminiKey?.() || Promise.resolve(null));
+    if (!apiKey) return;  // user cancelled or key invalid; popup already shown
+
+    const originalLabel = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> ${t("generating", "Generating...")}`;
+
+    try {
+        const res = await fetch('/generate_ai_text_answers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                form_id: window.currentFormId,
+                question_id: questionId,
+                api_key: apiKey,
+                count: getTargetCount(),
+            }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || !result.success) {
+            window.showPopup?.(result.error || t("aiGenerateFailed", "Failed to generate AI answers"), 'error');
+            return;
+        }
+        textarea.value = (result.answers || []).join("\n");
+    } catch (e) {
+        window.showPopup?.(`${t("aiGenerateFailed", "Failed to generate AI answers")}: ${e.message}`, 'error');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalLabel;
+    }
 }
 
 
