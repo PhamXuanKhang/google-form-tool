@@ -3,6 +3,7 @@ from app.models import Form, Page, Question
 from app.core.form_extractor import DriverStartupError, FormExtractor
 
 
+@pytest.mark.integration
 def test_extract_form_data_structure(extractor, sample_form_url):
     form_data: Form = extractor.extract_form_data(sample_form_url)
 
