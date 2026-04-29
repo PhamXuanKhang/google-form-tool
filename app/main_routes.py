@@ -379,6 +379,69 @@ def save_edit():
 #############################
 
 active_submitters: dict = {}
+MAX_SUBMISSIONS_PER_BATCH = 500
+MAX_CONCURRENT_THREADS = 10
+
+
+def _parse_integer_field(value, field_label, minimum, maximum):
+    if isinstance(value, bool) or value is None:
+        raise ValueError(f"{field_label} must be an integer from {minimum} to {maximum}.")
+
+    if isinstance(value, str):
+        value = value.strip()
+        if not value.isdigit():
+            raise ValueError(f"{field_label} must be an integer from {minimum} to {maximum}.")
+        value = int(value)
+    elif isinstance(value, int):
+        pass
+    else:
+        raise ValueError(f"{field_label} must be an integer from {minimum} to {maximum}.")
+
+    if value < minimum or value > maximum:
+        raise ValueError(f"{field_label} must be between {minimum} and {maximum}.")
+
+    return value
+
+
+def _parse_delay_field(value, field_label):
+    if isinstance(value, bool) or value is None:
+        raise ValueError(f"{field_label} must be a non-negative number.")
+
+    try:
+        delay = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{field_label} must be a non-negative number.")
+
+    if delay < 0:
+        raise ValueError(f"{field_label} must be a non-negative number.")
+
+    return delay
+
+
+def _validate_submission_request(data):
+    num_submissions = _parse_integer_field(
+        data.get('num_submissions', 1),
+        "Number of submissions",
+        1,
+        MAX_SUBMISSIONS_PER_BATCH
+    )
+    concurrent_threads = _parse_integer_field(
+        data.get('concurrent_threads', 1),
+        "Concurrent threads",
+        1,
+        MAX_CONCURRENT_THREADS
+    )
+
+    if concurrent_threads > num_submissions:
+        raise ValueError("Concurrent threads cannot be greater than the number of submissions.")
+
+    min_delay = _parse_delay_field(data.get('min_delay', 1), "Minimum delay")
+    max_delay = _parse_delay_field(data.get('max_delay', 5), "Maximum delay")
+
+    if max_delay < min_delay:
+        raise ValueError("Maximum delay must be greater than or equal to minimum delay.")
+
+    return num_submissions, concurrent_threads, min_delay, max_delay
 
 
 def _cleanup_finished_submitters():
@@ -398,13 +461,9 @@ def start_submission():
     - Supports concurrent submissions for different forms
     - Accepts optional responses_list for data-driven submission
     """
-    data = request.get_json()
+    data = request.get_json() or {}
 
     form_id = data.get('form_id')
-    num_submissions = data.get('num_submissions', 1)
-    concurrent_threads = data.get('concurrent_threads', 1)
-    min_delay = data.get('min_delay', 1)
-    max_delay = data.get('max_delay', 5)
     responses_list = data.get('responses_list')
     responses = data.get('responses')
     use_file_data = data.get('use_file_data', False)
@@ -412,6 +471,11 @@ def start_submission():
 
     if not form_id:
         return jsonify({"error": "No form_id provided"}), 400
+
+    try:
+        num_submissions, concurrent_threads, min_delay, max_delay = _validate_submission_request(data)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
     _cleanup_finished_submitters()
 
