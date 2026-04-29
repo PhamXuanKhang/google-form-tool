@@ -10,6 +10,7 @@ import pytest
 import json
 import tempfile
 import os
+import random
 from io import BytesIO
 from app.core.form_processor import FormProcessor
 from app.models import Form, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
@@ -106,6 +107,69 @@ class TestRandomResponses:
         assert isinstance(q3_response, list)
         for item in q3_response:
             assert item in ["Reading", "Sports"]
+
+    def test_question_fill_percentage_zero_skips_question(self, processor):
+        q1 = processor.form.response_config.pages[0].questions[0]
+        q1.answer_config.fill_percentage = 0
+
+        responses = processor.generate_random_responses(fill_percentage=100)
+
+        assert "q1" not in responses
+
+    def test_text_question_uses_configured_answers(self, processor):
+        q1 = processor.form.response_config.pages[0].questions[0]
+        q1.answer_config.answers = ["Alice", "Bob"]
+
+        responses = processor.generate_random_responses(fill_percentage=100)
+
+        assert responses["q1"] in ["Alice", "Bob"]
+
+    def test_multiple_choice_uses_weighted_percentages(self, processor):
+        q2 = processor.form.response_config.pages[0].questions[1]
+        q2.answer_config.options = [
+            AnswerOption(text="Red", percentage=100),
+            AnswerOption(text="Blue", percentage=0),
+        ]
+
+        responses = processor.generate_random_responses(fill_percentage=100)
+
+        assert responses["q2"] == "Red"
+
+    def test_multiple_choice_zero_weights_falls_back_to_random_option(self, processor, monkeypatch):
+        q2 = processor.form.response_config.pages[0].questions[1]
+        q2.answer_config.options = [
+            AnswerOption(text="Red", percentage=0),
+            AnswerOption(text="Blue", percentage=0),
+        ]
+        monkeypatch.setattr(random, "choice", lambda options: options[1])
+
+        responses = processor.generate_random_responses(fill_percentage=100)
+
+        assert responses["q2"] == "Blue"
+
+    def test_checkbox_uses_independent_option_percentages(self, processor):
+        q3 = processor.form.response_config.pages[0].questions[2]
+        q3.answer_config.options = [
+            AnswerOption(text="Reading", percentage=100),
+            AnswerOption(text="Sports", percentage=0),
+        ]
+
+        responses = processor.generate_random_responses(fill_percentage=100)
+
+        assert responses["q3"] == ["Reading"]
+
+    def test_checkbox_zero_weights_keeps_existing_random_fallback(self, processor, monkeypatch):
+        q3 = processor.form.response_config.pages[0].questions[2]
+        q3.answer_config.options = [
+            AnswerOption(text="Reading", percentage=0),
+            AnswerOption(text="Sports", percentage=0),
+        ]
+        monkeypatch.setattr(random, "randint", lambda start, end: 1)
+        monkeypatch.setattr(random, "sample", lambda options, count: [options[0]])
+
+        responses = processor.generate_random_responses(fill_percentage=100)
+
+        assert responses["q3"] == ["Reading"]
 
 
 class TestLoadDataFromFile:

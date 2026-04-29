@@ -347,15 +347,15 @@ function initializeCharts() {
         window.resourceChart = new Chart(resourceCtx, {
             type: 'line',
             data: {
-                labels: Array(10).fill(''),
+                labels: [],
                 datasets: [{
                     label: 'CPU Usage',
-                    data: Array(10).fill(0),
+                    data: [],
                     borderColor: '#007bff',
                     tension: 0.1
                 }, {
                     label: 'Memory Usage',
-                    data: Array(10).fill(0),
+                    data: [],
                     borderColor: '#20c997',
                     tension: 0.1
                 }]
@@ -366,6 +366,7 @@ function initializeCharts() {
                 scales: {
                     y: {
                         beginAtZero: true,
+                        min: 0,
                         max: 100
                     }
                 }

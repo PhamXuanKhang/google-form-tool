@@ -216,8 +216,7 @@ class FormProcessor:
                 continue
                 
             for question in page.questions:
-                # Skip some questions based on fill_percentage
-                if random.randint(1, 100) > fill_percentage:
+                if not self._should_fill_question(question, fill_percentage):
                     continue
                     
                 response = self._generate_response_for_question(question)
@@ -239,6 +238,11 @@ class FormProcessor:
         """
         q_type = question.type
         
+        if q_type in ["input_text", "input_email", "textarea", "date", "time"]:
+            configured_answer = self._select_configured_answer(question)
+            if configured_answer is not None:
+                return configured_answer
+
         if q_type == "input_text":
             return self._generate_text_response(5, 20)
         
@@ -248,14 +252,16 @@ class FormProcessor:
         elif q_type == "textarea":
             return self._generate_text_response(20, 100)
         
-        elif q_type in ["multiple_choice", "dropdown"]:
+        elif q_type in ["multiple_choice", "dropdown", "linear_scale"]:
+            configured_option = self._select_weighted_option(question)
+            if configured_option is not None:
+                return configured_option
+            if q_type == "linear_scale":
+                return self._generate_scale_response()
             return self._select_random_option(question)
         
         elif q_type == "checkbox":
             return self._select_multiple_options(question)
-        
-        elif q_type == "linear_scale":
-            return self._generate_scale_response()
         
         elif q_type == "date":
             return self._generate_date()
@@ -269,6 +275,44 @@ class FormProcessor:
         else:
             logger.warning(f"Unsupported question type: {q_type}")
             return None
+
+    def _should_fill_question(self, question: Question, global_fill_percentage: int) -> bool:
+        """Return whether a question should be answered for this generated response."""
+        question_fill = None
+        if question.answer_config and question.answer_config.fill_percentage is not None:
+            question_fill = question.answer_config.fill_percentage
+
+        fill_percentage = question_fill if question_fill is not None else global_fill_percentage
+        fill_percentage = max(0, min(100, float(fill_percentage)))
+
+        if fill_percentage <= 0:
+            return False
+        if fill_percentage >= 100:
+            return True
+        return random.random() * 100 < fill_percentage
+
+    def _select_configured_answer(self, question: Question) -> Optional[Any]:
+        """Select from user-configured text-like answers when available."""
+        if not question.answer_config or not question.answer_config.answers:
+            return None
+
+        answers = [answer for answer in question.answer_config.answers if answer not in (None, "")]
+        if not answers:
+            return None
+
+        return random.choice(answers)
+
+    def _select_weighted_option(self, question: Question) -> Optional[str]:
+        """Select a single option using configured percentages when available."""
+        if not question.answer_config or not question.answer_config.options:
+            return None
+
+        options = question.answer_config.options
+        weights = [max(0, float(option.percentage or 0)) for option in options]
+        if sum(weights) <= 0:
+            return random.choice([option.text for option in options])
+
+        return random.choices(options, weights=weights, k=1)[0].text
     
     def _generate_text_response(self, min_length: int, max_length: int) -> str:
         """Generate a random text string of specified length"""
@@ -299,8 +343,17 @@ class FormProcessor:
         """Select multiple random options for a checkbox question"""
         if not question.answer_config or not question.answer_config.options:
             return ["Option 1"]  # Default fallback
+
+        configured_options = question.answer_config.options
+        weights = [max(0, float(option.percentage or 0)) for option in configured_options]
+        if any(weight > 0 for weight in weights):
+            return [
+                option.text
+                for option, weight in zip(configured_options, weights)
+                if random.random() * 100 < weight
+            ]
         
-        options = [opt.text for opt in question.answer_config.options]
+        options = [opt.text for opt in configured_options]
         # Select 1 to all options
         num_to_select = random.randint(1, len(options))
         

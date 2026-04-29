@@ -140,6 +140,7 @@ async function updateSubmissionStatus() {
         
         // Update UI with status data
         updateStatusDisplay(statusData);
+        await updateSystemResources();
         
         // If submission is no longer running, stop monitoring
         if (!statusData.running) {
@@ -238,6 +239,63 @@ function updateCharts(statusData) {
     }
     
     // Update other charts as needed
+}
+
+async function updateSystemResources() {
+    try {
+        const response = await fetch('/system_status');
+        if (!response.ok) {
+            console.warn('System status request failed:', response.status);
+            return;
+        }
+
+        const resourceData = await response.json();
+        updateResourceDisplay(resourceData);
+    } catch (error) {
+        console.warn('Error updating system resources:', error);
+    }
+}
+
+function updateResourceDisplay(resourceData) {
+    const cpuValue = normalizePercent(
+        resourceData?.cpu?.system_cpu ?? resourceData?.cpu?.process_cpu ?? 0
+    );
+    const ramValue = normalizePercent(resourceData?.memory?.memory_percent ?? 0);
+
+    const cpuElement = document.getElementById('resource-cpu-current');
+    const ramElement = document.getElementById('resource-ram-current');
+    if (cpuElement) {
+        cpuElement.textContent = `CPU: ${cpuValue.toFixed(1)}%`;
+    }
+    if (ramElement) {
+        ramElement.textContent = `RAM: ${ramValue.toFixed(1)}%`;
+    }
+
+    if (!window.resourceChart) {
+        return;
+    }
+
+    const now = new Date();
+    const label = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const labels = window.resourceChart.data.labels;
+    const cpuData = window.resourceChart.data.datasets[0].data;
+    const ramData = window.resourceChart.data.datasets[1].data;
+
+    labels.push(label);
+    cpuData.push(cpuValue);
+    ramData.push(ramValue);
+
+    while (labels.length > 10) labels.shift();
+    while (cpuData.length > 10) cpuData.shift();
+    while (ramData.length > 10) ramData.shift();
+
+    window.resourceChart.update();
+}
+
+function normalizePercent(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return 0;
+    return Math.max(0, Math.min(100, number));
 }
 
 /**

@@ -254,7 +254,9 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h5>{{ _('Submission Status') }}</h5>
-                                    <canvas id="submission-chart" height="200"></canvas>
+                                    <div class="monitor-chart-container" style="height: 240px;">
+                                        <canvas id="submission-chart" style="width: 100%; height: 100%;"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -262,7 +264,14 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h5>{{ _('System Resources') }}</h5>
-                                    <canvas id="resource-chart" height="200"></canvas>
+                                    <div class="small text-muted mb-2">
+                                        <span id="resource-cpu-current">CPU: 0%</span>
+                                        <span class="mx-2">|</span>
+                                        <span id="resource-ram-current">RAM: 0%</span>
+                                    </div>
+                                    <div class="monitor-chart-container" style="height: 240px;">
+                                        <canvas id="resource-chart" style="width: 100%; height: 100%;"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
