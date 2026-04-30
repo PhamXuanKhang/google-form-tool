@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 from typing import Any, Dict, Iterable, List, Tuple
-from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
+from urllib.parse import quote_plus, urlsplit, urlunsplit
 
 from app.models import Form, Question
 from app.logging_config import logger
@@ -66,28 +66,17 @@ class PrefillLinkGenerator:
     def _normalize_base_url(url: str) -> str:
         """Normalize the stored form URL to a Google Forms ``/viewform`` URL.
 
-        Preserves the form ID path and any non-answer query parameters (answer
-        params, ``usp``, are stripped here and re-added in :meth:`_compose_url`).
+        Match the old prefill-link script: keep only the form path and start
+        every generated link from ``?usp=pp_url``.
         """
         parts = urlsplit(url)
         path = parts.path or ""
-        # /formResponse and /viewform both target the same form id; prefill
-        # links must use /viewform so users see the rendered form.
         for suffix in ("/formResponse", "/viewform"):
             if path.endswith(suffix):
                 path = path[: -len(suffix)]
                 break
         path = path.rstrip("/") + "/viewform"
-
-        # Drop any pre-existing entry.* params and usp; keep everything else.
-        kept_query = [
-            (k, v)
-            for k, v in parse_qsl(parts.query, keep_blank_values=True)
-            if not k.startswith("entry.") and k != "usp"
-        ]
-        return urlunsplit(
-            (parts.scheme, parts.netloc, path, urlencode(kept_query), "")
-        )
+        return urlunsplit((parts.scheme, parts.netloc, path, "usp=pp_url", ""))
 
     def _resolve_entry(self, key: str) -> Tuple[str, Question]:
         entry_param = self._entry_lookup.get(key)
@@ -151,10 +140,15 @@ class PrefillLinkGenerator:
         return str(value)
 
     def _compose_url(self, params: List[Tuple[str, str]]) -> str:
-        parts = urlsplit(self._base_url)
-        existing = parse_qsl(parts.query, keep_blank_values=True)
-        merged = existing + params + [("usp", "pp_url")]
-        query = urlencode(merged, doseq=False)
-        url = urlunsplit((parts.scheme, parts.netloc, parts.path, query, ""))
+        encoded_params = []
+        for entry_param, value in params:
+            if value.startswith("__other_option__&"):
+                encoded_params.append(f"{entry_param}=__other_option__")
+                encoded_params.append(value.split("&", 1)[1])
+            else:
+                encoded_params.append(f"{entry_param}={quote_plus(value)}")
+
+        suffix = f"&{'&'.join(encoded_params)}" if encoded_params else ""
+        url = f"{self._base_url}{suffix}"
         logger.debug("Built prefill URL with %d answer params", len(params))
         return url

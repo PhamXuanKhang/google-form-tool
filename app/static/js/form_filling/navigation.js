@@ -92,9 +92,8 @@ function syncSettingsFromExistingFormCount() {
     const settingsFormCount = document.getElementById("settings-form-count");
     const existingFormCount = document.getElementById("form-count");
 
-    if (settingsFormCount && existingFormCount && !settingsFormCount.dataset.syncedFromStep2) {
+    if (settingsFormCount && existingFormCount) {
         settingsFormCount.value = existingFormCount.value || settingsFormCount.value;
-        settingsFormCount.dataset.syncedFromStep2 = "true";
     }
 }
 

@@ -135,6 +135,17 @@ def test_start_submission_does_not_pass_route_storage_to_thread(client, sample_f
     assert captured["args"][1] == sample_form.id
 
 
+def test_stop_submission_accepts_empty_json_body(client):
+    response = client.post(
+        "/stop_submission",
+        data="",
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["success"] is True
+
+
 def post_invalid_submission_request(client, monkeypatch, sample_form, payload):
     def fail_if_storage_opens():
         raise AssertionError("storage should not be opened for invalid submission settings")

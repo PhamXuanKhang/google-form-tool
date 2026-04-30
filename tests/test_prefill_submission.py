@@ -157,6 +157,63 @@ def test_start_submission_default_mode_is_prefill(client, monkeypatch, patch_thr
     assert args[-1] == SUBMISSION_MODE_PREFILL
 
 
+def test_start_submission_prefill_prepares_queue_before_thread(client, monkeypatch, patch_thread):
+    form = _build_prefill_form()
+    monkeypatch.setattr(
+        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
+    )
+
+    captured = {}
+
+    class CapturingSubmitter(FormSubmitter):
+        def prepare_prefill_queue(self, *args, **kwargs):
+            captured["called"] = True
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return 2, {}, "https://docs.google.com/forms/d/e/FAKEID/viewform?usp=pp_url&entry.111=Alice"
+
+    monkeypatch.setattr(form_submitter_module, "FormSubmitter", CapturingSubmitter)
+
+    response = _post_start(client)
+    data = response.get_json()
+
+    assert response.status_code == 200
+    assert data["success"] is True
+    assert data["prepared_count"] == 2
+    assert captured["called"] is True
+    assert patch_thread.instances[0].started is True
+
+
+def test_prepare_prefill_queue_keeps_rank_question():
+    form = _build_prefill_form()
+    form.response_config.pages[0].questions.append(
+        Question(
+            question_id="333",
+            entry_id="entry.333",
+            type="rank",
+            text="Rank?",
+            answer_config=AnswerConfig(
+                fill_percentage=None,
+                answers=None,
+                options=[
+                    AnswerOption(text="1", percentage=100),
+                    AnswerOption(text="2", percentage=0),
+                ],
+            ),
+        )
+    )
+    submitter = FormSubmitter(form)
+
+    prepared_count, skipped_summary, debug_sample = submitter.prepare_prefill_queue(
+        1, responses=None, responses_list=None, include_debug_sample=True
+    )
+
+    assert prepared_count == 1
+    assert skipped_summary == {}
+    assert "entry.333=1" in submitter.urls_queue[0]
+    assert debug_sample == submitter.urls_queue[0]
+
+
 def test_start_submission_accepts_dom_fill(client, monkeypatch, patch_thread):
     form = _build_prefill_form()
     monkeypatch.setattr(
@@ -226,12 +283,51 @@ class FakeWebDriverWait:
         self.driver = driver
 
     def until(self, condition):
-        # Returning truthy is sufficient to advance past the wait calls.
-        return True
+        from selenium.common.exceptions import TimeoutException
+        from selenium.webdriver.support import expected_conditions as EC
+
+        # staleness_of is always True in tests (page navigates after Submit click).
+        if isinstance(EC.staleness_of, type) and isinstance(condition, EC.staleness_of):
+            return True
+        if getattr(condition, "__qualname__", "") == "staleness_of.<locals>._predicate":
+            return True
+
+        try:
+            result = condition(self.driver)
+            if not result:
+                raise TimeoutException("Condition returned falsy")
+            return result
+        except TimeoutException:
+            raise
+        except Exception:
+            raise TimeoutException("Condition threw exception")
 
 
 class FakeElement:
-    pass
+    def __init__(self, text="", kind=None):
+        self.text = text
+        self.kind = kind
+
+    def is_enabled(self):
+        return True
+
+    def is_displayed(self):
+        return True
+
+
+class FakeTextDriver:
+    def __init__(self, containers=None, elements=None):
+        self.containers = containers or []
+        self.elements = elements or []
+
+    def find_elements(self, by, xpath):
+        if xpath == "//div[@data-params]":
+            return self.containers
+        if xpath == "//div[@role='button']":
+            return self.elements
+        if "required" in xpath or "bắt buộc" in xpath:
+            return self.elements
+        return []
 
 
 class FakeDriver:
@@ -274,13 +370,96 @@ class FakeDriver:
         raise NoSuchElementException("unknown xpath")
 
     def find_elements(self, by, xpath):
+        if xpath == "//div[@role='button']":
+            if not self.button_sequence:
+                return []
+            kind = self.button_sequence[0]
+            if kind == "next":
+                return [FakeElement("Tiếp", kind="next")]
+            if kind == "submit":
+                return [FakeElement("Gửi", kind="submit")]
         return []
 
     def execute_script(self, script, element):
         self.scripts.append(script)
+        if "click" in script and getattr(element, "kind", None):
+            if self.button_sequence and self.button_sequence[0] == element.kind:
+                self.button_sequence.pop(0)
+            if element.kind == "submit":
+                self.current_url = self.current_url + "?submitted=1"
 
     def quit(self):
         self.quit_called = True
+
+
+class FakeChoiceElement:
+    def __init__(self, role=None, checked=False, children=None):
+        self.role = role
+        self.checked = checked
+        self.children = children or []
+
+    def find_elements(self, by, xpath):
+        if "@aria-checked='true'" in xpath:
+            return [child for child in self.children if child.checked]
+        if "@role='radio'" in xpath:
+            return [child for child in self.children if child.role == "radio"]
+        if "@role='checkbox'" in xpath:
+            return [child for child in self.children if child.role == "checkbox"]
+        return []
+
+    def find_element(self, by, xpath):
+        elements = self.find_elements(by, xpath)
+        if not elements:
+            from selenium.common.exceptions import NoSuchElementException
+            raise NoSuchElementException("not found")
+        return elements[0]
+
+
+class FakeChoiceDriver:
+    def __init__(self):
+        self.radio_blank = FakeChoiceElement(children=[
+            FakeChoiceElement(role="radio"),
+            FakeChoiceElement(role="radio"),
+        ])
+        self.radio_prefilled = FakeChoiceElement(children=[
+            FakeChoiceElement(role="radio", checked=True),
+            FakeChoiceElement(role="radio"),
+        ])
+        self.checkbox_blank = FakeChoiceElement(children=[
+            FakeChoiceElement(role="checkbox"),
+            FakeChoiceElement(role="checkbox"),
+        ])
+        self.checkbox_prefilled = FakeChoiceElement(children=[
+            FakeChoiceElement(role="checkbox", checked=True),
+            FakeChoiceElement(role="checkbox"),
+        ])
+        self.clicked = []
+
+    def find_elements(self, by, xpath):
+        if "@role='radiogroup'" in xpath:
+            return [self.radio_blank, self.radio_prefilled]
+        if "@data-params" in xpath and "@role='checkbox'" in xpath:
+            return [self.checkbox_blank, self.checkbox_prefilled]
+        return []
+
+    def execute_script(self, script, element):
+        element.checked = True
+        self.clicked.append(element)
+
+
+def test_fill_unanswered_choice_controls_preserves_prefilled_choices():
+    submitter = FormSubmitter(_build_prefill_form())
+    driver = FakeChoiceDriver()
+
+    submitter._fill_unanswered_choice_controls(driver)
+
+    assert len(driver.clicked) == 2
+    assert driver.radio_blank.children[0].checked is True
+    assert driver.radio_prefilled.children[0].checked is True
+    assert driver.radio_prefilled.children[1].checked is False
+    assert driver.checkbox_blank.children[0].checked is True
+    assert driver.checkbox_prefilled.children[0].checked is True
+    assert driver.checkbox_prefilled.children[1].checked is False
 
 
 def test_submit_prefilled_url_clicks_through_and_returns_true(monkeypatch):
@@ -294,8 +473,8 @@ def test_submit_prefilled_url_clicks_through_and_returns_true(monkeypatch):
 
     assert submitter._submit_prefilled_url(driver, url) is True
     assert driver.visited_urls == [url]
-    # Two clicks: next + submit.
-    assert len(driver.scripts) == 2
+    # Four execute_script calls: scrollIntoView + click for next, scrollIntoView + click for submit.
+    assert len(driver.scripts) == 4
 
 
 def test_submit_prefilled_url_returns_false_when_no_buttons(monkeypatch):
@@ -306,6 +485,78 @@ def test_submit_prefilled_url_returns_false_when_no_buttons(monkeypatch):
 
     driver = FakeDriver([])  # no buttons at all
     assert submitter._submit_prefilled_url(driver, "https://x") is False
+
+
+class FakeValidationDriver(FakeDriver):
+    def __init__(self):
+        super().__init__(["submit"])
+
+    def find_element(self, by, xpath):
+        if "Submit" in xpath or "Gửi" in xpath:
+            if not self.button_sequence:
+                from selenium.common.exceptions import NoSuchElementException
+                raise NoSuchElementException("no submit")
+            self.button_sequence.pop(0)
+            return FakeElement()
+        return super().find_element(by, xpath)
+
+    def find_elements(self, by, xpath):
+        if xpath == "//div[@role='button']":
+            return [FakeElement("G", kind="submit")]
+        if "required" in xpath or "bắt buộc" in xpath:
+            return [FakeElement("This is a required question")]
+        return []
+
+
+def test_submit_prefilled_url_returns_false_on_validation_error(monkeypatch):
+    form = _build_prefill_form()
+    submitter = FormSubmitter(form)
+
+    monkeypatch.setattr(form_submitter_module, "WebDriverWait", FakeWebDriverWait)
+
+    driver = FakeValidationDriver()
+
+    assert submitter._submit_prefilled_url(driver, "https://x") is False
+
+
+def test_find_form_button_matches_decomposed_vietnamese_and_g_fallback():
+    submitter = FormSubmitter(_build_prefill_form())
+
+    next_driver = FakeTextDriver(elements=[FakeElement("Gu\u031bi", kind="submit")])
+    assert submitter._find_form_button(next_driver, ("submit", "gui")).text == "Gu\u031bi"
+
+    g_driver = FakeTextDriver(elements=[FakeElement("G", kind="submit")])
+    assert (
+        submitter._find_form_button(g_driver, ("submit", "gui"), fallback_initials=("g",)).text
+        == "G"
+    )
+
+
+def test_prefill_diagnostics_ignore_required_legend_text():
+    submitter = FormSubmitter(_build_prefill_form())
+    driver = FakeTextDriver(elements=[FakeElement("* Biểu thị câu hỏi bắt buộc")])
+
+    assert submitter._collect_prefill_submit_diagnostics(driver) == ""
+
+
+def test_prefill_diagnostics_include_question_title_for_required_error():
+    submitter = FormSubmitter(_build_prefill_form())
+    driver = FakeTextDriver(
+        containers=[
+            FakeElement("Test rank\n1\n2\n3\nĐây là một câu hỏi bắt buộc")
+        ]
+    )
+
+    assert (
+        submitter._collect_prefill_submit_diagnostics(driver)
+        == "Test rank: Đây là một câu hỏi bắt buộc"
+    )
+
+
+def test_format_prefill_url_for_log_returns_original_url():
+    url = "https://docs.google.com/forms/d/e/FAKEID/viewform?usp=pp_url&entry.111=Alice"
+
+    assert FormSubmitter._format_prefill_url_for_log(url) == url
 
 
 def test_submit_form_prefill_mode_calls_prefill_worker(monkeypatch):

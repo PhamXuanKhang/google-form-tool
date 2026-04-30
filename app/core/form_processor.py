@@ -16,6 +16,9 @@ from app.models import Form, Question, AnswerConfig, AnswerOption
 from app.logging_config import logger
 
 
+BRANCH_SUBMIT_SENTINEL = "__submit__"
+
+
 class FormProcessor:
     """
     Process form data and generate responses for different question types.
@@ -225,6 +228,180 @@ class FormProcessor:
         
         logger.info(f"Generated {len(responses)} random responses")
         return responses
+
+    def generate_prefill_responses(self, num_submissions: int) -> List[Dict[str, Any]]:
+        """Generate one response dictionary per prefill URL.
+
+        Prefill mode needs materialized rows, not independent random draws, so
+        text answers and option percentages are distributed across the URL list.
+        This mirrors the old prefill-link script's "build all links first" flow.
+        """
+        responses_list = [{} for _ in range(max(0, num_submissions))]
+        if not responses_list or not self.form.response_config or not self.form.response_config.pages:
+            return responses_list
+
+        for page in self.form.response_config.pages:
+            for question in page.questions or []:
+                values = self._generate_prefill_values_for_question(question, len(responses_list))
+                for index, value in enumerate(values):
+                    if value is None or value == "" or value == []:
+                        continue
+                    responses_list[index][question.question_id] = value
+
+        self.apply_prefill_branch_stops(responses_list)
+        logger.info(f"Generated {len(responses_list)} prefill response rows")
+        return responses_list
+
+    def apply_prefill_branch_stops(self, responses_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove later-page answers when a configured branch goes straight to submit."""
+        if not responses_list or not self.form.response_config or not self.form.response_config.pages:
+            return responses_list
+
+        pages = self.form.response_config.pages
+        later_question_keys_by_page: List[List[str]] = []
+        branch_questions = []
+
+        for page_index, page in enumerate(pages):
+            later_keys = []
+            for later_page in pages[page_index + 1:]:
+                for later_question in later_page.questions or []:
+                    later_keys.append(later_question.question_id)
+                    entry_param = later_question.get_entry_param()
+                    if entry_param:
+                        later_keys.append(entry_param)
+            later_question_keys_by_page.append(later_keys)
+
+            for question in page.questions or []:
+                if question.type not in ["multiple_choice", "dropdown"]:
+                    continue
+                if not question.answer_config or not question.answer_config.options:
+                    continue
+                submit_values = {
+                    option.text
+                    for option in question.answer_config.options
+                    if option.next_page_id == BRANCH_SUBMIT_SENTINEL
+                }
+                if submit_values:
+                    branch_questions.append(
+                        (page_index, question.question_id, question.get_entry_param(), submit_values)
+                    )
+
+        if not branch_questions:
+            return responses_list
+
+        for response in responses_list:
+            stop_after_page = None
+            for page_index, question_id, entry_param, submit_values in branch_questions:
+                answer = response.get(question_id)
+                if answer is None and entry_param:
+                    answer = response.get(entry_param)
+                if answer in submit_values:
+                    stop_after_page = page_index
+                    break
+
+            if stop_after_page is None:
+                continue
+
+            for question_key in later_question_keys_by_page[stop_after_page]:
+                response.pop(question_key, None)
+
+        return responses_list
+
+    def _generate_prefill_values_for_question(self, question: Question, count: int) -> List[Any]:
+        q_type = question.type
+        if q_type in ["input_text", "input_email", "textarea", "date", "time"]:
+            return self._generate_prefill_text_values(question, count)
+        if q_type in ["multiple_choice", "dropdown", "linear_scale", "rank"]:
+            return self._generate_prefill_single_option_values(question, count)
+        if q_type == "checkbox":
+            return self._generate_prefill_checkbox_values(question, count)
+        return [self._generate_response_for_question(question) for _ in range(count)]
+
+    def _question_fill_count(self, question: Question, count: int) -> int:
+        fill_percentage = 100
+        if question.answer_config and question.answer_config.fill_percentage is not None:
+            fill_percentage = question.answer_config.fill_percentage
+        fill_percentage = max(0, min(100, float(fill_percentage)))
+        return round(count * fill_percentage / 100)
+
+    def _generate_prefill_text_values(self, question: Question, count: int) -> List[Any]:
+        fill_count = self._question_fill_count(question, count)
+        values: List[Any] = [None] * count
+        if fill_count <= 0:
+            return values
+
+        configured = []
+        if question.answer_config and question.answer_config.answers:
+            configured = [answer for answer in question.answer_config.answers if answer not in (None, "")]
+
+        for index in range(fill_count):
+            if configured:
+                values[index] = configured[index % len(configured)]
+            else:
+                values[index] = self._generate_response_for_question(question)
+        return values
+
+    def _generate_prefill_single_option_values(self, question: Question, count: int) -> List[Any]:
+        if not question.answer_config or not question.answer_config.options:
+            return [self._generate_response_for_question(question) for _ in range(count)]
+
+        options = question.answer_config.options
+        weights = [max(0, float(option.percentage or 0)) for option in options]
+        if not any(weight > 0 for weight in weights):
+            return [options[index % len(options)].text for index in range(count)]
+
+        counts = self._allocate_counts(weights, count)
+        values = []
+        for option, option_count in zip(options, counts):
+            values.extend([option.text] * option_count)
+
+        while len(values) < count:
+            values.append(options[-1].text)
+        return values[:count]
+
+    def _generate_prefill_checkbox_values(self, question: Question, count: int) -> List[List[str]]:
+        if not question.answer_config or not question.answer_config.options:
+            return [["Option 1"] for _ in range(count)]
+
+        options = question.answer_config.options
+        values: List[List[str]] = [[] for _ in range(count)]
+        weights = [max(0, float(option.percentage or 0)) for option in options]
+
+        if not any(weight > 0 for weight in weights):
+            for index in range(count):
+                values[index].append(options[index % len(options)].text)
+            return values
+
+        for option, weight in zip(options, weights):
+            option_count = round(count * min(weight, 100) / 100)
+            for occurrence in range(option_count):
+                values[occurrence % count].append(option.text)
+
+        if any(weight > 0 for weight in weights):
+            fallback_options = [option.text for option in options if float(option.percentage or 0) > 0]
+            fallback = fallback_options[0] if fallback_options else options[0].text
+            for value in values:
+                if not value:
+                    value.append(fallback)
+        return values
+
+    @staticmethod
+    def _allocate_counts(weights: List[float], total: int) -> List[int]:
+        weight_sum = sum(weights)
+        if weight_sum <= 0:
+            return [0 for _ in weights]
+
+        raw_counts = [(weight / weight_sum) * total for weight in weights]
+        counts = [int(raw) for raw in raw_counts]
+        remaining = total - sum(counts)
+        remainders = sorted(
+            enumerate(raw_counts),
+            key=lambda item: item[1] - int(item[1]),
+            reverse=True,
+        )
+        for index, _ in remainders[:remaining]:
+            counts[index] += 1
+        return counts
     
     def _generate_response_for_question(self, question: Question) -> Any:
         """
@@ -347,11 +524,12 @@ class FormProcessor:
         configured_options = question.answer_config.options
         weights = [max(0, float(option.percentage or 0)) for option in configured_options]
         if any(weight > 0 for weight in weights):
-            return [
+            selected = [
                 option.text
                 for option, weight in zip(configured_options, weights)
                 if random.random() * 100 < weight
             ]
+            return selected if selected else [random.choice([opt.text for opt in configured_options])]
         
         options = [opt.text for opt in configured_options]
         # Select 1 to all options
@@ -434,4 +612,7 @@ class FormProcessor:
             option_map = {opt.text: opt for opt in question.answer_config.options}
             for option_edit in edit['options']:
                 if option_edit['text'] in option_map:
-                    option_map[option_edit['text']].percentage = option_edit['percentage']
+                    option = option_map[option_edit['text']]
+                    option.percentage = option_edit['percentage']
+                    if 'next_page_id' in option_edit:
+                        option.next_page_id = option_edit['next_page_id'] or None

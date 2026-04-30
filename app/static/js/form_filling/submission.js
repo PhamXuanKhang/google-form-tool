@@ -33,6 +33,7 @@ export async function startSubmission(settings) {
     }
     
     try {
+        console.info("Starting submission:", settings);
         const response = await fetch('/start_submission', {
             method: 'POST',
             headers: {
@@ -59,7 +60,7 @@ export async function startSubmission(settings) {
             showStatusMessage(data.warnings.join(" "), 'warning');
         }
         if (data.debug_prefill_sample) {
-            console.info("Prefill sample (redacted):", data.debug_prefill_sample);
+            console.info("Prefill sample:", data.debug_prefill_sample);
         }
         return true;
     } catch (error) {
@@ -82,7 +83,8 @@ export async function stopSubmission() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ form_id: currentSubmissionFormId })
         });
         
         const data = await response.json();

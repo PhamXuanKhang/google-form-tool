@@ -130,12 +130,9 @@ test("validate: ok for fully supported form", () => {
     assert.deepEqual(r, { ok: true });
 });
 
-test("validate: warns rank but does not block submission", () => {
+test("validate: rank is supported in prefill mode", () => {
     const r = validatePrefillCompatibility(formWithRank, { submission_mode: "prefill_link" });
-    assert.equal(r.ok, true);
-    assert.ok(Array.isArray(r.warnings));
-    assert.match(r.warnings[0], /developed/);
-    assert.match(r.warnings[0], /rank/);
+    assert.deepEqual(r, { ok: true });
 });
 
 test("validate: blocks question with missing entry, names the question text", () => {

@@ -5,7 +5,7 @@
  * by tests/js/test_prefill_validator.mjs for unit verification.
  */
 
-const SKIPPABLE_BETA_TYPES = new Set(["rank", "file_upload", "rating", "unknown"]);
+const SKIPPABLE_BETA_TYPES = new Set(["file_upload", "rating", "unknown"]);
 
 export function hasEntryParam(question) {
     if (question?.entry_id) return true;

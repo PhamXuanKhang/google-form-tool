@@ -78,8 +78,8 @@ def test_single_text_field():
     form = _make_form(_text_q("111", "entry.111"))
     url = PrefillLinkGenerator(form).build_prefill_url({"111": "Alice"})
     pairs = _params(url)
+    assert pairs[0] == ("usp", "pp_url")
     assert ("entry.111", "Alice") in pairs
-    assert ("usp", "pp_url") in pairs
     assert urlsplit(url).path.endswith("/viewform")
 
 
@@ -175,14 +175,15 @@ def test_normalizes_form_response_url():
 
 
 def test_existing_query_params_are_preserved_but_entry_overwritten():
-    # form.url already has stale entry.* and usp; generator must drop those.
+    # Match the old prefill-link script: generated links start from usp=pp_url
+    # and discard stale/custom query params from the source URL.
     form = _make_form(
         _text_q("111", "entry.111"),
         url="https://docs.google.com/forms/d/e/FAKEID/viewform?entry.111=stale&track=keep&usp=foo",
     )
     url = PrefillLinkGenerator(form).build_prefill_url({"111": "fresh"})
     pairs = _params(url)
-    assert ("track", "keep") in pairs
+    assert ("track", "keep") not in pairs
     assert ("entry.111", "fresh") in pairs
     assert ("entry.111", "stale") not in pairs
     assert ("usp", "pp_url") in pairs

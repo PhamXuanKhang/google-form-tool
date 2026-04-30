@@ -567,7 +567,7 @@ def start_submission():
         VALID_SUBMISSION_MODES,
     )
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
 
     form_id = data.get('form_id')
     responses_list = data.get('responses_list')
@@ -575,6 +575,13 @@ def start_submission():
     use_file_data = data.get('use_file_data', False)
     use_ai_responses = data.get('use_ai_responses', False)
     submission_mode = data.get('submission_mode') or SUBMISSION_MODE_PREFILL
+
+    logger.info(
+        "Received start_submission request: form_id=%s mode=%s requested_total=%s",
+        form_id,
+        submission_mode,
+        data.get('num_submissions'),
+    )
 
     if not form_id:
         return jsonify({"error": "No form_id provided"}), 400
@@ -609,7 +616,7 @@ def start_submission():
                 form=form,
                 chromebinary_path=Config.CHROME_BINARY_PATH,
                 chromedriver_path=Config.CHROME_DRIVER_PATH,
-                headless=True
+                headless=False
             )
             active_submitters[form_id] = submitter
 
@@ -705,7 +712,7 @@ def stop_submission():
     - Stops submission for a specific form (pass form_id in body)
     - If no form_id provided, stops all active submissions
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     form_id = data.get('form_id')
 
     if form_id:

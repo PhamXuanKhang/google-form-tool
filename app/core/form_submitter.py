@@ -26,15 +26,26 @@ from app.logging_config import logger
 SUBMISSION_MODE_PREFILL = "prefill_link"
 SUBMISSION_MODE_DOM_FILL = "dom_fill"
 VALID_SUBMISSION_MODES = (SUBMISSION_MODE_PREFILL, SUBMISSION_MODE_DOM_FILL)
-SKIPPABLE_PREFILL_TYPES = {"rank", "file_upload", "rating", "unknown"}
+SKIPPABLE_PREFILL_TYPES = {"file_upload", "rating", "unknown"}
+PREFILL_MAX_BUTTON_CLICKS = 25
+REQUIRED_ERROR_MARKERS = (
+    "this is a required question",
+    "required question",
+    "đây là một câu hỏi bắt buộc",
+    "câu hỏi này là bắt buộc",
+)
+REQUIRED_LEGEND_MARKERS = (
+    "biểu thị câu hỏi bắt buộc",
+    "indicates required question",
+)
 
 import threading
 import time
 import random
+import unicodedata
 from datetime import datetime
 from functools import wraps
 from typing import Dict, List, Any, Optional, Callable
-from urllib.parse import urlsplit, parse_qsl, urlencode, urlunsplit
 
 HIGH_FAILURE_WARNING_THRESHOLD = 80
 HIGH_FAILURE_WARNING_MESSAGE = (
@@ -364,13 +375,14 @@ class FormSubmitter:
         - Manual/random: generate N random responses using FormProcessor.
         """
         if responses_list:
-            return list(responses_list)
+            return self.form_processor.apply_prefill_branch_stops(
+                [dict(response) for response in responses_list]
+            )
         if responses is not None:
-            return [dict(responses) for _ in range(num_submissions)]
-        return [
-            self.form_processor.generate_random_responses()
-            for _ in range(num_submissions)
-        ]
+            return self.form_processor.apply_prefill_branch_stops(
+                [dict(responses) for _ in range(num_submissions)]
+            )
+        return self.form_processor.generate_prefill_responses(num_submissions)
 
     def prepare_prefill_queue(
         self,
@@ -392,7 +404,7 @@ class FormSubmitter:
 
         debug_sample = None
         if include_debug_sample and self.urls_queue:
-            debug_sample = self._redact_prefill_url(self.urls_queue[0])
+            debug_sample = self._format_prefill_url_for_log(self.urls_queue[0])
 
         return len(self.urls_queue), skipped_summary, debug_sample
 
@@ -495,83 +507,257 @@ class FormSubmitter:
         return filtered, skipped_summary
 
     @staticmethod
-    def _redact_prefill_url(url: str) -> str:
-        try:
-            parts = urlsplit(url)
-            params = []
-            for key, value in parse_qsl(parts.query, keep_blank_values=True):
-                if key.startswith("entry."):
-                    params.append((key, "<redacted>"))
-                else:
-                    params.append((key, value))
-            return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(params), ""))
-        except Exception:
-            return "<redacted>"
+    def _format_prefill_url_for_log(url: str) -> str:
+        return url
 
     def _submit_prefilled_url(self, driver, url: str) -> bool:
-        """Open a prefill URL and click through Next/Submit pages.
-
-        Success is detected when either:
-            * Confirmation text ("response", "submitted", "gửi") appears, or
-            * The URL changes to a submitted/response state (``formResponse`` /
-              ``/closedform`` etc.).
-        """
+        """Open a prefill URL and click through Next/Submit pages."""
         try:
             driver.get(url)
-
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.TAG_NAME, "form"))
-            )
-
             start_url = driver.current_url
+            button_clicks = 0
 
             while True:
-                try:
-                    next_button = driver.find_element(
-                        By.XPATH,
-                        "//div[@role='button']//span[contains(text(), 'Next') or contains(text(), 'Tiếp')]"
+                if button_clicks >= PREFILL_MAX_BUTTON_CLICKS:
+                    diagnostics = self._collect_prefill_submit_diagnostics(driver)
+                    logger.warning(
+                        "Prefill submit stopped after too many page actions for %s%s",
+                        self._format_prefill_url_for_log(start_url),
+                        f" ({diagnostics})" if diagnostics else "",
                     )
-                    driver.execute_script("arguments[0].click();", next_button)
-                    time.sleep(1)
-                except NoSuchElementException:
-                    try:
-                        submit_button = driver.find_element(
-                            By.XPATH,
-                            "//div[@role='button']//span[contains(text(), 'Submit') or contains(text(), 'Gửi')]"
-                        )
-                        driver.execute_script("arguments[0].click();", submit_button)
+                    return False
 
-                        WebDriverWait(driver, 10).until(
-                            lambda d: (
-                                d.current_url != start_url
-                                or d.find_elements(
-                                    By.XPATH,
-                                    "//*[contains(text(), 'response') or "
-                                    "contains(text(), 'submitted') or "
-                                    "contains(text(), 'gửi') or "
-                                    "contains(text(), 'recorded')]"
-                                )
+                try:
+                    self._fill_unanswered_choice_controls(driver)
+                    next_button = WebDriverWait(driver, 8).until(
+                        lambda d: self._find_form_button(d, ("next", "tiep"))
+                    )
+                    driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
+                    driver.execute_script("arguments[0].click();", next_button)
+                    button_clicks += 1
+                    time.sleep(1.5)
+                    diagnostics = self._collect_prefill_submit_diagnostics(driver)
+                    if diagnostics:
+                        logger.warning(
+                            "Prefill validation failed after Next for %s: %s",
+                            self._format_prefill_url_for_log(start_url),
+                            diagnostics,
+                        )
+                        return False
+
+                except TimeoutException:
+                    # No Next button found — look for Submit
+                    try:
+                        self._fill_unanswered_choice_controls(driver)
+                        submit_button = WebDriverWait(driver, 8).until(
+                            lambda d: self._find_form_button(
+                                d,
+                                ("submit", "gui"),
+                                fallback_initials=("g",),
                             )
                         )
+                        driver.execute_script("arguments[0].scrollIntoView(true);", submit_button)
+                        driver.execute_script("arguments[0].click();", submit_button)
+                        button_clicks += 1
 
+                        result = WebDriverWait(driver, 10).until(
+                            lambda d: self._prefill_submit_result(d, submit_button, start_url)
+                        )
+                        if result == "validation_error":
+                            diagnostics = self._collect_prefill_submit_diagnostics(driver)
+                            logger.warning(
+                                "Prefill validation failed after Submit for %s: %s",
+                                self._format_prefill_url_for_log(start_url),
+                                diagnostics or "unknown validation error",
+                            )
+                            return False
                         logger.info("Prefill URL submitted successfully")
                         return True
 
-                    except (NoSuchElementException, TimeoutException) as e:
+                    except (TimeoutException, NoSuchElementException) as e:
+                        diagnostics = self._collect_prefill_submit_diagnostics(driver)
                         logger.warning(
-                            "Prefill submit confirmation failed for %s: %s",
-                            self._redact_prefill_url(start_url),
+                            "Prefill submit confirmation failed for %s: %s%s",
+                            self._format_prefill_url_for_log(start_url),
                             type(e).__name__,
+                            f" ({diagnostics})" if diagnostics else "",
                         )
                         return False
 
         except Exception as e:
             logger.error(
                 "Error submitting prefill URL %s: %s",
-                self._redact_prefill_url(url),
+                self._format_prefill_url_for_log(url),
                 type(e).__name__,
             )
             return False
+
+    def _find_form_button(
+        self,
+        driver,
+        labels: tuple[str, ...],
+        fallback_initials: tuple[str, ...] = (),
+    ):
+        buttons = driver.find_elements(By.XPATH, "//div[@role='button']")
+        for button in buttons:
+            try:
+                if hasattr(button, "is_displayed") and not button.is_displayed():
+                    continue
+                if hasattr(button, "is_enabled") and not button.is_enabled():
+                    continue
+                text = self._normalize_button_text(button.text)
+                if text and any(label in text for label in labels):
+                    return button
+            except StaleElementReferenceException:
+                continue
+
+        for button in buttons:
+            try:
+                if hasattr(button, "is_displayed") and not button.is_displayed():
+                    continue
+                if hasattr(button, "is_enabled") and not button.is_enabled():
+                    continue
+                text = self._normalize_button_text(button.text)
+                if text and any(text == initial or text.startswith(initial) for initial in fallback_initials):
+                    logger.info("Matched form button by fallback text: %s", button.text)
+                    return button
+            except StaleElementReferenceException:
+                continue
+
+        return False
+
+    @staticmethod
+    def _normalize_button_text(text: str) -> str:
+        decomposed = unicodedata.normalize("NFD", text or "")
+        without_marks = "".join(
+            char for char in decomposed
+            if unicodedata.category(char) != "Mn"
+        )
+        return " ".join(without_marks.lower().split())
+
+    def _prefill_submit_result(self, driver, submit_button, start_url: str):
+        if self._collect_prefill_submit_diagnostics(driver):
+            return "validation_error"
+        if EC.staleness_of(submit_button)(driver):
+            return "submitted"
+        if driver.current_url != start_url:
+            return "submitted"
+        if driver.find_elements(
+            By.XPATH,
+            "//*[contains(text(), 'response') or "
+            "contains(text(), 'submitted') or "
+            "contains(text(), 'recorded') or "
+            "contains(text(), 'gửi') or "
+            "contains(text(), 'ghi lại') or "
+            "contains(text(), 'đã được ghi') or "
+            "contains(text(), 'Câu trả lời')]"
+        ):
+            return "submitted"
+        return False
+
+    def _fill_unanswered_choice_controls(self, driver) -> None:
+        """Select a first option only for visible choice groups with no selection.
+
+        Prefill links cannot cover every Google Forms control type. This keeps
+        existing prefilled answers intact and only supplies a fallback for
+        unanswered visible radio/checkbox groups that would block navigation or
+        final submit when required.
+        """
+        try:
+            radio_groups = driver.find_elements(By.XPATH, "//div[@role='radiogroup']")
+            filled_radios = 0
+            for group in radio_groups:
+                try:
+                    checked = group.find_elements(By.XPATH, ".//div[@role='radio' and @aria-checked='true']")
+                    if checked:
+                        continue
+                    radios = group.find_elements(By.XPATH, ".//div[@role='radio']")
+                    if radios:
+                        driver.execute_script("arguments[0].click();", radios[0])
+                        filled_radios += 1
+                except (NoSuchElementException, StaleElementReferenceException):
+                    continue
+
+            checkbox_containers = driver.find_elements(
+                By.XPATH,
+                "//div[@data-params and .//div[@role='checkbox']]"
+            )
+            filled_checkboxes = 0
+            for container in checkbox_containers:
+                try:
+                    checked = container.find_elements(By.XPATH, ".//div[@role='checkbox' and @aria-checked='true']")
+                    if checked:
+                        continue
+                    checkbox = container.find_element(By.XPATH, ".//div[@role='checkbox']")
+                    driver.execute_script("arguments[0].click();", checkbox)
+                    filled_checkboxes += 1
+                except (NoSuchElementException, StaleElementReferenceException):
+                    continue
+
+            if filled_radios or filled_checkboxes:
+                logger.info(
+                    "Filled unanswered visible choice controls before submit: radios=%s checkboxes=%s",
+                    filled_radios,
+                    filled_checkboxes,
+                )
+        except Exception as e:
+            logger.debug("Could not fill unanswered choice controls: %s", type(e).__name__)
+
+    def _collect_prefill_submit_diagnostics(self, driver) -> str:
+        try:
+            diagnostics = []
+            question_containers = driver.find_elements(By.XPATH, "//div[@data-params]")
+            for container in question_containers:
+                text = (container.text or "").strip()
+                diagnostic = self._extract_required_error_diagnostic(text)
+                if diagnostic and diagnostic not in diagnostics:
+                    diagnostics.append(diagnostic)
+                if len(diagnostics) >= 5:
+                    return "; ".join(diagnostics)
+
+            error_elements = driver.find_elements(
+                By.XPATH,
+                "//*[contains(text(), 'required') or "
+                "contains(text(), 'Required') or "
+                "contains(text(), 'bắt buộc') or "
+                "contains(text(), 'Bắt buộc')]"
+            )
+            for element in error_elements[:5]:
+                text = (element.text or "").strip()
+                if self._is_required_error_text(text) and text not in diagnostics:
+                    diagnostics.append(text)
+            return "; ".join(diagnostics)
+        except Exception:
+            return ""
+
+    @staticmethod
+    def _is_required_error_text(text: str) -> bool:
+        normalized = " ".join((text or "").split()).lower()
+        if not normalized:
+            return False
+        if any(marker in normalized for marker in REQUIRED_LEGEND_MARKERS):
+            return False
+        return any(marker in normalized for marker in REQUIRED_ERROR_MARKERS)
+
+    def _extract_required_error_diagnostic(self, text: str) -> str:
+        lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+        if not lines:
+            return ""
+
+        error_line = next((line for line in lines if self._is_required_error_text(line)), "")
+        if not error_line:
+            return ""
+
+        title = ""
+        for line in lines:
+            if line == error_line or self._is_required_error_text(line):
+                continue
+            if line in ("*",):
+                continue
+            title = line
+            break
+
+        return f"{title}: {error_line}" if title else error_line
 
     def _submit_single_form(self, driver) -> bool:
         """

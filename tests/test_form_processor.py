@@ -12,7 +12,7 @@ import tempfile
 import os
 import random
 from io import BytesIO
-from app.core.form_processor import FormProcessor
+from app.core.form_processor import BRANCH_SUBMIT_SENTINEL, FormProcessor
 from app.models import Form, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from datetime import datetime
 import app.main_routes as main_routes
@@ -170,6 +170,113 @@ class TestRandomResponses:
         responses = processor.generate_random_responses(fill_percentage=100)
 
         assert responses["q3"] == ["Reading"]
+
+    def test_prefill_responses_use_configured_text_rows(self, processor):
+        q1 = processor.form.response_config.pages[0].questions[0]
+        q1.answer_config.answers = ["Alice", "Bob"]
+
+        responses = processor.generate_prefill_responses(3)
+
+        assert [row["q1"] for row in responses] == ["Alice", "Bob", "Alice"]
+
+    def test_prefill_responses_materialize_single_option_distribution(self, processor):
+        q2 = processor.form.response_config.pages[0].questions[1]
+        q2.answer_config.options = [
+            AnswerOption(text="Red", percentage=75),
+            AnswerOption(text="Blue", percentage=25),
+        ]
+
+        responses = processor.generate_prefill_responses(4)
+
+        assert [row["q2"] for row in responses] == ["Red", "Red", "Red", "Blue"]
+
+    def test_prefill_responses_materialize_rank_as_single_value(self, sample_form):
+        sample_form.response_config.pages[0].questions = [
+            Question(
+                question_id="q_rank",
+                entry_id="entry.333",
+                type="rank",
+                text="Rate this",
+                answer_config=AnswerConfig(
+                    fill_percentage=None,
+                    answers=None,
+                    options=[
+                        AnswerOption(text="1", percentage=25),
+                        AnswerOption(text="2", percentage=75),
+                    ],
+                ),
+            )
+        ]
+        processor = FormProcessor(sample_form)
+
+        responses = processor.generate_prefill_responses(4)
+
+        assert [row["q_rank"] for row in responses] == ["1", "2", "2", "2"]
+
+    def test_prefill_responses_materialize_checkbox_repeated_values(self, processor):
+        q3 = processor.form.response_config.pages[0].questions[2]
+        q3.answer_config.options = [
+            AnswerOption(text="Reading", percentage=50),
+            AnswerOption(text="Sports", percentage=50),
+        ]
+
+        responses = processor.generate_prefill_responses(4)
+
+        assert [row["q3"] for row in responses] == [
+            ["Reading", "Sports"],
+            ["Reading", "Sports"],
+            ["Reading"],
+            ["Reading"],
+        ]
+
+    def test_prefill_responses_skip_later_pages_for_submit_branch(self, sample_form):
+        sample_form.response_config.pages = [
+            Page(
+                page_id="page_1",
+                questions=[
+                    Question(
+                        question_id="q_branch",
+                        type="multiple_choice",
+                        text="Continue?",
+                        answer_config=AnswerConfig(
+                            fill_percentage=100,
+                            answers=None,
+                            options=[
+                                AnswerOption(text="Continue", percentage=50),
+                                AnswerOption(
+                                    text="Submit now",
+                                    percentage=50,
+                                    next_page_id=BRANCH_SUBMIT_SENTINEL,
+                                ),
+                            ],
+                        ),
+                    )
+                ],
+            ),
+            Page(
+                page_id="page_2",
+                questions=[
+                    Question(
+                        question_id="q_followup",
+                        type="input_text",
+                        text="Follow-up answer",
+                        answer_config=AnswerConfig(
+                            fill_percentage=100,
+                            answers=["Follow-up value"],
+                            options=None,
+                        ),
+                    )
+                ],
+            ),
+        ]
+        processor = FormProcessor(sample_form)
+
+        responses = processor.generate_prefill_responses(2)
+
+        assert responses[0]["q_branch"] == "Continue"
+        assert responses[0]["q_followup"] == "Follow-up value"
+        assert responses[1]["q_branch"] == "Submit now"
+        assert "q_followup" not in responses[1]
 
 
 class TestLoadDataFromFile:
@@ -364,6 +471,21 @@ class TestApplyUserEdits:
         options = {opt.text: opt.percentage for opt in q2.answer_config.options}
         assert options["Red"] == 80
         assert options["Blue"] == 10
+
+    def test_apply_options_next_page_edit(self, processor):
+        edits = {
+            "q2": {
+                "options": [
+                    {"text": "Blue", "percentage": 30, "next_page_id": BRANCH_SUBMIT_SENTINEL},
+                ]
+            }
+        }
+
+        processor.apply_user_edits(edits)
+
+        q2 = processor.form.response_config.pages[0].questions[1]
+        options = {opt.text: opt.next_page_id for opt in q2.answer_config.options}
+        assert options["Blue"] == BRANCH_SUBMIT_SENTINEL
 
     def test_apply_edit_to_nonexistent_question_is_ignored(self, processor):
         edits = {

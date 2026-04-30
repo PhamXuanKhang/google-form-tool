@@ -101,14 +101,25 @@ function renderQuestionsStep2(formData) {
 
             else if (["multiple_choice", "dropdown", "linear_scale", "rank"].includes(type)) {
                 const opts = (question.answer_config?.options || []);
-                let optionsHTML = opts.map((opt, i) => `
-                    <div class="d-flex align-items-center mb-2 option-row" data-option-text="${escapeHtml(opt.text)}">
-                        <input class="form-control me-2 option-text" value="${escapeHtml(opt.text)}" disabled>
-                        <input type="number" class="form-control w-25 option-percent" value="${i === opts.length - 1 ? 100 : 0}" min="0" max="100" 
-                            oninput="adjustPercentDistribution(this)">
-                        <span class="ms-1">%</span>
-                    </div>
-                `).join("");
+                const supportsBranchSubmit = ["multiple_choice", "dropdown"].includes(type);
+                let optionsHTML = opts.map((opt, i) => {
+                    const branchSubmitControl = supportsBranchSubmit ? `
+                        <div class="form-check ms-2 mb-0 flex-shrink-0">
+                            <input class="form-check-input option-submit-branch" type="checkbox" ${opt.next_page_id === "__submit__" ? "checked" : ""}>
+                            <label class="form-check-label small">Submit after this option</label>
+                        </div>
+                    ` : "";
+
+                    return `
+                        <div class="d-flex align-items-center mb-2 option-row" data-option-text="${escapeHtml(opt.text)}">
+                            <input class="form-control me-2 option-text" value="${escapeHtml(opt.text)}" disabled>
+                            <input type="number" class="form-control w-25 option-percent" value="${i === opts.length - 1 ? 100 : 0}" min="0" max="100" 
+                                oninput="adjustPercentDistribution(this)">
+                            <span class="ms-1">%</span>
+                            ${branchSubmitControl}
+                        </div>
+                    `;
+                }).join("");
 
                 qEl.innerHTML = `
                     ${qTitle}
@@ -155,7 +166,7 @@ function renderQuestionsStep2(formData) {
     document.querySelectorAll(".email-generator").forEach(container => {
         const domainSelect = container.querySelector(".email-domain");
         const generateBtn = container.querySelector(".generate-email-btn");
-        const textarea = container.querySelector(".email-textarea");
+        const textarea = container.closest(".card").querySelector(".email-textarea");
 
         generateBtn.addEventListener("click", () => {
             const domain = domainSelect.value;
@@ -403,7 +414,8 @@ function collectManualEdits() {
         if (optionRows.length > 0) {
             edit.options = Array.from(optionRows).map(row => ({
                 text: row.dataset.optionText || row.querySelector(".option-text")?.value || "",
-                percentage: parsePercent(row.querySelector(".option-percent")?.value, 0)
+                percentage: parsePercent(row.querySelector(".option-percent")?.value, 0),
+                next_page_id: row.querySelector(".option-submit-branch")?.checked ? "__submit__" : null
             })).filter(option => option.text);
         }
 
