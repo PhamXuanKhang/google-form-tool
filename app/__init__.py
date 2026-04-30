@@ -20,6 +20,8 @@ except ImportError:
 
 SUPPORTED_LANGUAGES = ["en", "vi"]
 
+__version__ = "1.0.0-beta.1"
+
 
 def get_locale():
     """Get locale from session, query param, or Accept-Language header."""
@@ -40,34 +42,31 @@ def create_app(testing: bool = False):
     Args:
         testing (bool): If True, use testing configuration (e.g., temp DB).
 
-    - Loads configuration from `Config`
-    - Initializes application logging
-    - Registers main blueprint (`bp`)
-    - Initializes Flask-Babel for i18n
-
     Returns:
         Flask: Configured Flask application
     """
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config["APP_VERSION"] = __version__
 
     if testing:
         app.config["TESTING"] = True
 
-    # Initialize logging
     init_app_logging(app)
 
-    # Initialize Flask-Babel for internationalization
     if BABEL_AVAILABLE:
         app.config["BABEL_DEFAULT_LOCALE"] = "en"
         app.config["BABEL_SUPPORTED_LOCALES"] = SUPPORTED_LANGUAGES
         babel = Babel(app, locale_selector=get_locale)
 
-        @app.context_processor
-        def inject_locale():
-            return {"current_locale": get_locale(), "supported_languages": SUPPORTED_LANGUAGES}
+    @app.context_processor
+    def inject_globals():
+        return {
+            "current_locale": get_locale() if BABEL_AVAILABLE else "en",
+            "supported_languages": SUPPORTED_LANGUAGES,
+            "app_version": __version__,
+        }
 
-    # Register blueprint
     app.register_blueprint(bp)
 
     return app

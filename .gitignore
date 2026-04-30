@@ -1,8 +1,13 @@
 /.env
 /venv
+/.venv
 /.vscode
 __pycache__/
 .pytest_cache/
 logs/
 */__pycache__/
 app/services/db.json
+
+# PyInstaller build artifacts
+/build/
+/dist/

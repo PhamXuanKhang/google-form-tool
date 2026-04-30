@@ -148,7 +148,11 @@ class FormSubmitter:
             options.binary_location = self.chromebinary_path
         
         try:
-            service = Service(executable_path=self.chromedriver_path)
+            service = (
+                Service(executable_path=self.chromedriver_path)
+                if self.chromedriver_path
+                else Service()  # Selenium Manager auto-downloads the correct driver
+            )
             driver = webdriver.Chrome(service=service, options=options)
             return driver
         except Exception as e:

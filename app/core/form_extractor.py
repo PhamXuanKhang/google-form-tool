@@ -175,10 +175,15 @@ class FormExtractor:
         options = Options()
         for arg in self.option_arguments:
             options.add_argument(arg)
-        options.binary_location = self.chromebinary_path
+        if self.chromebinary_path:
+            options.binary_location = self.chromebinary_path
 
         try:
-            service = Service(executable_path=self.chromedriver_path)
+            service = (
+                Service(executable_path=self.chromedriver_path)
+                if self.chromedriver_path
+                else Service()  # Selenium Manager auto-downloads the correct driver
+            )
             driver = webdriver.Chrome(service=service, options=options)
             logger.info("WebDriver initialized successfully")
             return driver
