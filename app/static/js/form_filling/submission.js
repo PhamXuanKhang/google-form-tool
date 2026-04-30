@@ -55,6 +55,12 @@ export async function startSubmission(settings) {
         startStatusMonitoring();
         
         showStatusMessage(data.message || t("submissionStartedSuccessfully", "Submission started successfully"), 'success');
+        if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+            showStatusMessage(data.warnings.join(" "), 'warning');
+        }
+        if (data.debug_prefill_sample) {
+            console.info("Prefill sample (redacted):", data.debug_prefill_sample);
+        }
         return true;
     } catch (error) {
         console.error('Error starting submission:', error);

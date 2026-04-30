@@ -191,6 +191,7 @@ Cach test:
 3. Bam `Start Automation`.
 4. Theo doi progress, success/fail, elapsed time.
 5. Mo Google Form responses de doi chieu so response that.
+6. Neu bam Start ma khong thay request len server, kiem tra popup va browser console truoc.
 
 Dat khi:
 

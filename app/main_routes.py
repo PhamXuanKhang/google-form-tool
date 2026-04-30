@@ -304,21 +304,40 @@ def validate_api_key():
         return jsonify({"valid": False, "error": "No API key provided"}), 400
 
     try:
-        from app.core.ai_responder import AIResponder, is_ai_available
+        from app.core.ai_responder import AIResponder, is_ai_available, ModelResolutionError
         if not is_ai_available():
-            return jsonify({"valid": False, "error": "AI not available. Install google-generativeai."}), 400
+            return jsonify({
+                "valid": False,
+                "error": "AI dependency is not installed. Run pip install -r requirements.txt.",
+                "code": "ai_dependency_missing",
+            }), 400
 
-        responder = AIResponder(api_key)
+        try:
+            responder = AIResponder(api_key)
+        except ModelResolutionError as e:
+            logger.warning("API key validation failed: %s", str(e))
+            return jsonify({
+                "valid": False,
+                "error": str(e),
+                "code": "model_unavailable",
+            }), 400
+
         is_valid = responder.validate_api_key()
+        if not is_valid:
+            return jsonify({
+                "valid": False,
+                "error": "API key validation failed.",
+                "code": "invalid_api_key",
+            }), 400
 
         return jsonify({
-            "valid": is_valid,
-            "message": "API key is valid" if is_valid else "API key validation failed"
+            "valid": True,
+            "message": "API key is valid",
         })
 
     except Exception as e:
-        logger.error(f"API key validation error: {e}")
-        return jsonify({"valid": False, "error": str(e)}), 400
+        logger.error("API key validation error: %s", type(e).__name__)
+        return jsonify({"valid": False, "error": "API key validation failed."}), 400
 
 
 @bp.route('/generate_ai_text_answers', methods=['POST'])
@@ -526,6 +545,13 @@ def _cleanup_finished_submitters():
         del active_submitters[fid]
 
 
+def _format_skipped_type_warning(skipped_summary):
+    if not skipped_summary:
+        return []
+    parts = [f"{k} ({v})" for k, v in sorted(skipped_summary.items())]
+    return [f"Skipping unsupported question types in prefill mode: {', '.join(parts)}."]
+
+
 @bp.route('/start_submission', methods=['POST'])
 def start_submission():
     """
@@ -587,6 +613,27 @@ def start_submission():
             )
             active_submitters[form_id] = submitter
 
+            prepared_count = num_submissions
+            skipped_summary = {}
+            debug_prefill_sample = None
+            if submission_mode == SUBMISSION_MODE_PREFILL:
+                prepared_count, skipped_summary, debug_prefill_sample = submitter.prepare_prefill_queue(
+                    num_submissions=num_submissions,
+                    responses=responses,
+                    responses_list=responses_list,
+                    include_debug_sample=Config.PREFILL_DEBUG_SAMPLE,
+                )
+
+            warnings = _format_skipped_type_warning(skipped_summary)
+
+            logger.info(
+                "Start submission: form_id=%s mode=%s total=%s skipped=%s",
+                form_id,
+                submission_mode,
+                prepared_count,
+                skipped_summary or "none",
+            )
+
             import threading
             submission_thread = threading.Thread(
                 target=_run_submission,
@@ -602,10 +649,17 @@ def start_submission():
             else:
                 mode = "random"
 
-            return jsonify({
+            response_body = {
                 "success": True,
-                "message": f"Started {num_submissions} form submissions ({mode} mode) with {concurrent_threads} threads"
-            })
+                "message": f"Started {prepared_count} form submissions ({mode} mode) with {concurrent_threads} threads",
+                "submission_mode": submission_mode,
+                "prepared_count": prepared_count,
+                "warnings": warnings,
+            }
+            if debug_prefill_sample:
+                response_body["debug_prefill_sample"] = debug_prefill_sample
+
+            return jsonify(response_body)
 
     except Exception as e:
         return jsonify({"error": f"Error starting submission: {str(e)}"}), 500

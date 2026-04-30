@@ -53,6 +53,9 @@ class FakeSubmitter:
     def stop(self):
         self.stopped = True
 
+    def prepare_prefill_queue(self, num_submissions, responses, responses_list, include_debug_sample=False):
+        return num_submissions, {}, None
+
 
 def test_run_submission_opens_fresh_storage_for_history(monkeypatch):
     storage = FakeStorageContext()

@@ -20,3 +20,5 @@ class Config:
     CHROME_BINARY_PATH = os.getenv("CHROME_BINARY_PATH")
     CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH")
     TEST_GOOGLE_FORM_URL = os.getenv("TEST_GOOGLE_FORM_URL")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+    PREFILL_DEBUG_SAMPLE = os.getenv("PREFILL_DEBUG_SAMPLE", "0") == "1"

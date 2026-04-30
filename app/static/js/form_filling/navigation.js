@@ -66,6 +66,10 @@ async function nextStep() {
             return showPopup(t("pleaseUploadAnswerFile", "Please upload a file with answer data."));
         }
         if (answerMethod === "manual") {
+            const issues = window.validateManualConfiguration?.() || [];
+            if (issues.length > 0) {
+                return showPopup(issues.join(" "), "warning");
+            }
             const saved = await saveManualConfiguration();
             if (!saved) return;
         }

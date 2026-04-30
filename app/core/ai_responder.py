@@ -7,14 +7,16 @@ API key is provided by user via UI (not from env) for flexibility.
 import json
 from typing import Optional, Dict, Any, List
 from app.models import Question
+from config import Config
 from app.logging_config import logger
 
 try:
-    import google.generativeai as genai
+    from google import genai
     GENAI_AVAILABLE = True
 except ImportError:
+    genai = None  # sentinel so monkeypatch targets still resolve
     GENAI_AVAILABLE = False
-    logger.warning("google-generativeai not installed. AI responses will not be available.")
+    logger.warning("google-genai not installed. AI responses will not be available.")
 
 
 class AIResponder:
@@ -33,11 +35,11 @@ class AIResponder:
             api_key (str): Google Gemini API key from user input
         """
         if not GENAI_AVAILABLE:
-            raise RuntimeError("google-generativeai package is not installed")
+            raise RuntimeError("google-genai package is not installed")
 
         self.api_key = api_key
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.client = genai.Client(api_key=api_key)
+        self.model_name = self._resolve_model_name(self.client, Config.GEMINI_MODEL)
         self._cache: Dict[str, str] = {}
 
     def generate_response(self, question: Question, context: Optional[str] = None) -> str:
@@ -58,7 +60,9 @@ class AIResponder:
         prompt = self._build_prompt(question, context)
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name, contents=prompt
+            )
             answer = self._extract_answer(response.text, question)
             self._cache[cache_key] = answer
             logger.info(f"AI generated response for question: {question.question_id}")
@@ -121,7 +125,9 @@ class AIResponder:
         )
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name, contents=prompt
+            )
             answers = self._parse_text_array(response.text)
             if answers:
                 # Pad/truncate to the exact count requested.
@@ -271,13 +277,76 @@ Question Type: {q_type}
             bool: True if key is valid, False otherwise
         """
         try:
-            response = self.model.generate_content("Say 'OK'")
+            response = self.client.models.generate_content(
+                model=self.model_name, contents="Say 'OK'"
+            )
             return bool(response.text)
         except Exception as e:
-            logger.error(f"API key validation failed: {e}")
+            logger.error("API key validation failed: %s", type(e).__name__)
             return False
+
+    def _resolve_model_name(self, client, preferred: Optional[str]) -> str:
+        models = self._list_models_safe(client)
+        preferred = preferred.strip() if isinstance(preferred, str) and preferred.strip() else None
+        if models:
+            compatible = [
+                model for model in models
+                if self._supports_generate_content(model)
+            ]
+            if not compatible:
+                raise ModelResolutionError(
+                    "No Gemini model supports generateContent for this API key."
+                )
+            if preferred and any(model.name == preferred for model in compatible):
+                return preferred
+            fallback = self._pick_fallback_model(compatible)
+            if preferred and fallback != preferred:
+                logger.warning(
+                    "Configured Gemini model '%s' unavailable; falling back to '%s'.",
+                    preferred,
+                    fallback,
+                )
+            return fallback
+
+        # Model listing unavailable: fall back to preferred or a default.
+        return preferred or "gemini-2.0-flash"
+
+    @staticmethod
+    def _supports_generate_content(model: Any) -> bool:
+        methods = getattr(model, "supported_generation_methods", None) or []
+        actions = getattr(model, "supported_actions", None) or []
+        return "generateContent" in methods or "generateContent" in actions
+
+    @staticmethod
+    def _pick_fallback_model(models: List[Any]) -> str:
+        def score(name: str) -> int:
+            name = name.lower()
+            if "flash" in name:
+                return 3
+            if "pro" in name:
+                return 2
+            return 1
+
+        sorted_models = sorted(
+            models,
+            key=lambda m: (score(getattr(m, "name", "")), getattr(m, "name", "")),
+            reverse=True,
+        )
+        return getattr(sorted_models[0], "name", "gemini-1.5-flash")
+
+    @staticmethod
+    def _list_models_safe(client) -> Optional[List[Any]]:
+        try:
+            return list(client.models.list())
+        except Exception as e:
+            logger.warning("Failed to list Gemini models: %s", type(e).__name__)
+            return None
 
 
 def is_ai_available() -> bool:
     """Check if AI functionality is available (package installed)."""
     return GENAI_AVAILABLE
+
+
+class ModelResolutionError(RuntimeError):
+    """Raised when no compatible Gemini model is available for generation."""

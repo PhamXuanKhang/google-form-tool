@@ -26,6 +26,7 @@ from app.logging_config import logger
 SUBMISSION_MODE_PREFILL = "prefill_link"
 SUBMISSION_MODE_DOM_FILL = "dom_fill"
 VALID_SUBMISSION_MODES = (SUBMISSION_MODE_PREFILL, SUBMISSION_MODE_DOM_FILL)
+SKIPPABLE_PREFILL_TYPES = {"rank", "file_upload", "rating", "unknown"}
 
 import threading
 import time
@@ -33,6 +34,7 @@ import random
 from datetime import datetime
 from functools import wraps
 from typing import Dict, List, Any, Optional, Callable
+from urllib.parse import urlsplit, parse_qsl, urlencode, urlunsplit
 
 HIGH_FAILURE_WARNING_THRESHOLD = 80
 HIGH_FAILURE_WARNING_MESSAGE = (
@@ -113,6 +115,9 @@ class FormSubmitter:
             '--disable-notifications',
             '--log-level=3'
         ]
+
+        self._question_type_lookup = self._build_question_type_lookup()
+        self.skipped_prefill_summary: Dict[str, int] = {}
         
         if self.headless:
             self.option_arguments.append('--headless')
@@ -188,6 +193,10 @@ class FormSubmitter:
                 response_dicts = self._build_response_dicts(
                     num_submissions, responses, responses_list
                 )
+                response_dicts, skipped_summary = self._filter_skippable_responses(
+                    response_dicts
+                )
+                self.skipped_prefill_summary = skipped_summary
                 num_submissions = len(response_dicts)
                 generator = PrefillLinkGenerator(self.form)
                 self.urls_queue = generator.build_prefill_urls(response_dicts)
@@ -199,6 +208,11 @@ class FormSubmitter:
             logger.info(
                 f"Prepared {len(self.urls_queue)} prefill URLs for submission"
             )
+            if self.skipped_prefill_summary:
+                logger.warning(
+                    "Skipping unsupported prefill types: %s",
+                    self.skipped_prefill_summary,
+                )
         else:
             self.urls_queue = None
             self.urls_lock = None
@@ -215,6 +229,7 @@ class FormSubmitter:
             "success_rate": 0,
             "warning": None
         }
+        self.skipped_prefill_summary = {}
 
         self.stop_flag.clear()
 
@@ -357,6 +372,30 @@ class FormSubmitter:
             for _ in range(num_submissions)
         ]
 
+    def prepare_prefill_queue(
+        self,
+        num_submissions: int,
+        responses: Optional[Dict[str, Any]],
+        responses_list: Optional[List[Dict[str, Any]]],
+        include_debug_sample: bool = False,
+    ) -> tuple[int, Dict[str, int], Optional[str]]:
+        response_dicts = self._build_response_dicts(
+            num_submissions, responses, responses_list
+        )
+        response_dicts, skipped_summary = self._filter_skippable_responses(
+            response_dicts
+        )
+        generator = PrefillLinkGenerator(self.form)
+        self.urls_queue = generator.build_prefill_urls(response_dicts)
+        self.urls_lock = threading.Lock()
+        self.skipped_prefill_summary = skipped_summary
+
+        debug_sample = None
+        if include_debug_sample and self.urls_queue:
+            debug_sample = self._redact_prefill_url(self.urls_queue[0])
+
+        return len(self.urls_queue), skipped_summary, debug_sample
+
     def _prefill_worker(self,
                         num_submissions: int,
                         min_delay: int,
@@ -425,6 +464,50 @@ class FormSubmitter:
             callback=callback,
         )
 
+    def _build_question_type_lookup(self) -> Dict[str, str]:
+        lookup = {}
+        if not self.form.response_config or not self.form.response_config.pages:
+            return lookup
+        for page in self.form.response_config.pages:
+            for question in page.questions or []:
+                if question.question_id:
+                    lookup[question.question_id] = question.type
+                entry_param = question.get_entry_param()
+                if entry_param:
+                    lookup[entry_param] = question.type
+        return lookup
+
+    def _filter_skippable_responses(
+        self,
+        responses_list: List[Dict[str, Any]],
+    ) -> tuple[List[Dict[str, Any]], Dict[str, int]]:
+        skipped_summary: Dict[str, int] = {}
+        filtered = []
+        for responses in responses_list:
+            cleaned = {}
+            for key, value in responses.items():
+                q_type = self._question_type_lookup.get(key)
+                if q_type in SKIPPABLE_PREFILL_TYPES:
+                    skipped_summary[q_type] = skipped_summary.get(q_type, 0) + 1
+                    continue
+                cleaned[key] = value
+            filtered.append(cleaned)
+        return filtered, skipped_summary
+
+    @staticmethod
+    def _redact_prefill_url(url: str) -> str:
+        try:
+            parts = urlsplit(url)
+            params = []
+            for key, value in parse_qsl(parts.query, keep_blank_values=True):
+                if key.startswith("entry."):
+                    params.append((key, "<redacted>"))
+                else:
+                    params.append((key, value))
+            return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(params), ""))
+        except Exception:
+            return "<redacted>"
+
     def _submit_prefilled_url(self, driver, url: str) -> bool:
         """Open a prefill URL and click through Next/Submit pages.
 
@@ -475,11 +558,19 @@ class FormSubmitter:
                         return True
 
                     except (NoSuchElementException, TimeoutException) as e:
-                        logger.error(f"Prefill submit failed: {e}")
+                        logger.warning(
+                            "Prefill submit confirmation failed for %s: %s",
+                            self._redact_prefill_url(start_url),
+                            type(e).__name__,
+                        )
                         return False
 
         except Exception as e:
-            logger.error(f"Error submitting prefill URL: {str(e)}")
+            logger.error(
+                "Error submitting prefill URL %s: %s",
+                self._redact_prefill_url(url),
+                type(e).__name__,
+            )
             return False
 
     def _submit_single_form(self, driver) -> bool:

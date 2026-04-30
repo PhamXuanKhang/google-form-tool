@@ -5,7 +5,7 @@
  * by tests/js/test_prefill_validator.mjs for unit verification.
  */
 
-const UNSUPPORTED_BETA_TYPES = new Set(["rank", "file_upload", "rating"]);
+const SKIPPABLE_BETA_TYPES = new Set(["rank", "file_upload", "rating", "unknown"]);
 
 export function hasEntryParam(question) {
     if (question?.entry_id) return true;
@@ -72,6 +72,7 @@ export function emailWillBeSubmitted(settings, manualEdits) {
 export function validatePrefillCompatibility(formData, settings, opts = {}) {
     const t = opts.t || _identityT;
     const manualEdits = opts.manualEdits;
+    const skippedItems = [];
 
     if (settings?.submission_mode !== "prefill_link") {
         return { ok: true };
@@ -82,12 +83,12 @@ export function validatePrefillCompatibility(formData, settings, opts = {}) {
 
     for (const page of formData.response_config.pages) {
         for (const question of (page.questions || [])) {
-            if (UNSUPPORTED_BETA_TYPES.has(question.type)) {
-                return {
-                    ok: false,
-                    blocking: true,
-                    message: `${t("unsupportedFeaturePopup", "This feature is being developed and will be available in the next update.")} (${question.type})`,
-                };
+            if (SKIPPABLE_BETA_TYPES.has(question.type)) {
+                const label = question.text
+                    ? `${question.type}: ${question.text}`
+                    : question.type;
+                skippedItems.push(label);
+                continue;
             }
 
             if (hasEntryParam(question)) continue;
@@ -119,6 +120,16 @@ export function validatePrefillCompatibility(formData, settings, opts = {}) {
                 ).replace("{q}", question.text || question.question_id),
             };
         }
+    }
+
+    if (skippedItems.length > 0) {
+        const unique = Array.from(new Set(skippedItems));
+        return {
+            ok: true,
+            warnings: [
+                `${t("unsupportedFeaturePopup", "This feature is being developed and will be available in the next update.")} (${unique.join(", ")})`
+            ],
+        };
     }
 
     return { ok: true };

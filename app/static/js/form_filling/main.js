@@ -91,18 +91,29 @@ window.validatePrefillCompatibility = validatePrefillCompatibility;
 
 // Function to start form submission
 window.startFormSubmission = async function() {
-    const settings = getFormSettings();
-    const manualEdits = window.collectManualEdits?.();
-    const check = validatePrefillCompatibility(
-        window.formQuestionsData,
-        settings,
-        { manualEdits, t }
-    );
-    if (check && check.blocking) {
-        window.showPopup?.(check.message, "warning");
-        return;
+    try {
+        const settings = getFormSettings();
+        const manualEdits = window.collectManualEdits?.();
+        const check = validatePrefillCompatibility(
+            window.formQuestionsData,
+            settings,
+            { manualEdits, t }
+        );
+        if (check && check.blocking) {
+            window.showPopup?.(check.message, "warning");
+            return;
+        }
+        if (check && Array.isArray(check.warnings) && check.warnings.length > 0) {
+            window.showPopup?.(check.warnings.join(" "), "warning");
+        }
+        await startSubmission(settings);
+    } catch (error) {
+        console.error("Start submission failed:", error);
+        window.showPopup?.(
+            t("startSubmissionFailed", "Failed to start submission. Check the popup and browser console."),
+            "error"
+        );
     }
-    await startSubmission(settings);
 }
 
 // Function to stop form submission
@@ -181,7 +192,14 @@ window.getOrAskGeminiKey = async function () {
             window.showPopup?.(t("aiKeySaved", "API key saved."), 'success');
             return key;
         }
-        window.showPopup?.(result.error || t("invalidApiKey", "Invalid API key"), 'error');
+        const code = result.code || "";
+        let message = result.error || t("invalidApiKey", "API key validation failed.");
+        if (code === "ai_dependency_missing") {
+            message = t("aiDependencyMissing", "AI dependency is not installed. Run pip install -r requirements.txt.");
+        } else if (code === "model_unavailable") {
+            message = t("aiModelUnavailable", "Selected Gemini model is unavailable. Check GEMINI_MODEL or API access.");
+        }
+        window.showPopup?.(message, 'error');
     } catch (e) {
         window.showPopup?.(`${t("invalidApiKey", "Invalid API key")}: ${e.message}`, 'error');
     }

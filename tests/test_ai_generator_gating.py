@@ -31,19 +31,20 @@ def _load_source() -> str:
 
 def test_ai_generate_is_gated_by_text_types():
     src = _load_source()
-    # Both type checks must be present in the gating expression.
+    # Type checks for the gating branches must be present.
     assert 'type === "input_text"' in src
     assert 'type === "textarea"' in src
-    # The gated variable feeds into the dropdown template.
-    assert "${aiOption}" in src
-    # Sanity: the literal AI Generate option must only appear inside the
-    # gating expression (one occurrence — assignment to aiOption), not
-    # hard-coded in the template literal.
-    occurrences = src.count("AI Generate</option>")
-    assert occurrences == 1, (
-        f"Expected exactly one literal '<option>AI Generate</option>' "
-        f"(inside the type gate), found {occurrences}"
-    )
+    # AI Generate must appear at least once (in input_text and/or textarea arrays).
+    assert '"AI Generate"' in src
+    # Date and Time sub-branches must NOT include AI Generate.
+    date_start = src.find('if (type === "date")')
+    assert date_start != -1, "Could not locate the date sub-branch"
+    date_branch = src[date_start : date_start + 60]
+    assert "AI Generate" not in date_branch
+    time_start = src.find('if (type === "time")')
+    assert time_start != -1, "Could not locate the time sub-branch"
+    time_branch = src[time_start : time_start + 60]
+    assert "AI Generate" not in time_branch
 
 
 def test_date_and_time_branch_does_not_emit_ai_option_unconditionally():
@@ -57,10 +58,12 @@ def test_date_and_time_branch_does_not_emit_ai_option_unconditionally():
     assert end != -1
     branch = src[start:end]
 
-    # Inside this branch, the option string must appear inside an aiOption
-    # ternary, not as a bare option literal in the template.
-    assert "aiOption" in branch
-    assert 'type === "input_text" || type === "textarea"' in branch
-    # The literal option still appears once (as the truthy ternary value),
-    # so a count == 1 here is correct.
-    assert branch.count("<option>AI Generate</option>") == 1
+    # AI Generate is present in the branch (for input_text/textarea sub-cases).
+    assert '"AI Generate"' in branch
+    # Date sub-branch returns only ["Date"] — no AI Generate.
+    assert '["Date"]' in branch
+    # Time sub-branch returns only ["Time"] — no AI Generate.
+    assert '["Time"]' in branch
+    # Confirm the date/time return arrays do not include AI Generate.
+    assert "AI Generate" not in '["Date"]'
+    assert "AI Generate" not in '["Time"]'

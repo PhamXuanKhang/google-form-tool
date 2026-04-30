@@ -130,12 +130,12 @@ test("validate: ok for fully supported form", () => {
     assert.deepEqual(r, { ok: true });
 });
 
-test("validate: blocks rank with developing-soon popup naming the type", () => {
+test("validate: warns rank but does not block submission", () => {
     const r = validatePrefillCompatibility(formWithRank, { submission_mode: "prefill_link" });
-    assert.equal(r.ok, false);
-    assert.equal(r.blocking, true);
-    assert.match(r.message, /developed/);
-    assert.match(r.message, /rank/);
+    assert.equal(r.ok, true);
+    assert.ok(Array.isArray(r.warnings));
+    assert.match(r.warnings[0], /developed/);
+    assert.match(r.warnings[0], /rank/);
 });
 
 test("validate: blocks question with missing entry, names the question text", () => {

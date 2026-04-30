@@ -34,6 +34,14 @@ function renderQuestionsStep2(formData) {
             const qTitle = `<h6 class="fw-bold">${escapeHtml(question.text)}</h6>
                             <div class="text-muted mb-2"><small>Type: <code>${escapeHtml(type)}</code></small></div>`;
 
+            const isDefaultEmail = question.question_id === "q_email" && !question.entry_id;
+            const hasConfiguredEmail = Array.isArray(question.answer_config?.answers) && question.answer_config.answers.length > 0;
+            const hasFillPercent = Number.isFinite(question.answer_config?.fill_percentage) && question.answer_config.fill_percentage > 0;
+
+            if (isDefaultEmail && !hasConfiguredEmail && !hasFillPercent) {
+                return;
+            }
+
             if (type === "input_email") {
                 qEl.innerHTML = `
                     ${qTitle}
@@ -52,27 +60,32 @@ function renderQuestionsStep2(formData) {
                         <button class="btn btn-sm btn-outline-primary generate-email-btn"><i class="fas fa-magic me-1"></i> Generate</button>
                     </div>
                     <textarea class="form-control mb-1 email-textarea answer-textarea" rows="4" placeholder="Each line = 1 email"></textarea>
-                    
-                    <div class="text-end text-muted small">Should match <b>form count</b></div>
+
+                    <div class="text-end text-muted small">Each line is a candidate email; submissions pick randomly.</div>
                 `;
 
             } else if (["input_text", "textarea", "date", "time"].includes(type)) {
-                // AI Generate is only meaningful for free-text questions (TIP-006).
-                // date/time keep the deterministic generators only.
-                const aiOption = (type === "input_text" || type === "textarea")
-                    ? `<option>AI Generate</option>`
-                    : "";
+                const generatorOptions = (() => {
+                    if (type === "input_text") return ["Name", "Phone", "Generic Text", "AI Generate"];
+                    if (type === "textarea") return ["Generic Text", "AI Generate"];
+                    if (type === "date") return ["Date"];
+                    if (type === "time") return ["Time"];
+                    return ["Generic Text"];
+                })();
+                const optionsHtml = generatorOptions
+                    .map(option => `<option>${option}</option>`)
+                    .join("");
+                const placeholder = type === "date"
+                    ? "Each line = YYYY-MM-DD"
+                    : type === "time"
+                        ? "Each line = HH:MM"
+                        : "Each line is a candidate answer";
                 qEl.innerHTML = `
                     ${qTitle}
                     <div class="d-flex align-items-center mb-2">
                         <label class="me-2">Answer Type:</label>
                         <select class="form-select w-auto me-2 answer-generator-type">
-                            <option>Name</option>
-                            <option>Phone</option>
-                            <option>Date</option>
-                            <option>Hour</option>
-                            <option>Minute</option>
-                            ${aiOption}
+                            ${optionsHtml}
                         </select>
                         <button class="btn btn-sm btn-outline-primary generate-answer-btn"><i class="fas fa-magic me-1"></i> Generate</button>
                     </div>
@@ -81,7 +94,8 @@ function renderQuestionsStep2(formData) {
                         <input type="number" class="form-control w-25 fill-percent" value="100" min="0" max="100">
                         <span class="ms-1">%</span>
                     </div>
-                    <textarea class="form-control answer-textarea" rows="4" placeholder="Each line = 1 answer"></textarea>
+                    <textarea class="form-control answer-textarea" rows="4" placeholder="${placeholder}"></textarea>
+                    <div class="text-end text-muted small">Selections are randomized per submission.</div>
                 `;
             }
 
@@ -171,6 +185,7 @@ async function runInlineAIGenerate(card, button, textarea) {
     const t = (key, fallback) => window.i18n?.[key] || fallback;
     const questionType = card.dataset.questionType;
     const questionId = card.dataset.questionId;
+    const targetCount = getTargetCount();
 
     if (!["input_text", "textarea"].includes(questionType)) {
         window.showPopup?.(t("aiOnlyForText", "AI Generate only supports text-like questions in this beta."), 'warning');
@@ -196,7 +211,7 @@ async function runInlineAIGenerate(card, button, textarea) {
                 form_id: window.currentFormId,
                 question_id: questionId,
                 api_key: apiKey,
-                count: getTargetCount(),
+                count: targetCount,
             }),
         });
         const result = await res.json().catch(() => ({}));
@@ -204,7 +219,12 @@ async function runInlineAIGenerate(card, button, textarea) {
             window.showPopup?.(result.error || t("aiGenerateFailed", "Failed to generate AI answers"), 'error');
             return;
         }
-        textarea.value = (result.answers || []).join("\n");
+        const answers = Array.isArray(result.answers) ? result.answers.slice(0, targetCount) : [];
+        while (answers.length < targetCount) {
+            answers.push("");
+        }
+        textarea.value = answers.join("\n");
+        window.showPopup?.(t("aiGenerateSuccess", "AI answers generated."), 'success');
     } catch (e) {
         window.showPopup?.(`${t("aiGenerateFailed", "Failed to generate AI answers")}: ${e.message}`, 'error');
     } finally {
@@ -305,8 +325,8 @@ function generateValues(type, count) {
     if (normalizedType === "name") return generateNames(count);
     if (normalizedType === "phone") return generatePhones(count);
     if (normalizedType === "date") return generateDates(count);
-    if (normalizedType === "hour") return generateHours(count);
-    if (normalizedType === "minute") return generateMinutes(count);
+    if (normalizedType === "time") return generateTimes(count);
+    if (normalizedType === "generic text") return generateGenericText(count);
     return generateGenericText(count);
 }
 
@@ -341,12 +361,12 @@ function generateDates(count) {
     });
 }
 
-function generateHours(count) {
-    return Array.from({ length: count }, (_, i) => String(i % 24).padStart(2, "0"));
-}
-
-function generateMinutes(count) {
-    return Array.from({ length: count }, (_, i) => String((i * 5) % 60).padStart(2, "0"));
+function generateTimes(count) {
+    return Array.from({ length: count }, (_, i) => {
+        const hour = String(i % 24).padStart(2, "0");
+        const minute = String((i * 7) % 60).padStart(2, "0");
+        return `${hour}:${minute}`;
+    });
 }
 
 function generateGenericText(count) {
@@ -400,6 +420,55 @@ function parsePercent(value, fallback) {
     return Number.isFinite(percent) ? percent : fallback;
 }
 
+function validateManualConfiguration() {
+    const issues = [];
+    const questionCards = document.querySelectorAll("#step-2-questions .card[data-question-id]");
+
+    questionCards.forEach(card => {
+        const type = card.dataset.questionType || "";
+        const title = card.querySelector("h6")?.textContent?.trim() || "Question";
+        const fillInput = card.querySelector(".fill-percent");
+        const fillValue = fillInput ? parseFloat(fillInput.value) : null;
+
+        if (fillInput && (!Number.isFinite(fillValue) || fillValue < 0 || fillValue > 100)) {
+            issues.push(`${title}: distribution % must be between 0 and 100.`);
+        }
+
+        if (["multiple_choice", "dropdown", "linear_scale"].includes(type)) {
+            const percentInputs = card.querySelectorAll(".option-percent");
+            let total = 0;
+            let hasInvalid = false;
+            percentInputs.forEach(input => {
+                const val = parseFloat(input.value);
+                if (!Number.isFinite(val) || val < 0 || val > 100) {
+                    hasInvalid = true;
+                }
+                total += Number.isFinite(val) ? val : 0;
+            });
+            if (hasInvalid) {
+                issues.push(`${title}: option % must be between 0 and 100.`);
+            }
+            if (percentInputs.length > 0 && Math.round(total) !== 100) {
+                issues.push(`${title}: option % total must equal 100 (current ${total.toFixed(0)}).`);
+            }
+        }
+
+        if (["input_text", "textarea", "input_email", "date", "time"].includes(type)) {
+            const textarea = card.querySelector("textarea");
+            const answers = (textarea?.value || "")
+                .split("\n")
+                .map(line => line.trim())
+                .filter(Boolean);
+            const effectiveFill = Number.isFinite(fillValue) ? fillValue : 100;
+            if (effectiveFill > 0 && answers.length === 0) {
+                issues.push(`${title}: add at least one answer or set % to 0.`);
+            }
+        }
+    });
+
+    return issues;
+}
+
 // Export functions to global scope
 window.renderQuestionsStep2 = renderQuestionsStep2;
 window.adjustPercentDistribution = adjustPercentDistribution;
@@ -408,3 +477,4 @@ window.adjustTextAreaRows = adjustTextAreaRows;
 window.generateEmails = generateEmails;
 window.generateValues = generateValues;
 window.collectManualEdits = collectManualEdits;
+window.validateManualConfiguration = validateManualConfiguration;
