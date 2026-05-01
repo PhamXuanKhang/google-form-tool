@@ -20,7 +20,7 @@ except ImportError:
 
 SUPPORTED_LANGUAGES = ["en", "vi"]
 
-__version__ = "1.0.0-beta.1"
+__version__ = "1.1.0"
 
 
 def get_locale():

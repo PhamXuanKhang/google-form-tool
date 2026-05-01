@@ -82,6 +82,6 @@ echo  Build complete!
 echo  Exe: dist\GoogleFormTool\GoogleFormTool.exe
 echo.
 echo  To create distributable zip (run in PowerShell):
-echo    Compress-Archive -Path dist\GoogleFormTool -DestinationPath GoogleFormTool-v1.0.0-beta.1-windows.zip
+echo    Compress-Archive -Path dist\GoogleFormTool -DestinationPath GoogleFormTool-v1.1.0-windows.zip
 echo ============================================================
 pause
