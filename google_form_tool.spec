@@ -65,9 +65,19 @@ a = Analysis(
         "selenium.webdriver.support.expected_conditions",
         # Google Generative AI (optional feature)
         "google.genai",
+        # webdriver-manager (auto-downloads ChromeDriver)
+        "webdriver_manager",
+        "webdriver_manager.chrome",
+        "webdriver_manager.core",
+        "webdriver_manager.core.driver",
+        "webdriver_manager.core.manager",
+        "webdriver_manager.core.os_manager",
+        "webdriver_manager.core.download_manager",
+        "webdriver_manager.core.http",
         # App modules
         "app",
         "app.main_routes",
+        "app.core.driver_manager",
         "app.models",
         "app.utils",
         "app.logging_config",

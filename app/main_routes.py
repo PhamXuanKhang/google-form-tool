@@ -11,6 +11,7 @@ from app.services import get_storage_service
 from datetime import datetime
 from app.core import FormExtractor
 from app.core.form_extractor import DriverStartupError, FormExtractionError, FormLoadError
+from app.core.driver_manager import get_chrome_binary, get_chromedriver_path
 from app.logging_config import logger
 from config import Config
 
@@ -105,8 +106,8 @@ def extract():
         form = storage.get_form_by_url(form_url)
         if not form:
             form_extractor = FormExtractor(
-                chromebinary_path=Config.CHROME_BINARY_PATH,
-                chromedriver_path=Config.CHROME_DRIVER_PATH,
+                chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
+                chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
                 headless=True
             )
             try:
@@ -614,9 +615,9 @@ def start_submission():
 
             submitter = FormSubmitter(
                 form=form,
-                chromebinary_path=Config.CHROME_BINARY_PATH,
-                chromedriver_path=Config.CHROME_DRIVER_PATH,
-                headless=False
+                chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
+                chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
+                headless=True
             )
             active_submitters[form_id] = submitter
 
