@@ -1,6 +1,290 @@
 {% extends "base.html" %}
-{% block title %}{{ _('About') }} - {{ _('Google Form Automation Tool') }}{% endblock%}
+{% block title %}{{ _('About') }} - {{ _('Google Form Automation Tool') }}{% endblock %}
+
+{% block css %}
+<style>
+  .about-hero {
+    background: linear-gradient(135deg, #0d6efd11 0%, #6610f211 100%);
+    border-radius: 1rem;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+  .feature-card {
+    border: none;
+    border-radius: .75rem;
+    transition: transform .2s, box-shadow .2s;
+    height: 100%;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  }
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: .6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: .75rem;
+  }
+  .step-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .95rem;
+    flex-shrink: 0;
+  }
+  .gif-placeholder {
+    background: #f0f4ff;
+    border: 2px dashed #a0b4e0;
+    border-radius: .75rem;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6c8cc4;
+    gap: .5rem;
+    font-size: .9rem;
+  }
+  .gif-placeholder img {
+    border-radius: .75rem;
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .tech-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 2rem;
+    padding: .35rem .9rem;
+    font-size: .85rem;
+    font-weight: 500;
+  }
+  .author-card {
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+    color: white;
+  }
+  .author-card a {
+    color: rgba(255,255,255,.85);
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .author-card a:hover { color: #fff; }
+  .version-pill {
+    display: inline-block;
+    background: rgba(255,255,255,.2);
+    border-radius: 2rem;
+    padding: .2rem .8rem;
+    font-size: .8rem;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1>{{ _('About This Tool') }}</h1>
-<p>{{ _('Google Form Automation Tool helps extract, configure, and automate Google Form submissions.') }}</p>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────── -->
+<div class="about-hero d-flex flex-column flex-md-row align-items-center gap-4">
+  <div class="flex-grow-1">
+    <h1 class="fw-bold mb-2">
+      <i class="fas fa-robot text-primary me-2"></i>{{ _('Google Form Automation Tool') }}
+    </h1>
+    <p class="lead mb-3">
+      {{ _('Automate bulk Google Form submissions without the Google Forms API. Extract any form structure, configure answer probabilities, and submit at scale — all from a local web UI.') }}
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+      <span class="badge bg-primary rounded-pill px-3 py-2">v{{ app_version }}</span>
+      <span class="badge bg-warning text-dark rounded-pill px-3 py-2">{{ _('Beta') }}</span>
+      <span class="badge bg-success rounded-pill px-3 py-2">Windows 10 / 11</span>
+      <span class="badge bg-secondary rounded-pill px-3 py-2">MIT License</span>
+    </div>
+  </div>
+  <div class="flex-shrink-0 text-center">
+    <img src="{{ url_for('static', filename='images/banner.png') }}"
+         alt="Google Form Automation Tool"
+         style="max-width:220px; border-radius:.75rem; box-shadow:0 4px 16px rgba(0,0,0,.12);">
+  </div>
+</div>
+
+<!-- ── Demo GIFs ─────────────────────────────────────────────────────── -->
+<h4 class="fw-semibold mb-3"><i class="fas fa-play-circle text-primary me-2"></i>{{ _('Demo') }}</h4>
+<div class="row g-3 mb-5">
+
+  <div class="col-md-4">
+    <p class="fw-semibold text-center mb-2"><i class="fas fa-search me-1"></i>{{ _('1. Extract Form') }}</p>
+    <!-- Replace the div below with <img src="..." alt="..."> when you have the GIF -->
+    <div class="gif-placeholder" id="gif-extract">
+      <i class="fas fa-film fa-2x"></i>
+      <span>{{ _('Demo GIF coming soon') }}</span>
+      <code style="font-size:.75rem;">{{ _('Replace with extract-demo.gif') }}</code>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <p class="fw-semibold text-center mb-2"><i class="fas fa-sliders-h me-1"></i>{{ _('2. Configure Answers') }}</p>
+    <div class="gif-placeholder" id="gif-configure">
+      <i class="fas fa-film fa-2x"></i>
+      <span>{{ _('Demo GIF coming soon') }}</span>
+      <code style="font-size:.75rem;">{{ _('Replace with configure-demo.gif') }}</code>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <p class="fw-semibold text-center mb-2"><i class="fas fa-rocket me-1"></i>{{ _('3. Submit & Monitor') }}</p>
+    <div class="gif-placeholder" id="gif-submit">
+      <i class="fas fa-film fa-2x"></i>
+      <span>{{ _('Demo GIF coming soon') }}</span>
+      <code style="font-size:.75rem;">{{ _('Replace with submit-demo.gif') }}</code>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── How it works ──────────────────────────────────────────────────── -->
+<h4 class="fw-semibold mb-3"><i class="fas fa-route text-primary me-2"></i>{{ _('How It Works') }}</h4>
+<div class="card shadow-sm mb-5">
+  <div class="card-body p-4">
+    <div class="d-flex flex-column gap-3">
+
+      {% set steps = [
+        ('1', 'primary',  'fas fa-link',      _('Paste the Google Form URL'),
+         _('The tool uses Selenium to open Chrome in the background, navigate to the form, and read all question structures — no API key needed.')),
+        ('2', 'success',  'fas fa-sliders-h', _('Configure answer probabilities'),
+         _('For each question, set the probability for each answer option. Leave as-is to use random selection, or dial each option to exactly what you need.')),
+        ('3', 'warning',  'fas fa-cog',       _('Set submission parameters'),
+         _('Choose how many submissions to run, how many parallel threads, and the random delay range between submissions to mimic human behaviour.')),
+        ('4', 'danger',   'fas fa-chart-bar', _('Start and monitor in real-time'),
+         _('Watch live progress, success / failure counts, CPU usage, and active thread count update in real-time. Stop at any time.'))
+      ] %}
+
+      {% for num, color, icon, title, desc in steps %}
+      <div class="d-flex gap-3 align-items-start">
+        <div class="step-badge bg-{{ color }} text-white">{{ num }}</div>
+        <div>
+          <div class="fw-semibold"><i class="{{ icon }} me-1"></i>{{ title }}</div>
+          <div class="text-muted small">{{ desc }}</div>
+        </div>
+      </div>
+      {% if not loop.last %}
+      <div class="ms-4 ps-1" style="border-left:2px dashed #dee2e6; height:16px;"></div>
+      {% endif %}
+      {% endfor %}
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Features ──────────────────────────────────────────────────────── -->
+<h4 class="fw-semibold mb-3"><i class="fas fa-star text-primary me-2"></i>{{ _('Features') }}</h4>
+<div class="row g-3 mb-5">
+
+  {% set features = [
+    ('bg-primary bg-opacity-10', 'text-primary', 'fas fa-magic',
+     _('Zero-Config Chrome'),
+     _('Auto-detects installed Chrome and downloads the matching ChromeDriver. No manual path setup needed.')),
+    ('bg-success bg-opacity-10', 'text-success', 'fas fa-check-double',
+     _('12 Question Types'),
+     _('Handles Short Answer, Paragraph, Multiple Choice, Checkbox, Dropdown, Scale, Grid, Date, Time, File Upload, and Rating.')),
+    ('bg-warning bg-opacity-10', 'text-warning', 'fas fa-random',
+     _('Probability Control'),
+     _('Set weighted probabilities per answer — e.g. 70% Option A, 30% Option B — for realistic response distributions.')),
+    ('bg-danger bg-opacity-10', 'text-danger', 'fas fa-layer-group',
+     _('Multithreaded Submission'),
+     _('Run up to 10 parallel Chrome threads for high-throughput bulk submission with configurable random delays.')),
+    ('bg-info bg-opacity-10', 'text-info', 'fas fa-robot',
+     _('AI Answer Generation'),
+     _('Optional Gemini AI integration generates context-aware text responses. Enter your API key in the UI — no env setup needed.')),
+    ('bg-secondary bg-opacity-10', 'text-secondary', 'fas fa-history',
+     _('Submission History'),
+     _('Every batch is saved locally. Browse, filter, and export history to CSV from the home screen.')),
+  ] %}
+
+  {% for bg, fg, icon, title, desc in features %}
+  <div class="col-md-4">
+    <div class="card feature-card shadow-sm p-3">
+      <div class="feature-icon {{ bg }}">
+        <i class="{{ icon }} {{ fg }}"></i>
+      </div>
+      <div class="fw-semibold mb-1">{{ title }}</div>
+      <div class="text-muted small">{{ desc }}</div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- ── Tech Stack ─────────────────────────────────────────────────────── -->
+<h4 class="fw-semibold mb-3"><i class="fas fa-layer-group text-primary me-2"></i>{{ _('Tech Stack') }}</h4>
+<div class="d-flex flex-wrap gap-2 mb-5">
+  {% set stack = [
+    ('fab fa-python text-primary', 'Python 3.12'),
+    ('fas fa-flask text-dark', 'Flask 3.1'),
+    ('fas fa-chrome text-success', 'Selenium 4'),
+    ('fas fa-database text-warning', 'TinyDB'),
+    ('fas fa-shield-alt text-info', 'Pydantic 2'),
+    ('fas fa-server text-secondary', 'Waitress'),
+    ('fas fa-globe text-primary', 'Flask-Babel'),
+    ('fas fa-brain text-danger', 'Google Gemini AI'),
+    ('fas fa-box text-dark', 'PyInstaller'),
+    ('fab fa-bootstrap text-purple', 'Bootstrap 5'),
+  ] %}
+  {% for icon, name in stack %}
+  <span class="tech-badge">
+    <i class="{{ icon }}"></i> {{ name }}
+  </span>
+  {% endfor %}
+</div>
+
+<!-- ── Known Limitations ─────────────────────────────────────────────── -->
+<h4 class="fw-semibold mb-3"><i class="fas fa-exclamation-triangle text-warning me-2"></i>{{ _('Known Limitations (Beta)') }}</h4>
+<div class="card shadow-sm mb-5">
+  <ul class="list-group list-group-flush rounded">
+    <li class="list-group-item"><i class="fas fa-windows text-secondary me-2"></i>{{ _('Windows 10 / 11 only — Linux/macOS not packaged yet') }}</li>
+    <li class="list-group-item"><i class="fas fa-wifi text-secondary me-2"></i>{{ _('First run requires internet to download ChromeDriver (~30 s)') }}</li>
+    <li class="list-group-item"><i class="fas fa-shield-virus text-secondary me-2"></i>{{ _('Antivirus may flag the .exe (PyInstaller false positive — safe to allow)') }}</li>
+    <li class="list-group-item"><i class="fas fa-file-upload text-secondary me-2"></i>{{ _('File upload and rating question types are not supported in prefill mode') }}</li>
+    <li class="list-group-item"><i class="fas fa-lock text-secondary me-2"></i>{{ _('Forms requiring Google account login cannot be submitted anonymously') }}</li>
+  </ul>
+</div>
+
+<!-- ── Author ─────────────────────────────────────────────────────────── -->
+<div class="card author-card shadow p-4 mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-center gap-4">
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="fw-bold fs-5">KhangPham</span>
+        <span class="version-pill">v{{ app_version }}</span>
+      </div>
+      <p class="mb-3 opacity-75">
+        {{ _('Built this tool to scratch a personal itch. Feedback and bug reports are very welcome — this is a beta and things will break!') }}
+      </p>
+      <div class="d-flex flex-wrap gap-3">
+        <a href="https://github.com/PhamXuanKhang/google-form-tool/issues/new" target="_blank">
+          <i class="fas fa-bug me-1"></i>{{ _('Report a Bug') }}
+        </a>
+        <a href="mailto:phamxuankhang2004@gmail.com">
+          <i class="fas fa-envelope me-1"></i>phamxuankhang2004@gmail.com
+        </a>
+        <a href="https://www.linkedin.com/in/xuan-khang-pham-715208279/" target="_blank">
+          <i class="fab fa-linkedin me-1"></i>LinkedIn
+        </a>
+        <a href="https://github.com/PhamXuanKhang" target="_blank">
+          <i class="fab fa-github me-1"></i>GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
