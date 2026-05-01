@@ -1,126 +1,151 @@
-# Google Form Automation Tool
+<div align="center">
 
-Local web tool for extracting Google Form structure, preparing answer data, and running automated submissions from your own machine.
+<img src="app/static/images/banner.png" alt="Google Form Automation Tool Banner" width="100%">
 
-## Quick Start on Windows
+<h1>Google Form Automation Tool</h1>
 
-1. Install Python 3.9 or newer.
-2. Open PowerShell in this project folder.
-3. Create a virtual environment:
+<p><strong>Tự động hoá submit Google Form hàng loạt — không cần API, không cần code.</strong></p>
 
-```powershell
-py -3 -m venv venv
+[![Release](https://img.shields.io/github/v/release/PhamXuanKhang/google-form-tool?include_prereleases&style=for-the-badge&color=blue&label=Download)](https://github.com/PhamXuanKhang/google-form-tool/releases/latest)
+[![Platform](https://img.shields.io/badge/Windows-10%2F11%2064--bit-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/PhamXuanKhang/google-form-tool/releases/latest)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Status](https://img.shields.io/badge/Status-Beta-orange?style=for-the-badge)](https://github.com/PhamXuanKhang/google-form-tool/issues)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
+
+</div>
+
+---
+
+## ⚡ Tải về & Chạy ngay (Windows)
+
+> Không cần cài Python. Không cần config. Double-click là chạy.
+
+**1.** [**⬇ Tải GoogleFormTool-v1.0.0-beta.1-windows.zip**](https://github.com/PhamXuanKhang/google-form-tool/releases/latest)
+
+**2.** Giải nén vào thư mục bất kỳ
+
+**3.** Cài **[Google Chrome](https://www.google.com/chrome/)** nếu chưa có *(bắt buộc)*
+
+**4.** Double-click **`GoogleFormTool.exe`**
+   → Trình duyệt tự động mở tại `http://127.0.0.1:5000`
+
+> 💡 **Lần đầu chạy:** App tự tải ChromeDriver phù hợp với Chrome của bạn (~30–60 giây, cần internet). Các lần sau không cần tải lại.
+
+> ⚠️ Antivirus có thể cảnh báo file exe — đây là **false positive** thông thường với PyInstaller. Bỏ qua an toàn.
+
+---
+
+## ✨ Tính năng
+
+| | Tính năng | Mô tả |
+|---|-----------|-------|
+| 🔍 | **Auto Extract** | Tự động đọc cấu trúc câu hỏi từ bất kỳ Google Form nào |
+| 🎯 | **12 Question Types** | Text, Multiple Choice, Checkbox, Scale, Grid, Date, Time... |
+| ⚙️ | **Custom Probabilities** | Tuỳ chỉnh xác suất chọn từng đáp án |
+| 🚀 | **Bulk Submit** | Multithreading — submit hàng trăm lần với delay ngẫu nhiên |
+| 📊 | **Live Monitoring** | CPU, network, thread metrics real-time |
+| 🤖 | **AI Responses** | Tích hợp Gemini AI để tạo câu trả lời tự nhiên |
+| 🌐 | **i18n** | Giao diện Tiếng Anh / Tiếng Việt |
+| 📋 | **History** | Lưu lịch sử submission, export CSV |
+
+---
+
+## 🗺️ Workflow
+
+```
+① Paste URL          ② Configure          ③ Settings          ④ Monitor
+   Google Form URL  →  Set probabilities  →  Threads & delay  →  Live progress
+   → Auto extract      per answer option     Min/max delay        Success/fail
 ```
 
-4. Install dependencies:
+---
 
-```powershell
-.\venv\Scripts\python.exe -m pip install -r requirements.txt
+## 🐛 Known Issues (Beta)
+
+- File upload answer method đang thử nghiệm, có thể không ổn định
+- Một số loại câu hỏi đặc biệt (file upload, rating) không hỗ trợ prefill mode
+- Docker path chưa được kiểm tra đầy đủ trên tất cả cấu hình
+
+---
+
+## 🛠️ Dành cho Developer (Chạy từ Source)
+
+<details>
+<summary>Click để mở hướng dẫn</summary>
+
+### Prerequisites
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) *(khuyến nghị)* hoặc pip
+- Google Chrome
+
+### Setup
+
+```bash
+git clone https://github.com/PhamXuanKhang/google-form-tool.git
+cd google-form-tool
+
+# Cài dependencies (uv)
+uv sync
+
+# Hoặc pip
+pip install -r requirements.txt
+
+# Chạy
+python wsgi.py
 ```
 
-5. Create your local environment file:
+Mở `http://localhost:5000`
 
-```powershell
-Copy-Item .env.example .env
-```
+### Chrome paths (tuỳ chọn)
 
-6. Edit `.env` and set:
+Để dùng Chrome hoặc ChromeDriver cụ thể, copy `.env.example` thành `.env` và cấu hình:
 
 ```env
-SECRET_KEY=change-this-to-a-random-string
-DB_PATH=app/services/db.json
-CHROME_BINARY_PATH=D:\common_tool\google_form_automation_tool\drivers\chrome\chrome.exe
-CHROME_DRIVER_PATH=D:\common_tool\google_form_automation_tool\drivers\chromedriver\chromedriver.exe
+CHROME_BINARY_PATH=C:\Path\To\chrome.exe
+CHROME_DRIVER_PATH=C:\Path\To\chromedriver.exe
 ```
 
-7. Start the app:
+Nếu để trống, app sẽ tự phát hiện Chrome hệ thống và tự tải ChromeDriver.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1
+### Build exe
+
+```bat
+build_exe.bat
 ```
 
-8. Open:
+Output: `dist\GoogleFormTool\GoogleFormTool.exe` (~114 MB uncompressed, ~51 MB zipped)
 
-```text
-http://localhost:5000
+### Chạy tests
+
+```bash
+pytest tests/ -v
 ```
 
-## Chrome and ChromeDriver
+### Docker (nâng cao)
 
-Selenium features require a working Chrome or Chromium binary and a compatible ChromeDriver.
-
-Suggested Windows folder layout:
-
-```text
-D:\common_tool\google_form_automation_tool\drivers\chrome\chrome.exe
-D:\common_tool\google_form_automation_tool\drivers\chromedriver\chromedriver.exe
-```
-
-You can use another folder if you update `CHROME_BINARY_PATH` and `CHROME_DRIVER_PATH` in `.env`.
-
-Chrome and ChromeDriver versions must be compatible. If extraction or submission fails before opening the form, check these paths and versions first.
-
-## Local Run Script
-
-Use:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1
-```
-
-The script:
-
-- runs from the repo root,
-- uses `.\venv\Scripts\python.exe`,
-- prints setup instructions if the virtual environment is missing,
-- warns if `.env` is missing,
-- starts `wsgi.py`,
-- shows `http://localhost:5000`.
-
-It does not install dependencies automatically.
-
-## Docker Optional
-
-Docker is an advanced path for users who prefer containerized setup.
-
-The repo includes `Dockerfile` and `docker-compose.yml`. A Docker image can use Chromium inside the container, which avoids configuring local Windows Chrome paths. Treat Docker as optional until the browser setup in the image is verified for your machine.
-
-Typical command:
-
-```powershell
+```bash
 docker compose up --build
 ```
 
-Then open `http://localhost:5000`.
+</details>
 
-## Future EXE Packaging
+---
 
-EXE packaging is not implemented in this TIP.
+## 📬 Feedback & Liên hệ
 
-A future packaging pass can use PyInstaller or a similar tool. Browser packaging needs explicit testing because Chrome/Chromium and ChromeDriver paths are the riskiest part of a standalone desktop build.
+Đây là bản **Beta** — mong nhận phản hồi và báo lỗi từ bạn!
 
-## Tests
+<div align="center">
 
-Run the default unit test suite without Selenium integration tests:
+[![Report Bug](https://img.shields.io/badge/🐛_Report_Bug-GitHub_Issues-red?style=for-the-badge)](https://github.com/PhamXuanKhang/google-form-tool/issues/new)
+[![Email](https://img.shields.io/badge/📧_Email-phamxuankhang2004@gmail.com-EA4335?style=for-the-badge)](mailto:phamxuankhang2004@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/💼_LinkedIn-KhangPham-0A66C2?style=for-the-badge)](https://www.linkedin.com/in/xuan-khang-pham-715208279/)
+[![GitHub](https://img.shields.io/badge/⭐_GitHub-PhamXuanKhang-181717?style=for-the-badge)](https://github.com/PhamXuanKhang)
 
-```powershell
-.\venv\Scripts\python.exe -m pytest
-```
+</div>
 
-Run real Selenium/Google Forms integration tests explicitly:
+---
 
-```powershell
-.\venv\Scripts\python.exe -m pytest -m integration
-```
-
-Integration tests require a working Chrome and ChromeDriver setup.
-
-### Test Google Form URL
-
-To point integration tests at your own real Google Form (recommended for beta verification), add this to `.env`:
-
-```env
-TEST_GOOGLE_FORM_URL=https://docs.google.com/forms/d/e/<your-form-id>/viewform
-```
-
-When set, the `sample_form_url` fixture in `tests/conftest.py` uses it. If unset, tests fall back to the bundled sample form URL. Unit tests do not require this variable.
+<div align="center">
+  <sub>Made with ❤️ by <a href="https://github.com/PhamXuanKhang">KhangPham</a> · v1.0.0-beta.1</sub>
+</div>

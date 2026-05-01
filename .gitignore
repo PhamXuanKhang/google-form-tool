@@ -11,3 +11,12 @@ app/services/db.json
 # PyInstaller build artifacts
 /build/
 /dist/
+*.zip
+
+# Internal dev / AI-assistant planning docs
+plan.md
+quy-trinh.md
+repomix-output.xml
+docs/beta-debug-phase.md
+docs/beta-task-instruction-packs.md
+docs/TIP-*.md
