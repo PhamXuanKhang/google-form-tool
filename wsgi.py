@@ -35,10 +35,11 @@ def _show_startup_error(msg: str) -> None:
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
     debug = os.getenv("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
+    no_browser = os.getenv("GOOGLE_FORM_TOOL_NO_BROWSER", "0").lower() in ("1", "true", "yes")
     frozen = getattr(sys, "frozen", False)
 
     # Auto-open browser (skip in Flask debug mode — the reloader starts two processes)
-    if not debug:
+    if not debug and not no_browser:
         threading.Thread(target=_open_browser, args=(port,), daemon=True).start()
 
     if frozen:

@@ -23,6 +23,11 @@ bp = Blueprint('main', __name__)
 #      Home & Static UI     #
 #############################
 
+@bp.route('/healthz', methods=['GET'])
+def healthz():
+    return jsonify({"status": "ok"})
+
+
 @bp.route('/', methods=['GET'])
 def index():
     """

@@ -2,6 +2,7 @@
 /venv
 /.venv
 /.vscode
+node_modules/
 __pycache__/
 .pytest_cache/
 logs/
@@ -20,3 +21,5 @@ repomix-output.xml
 docs/beta-debug-phase.md
 docs/beta-task-instruction-packs.md
 docs/TIP-*.md
+
+.claude/
