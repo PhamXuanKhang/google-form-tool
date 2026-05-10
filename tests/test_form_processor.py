@@ -403,6 +403,31 @@ class TestLoadDataFromFile:
         finally:
             os.unlink(file_path)
 
+
+    def test_load_csv_respects_max_rows(self, processor):
+        csv_content = "q1\nAlice\nBob"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f:
+            f.write(csv_content)
+            csv_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="maximum row limit of 1"):
+                processor.load_data_from_file(csv_path, max_rows=1)
+        finally:
+            os.unlink(csv_path)
+
+    def test_load_json_respects_max_rows(self, processor):
+        json_content = [{"q1": "Alice"}, {"q1": "Bob"}]
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:
+            json.dump(json_content, f)
+            json_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="maximum row limit of 1"):
+                processor.load_data_from_file(json_path, max_rows=1)
+        finally:
+            os.unlink(json_path)
+
     def test_load_data_route_accepts_xlsx(self, client, sample_form, monkeypatch):
         class Storage:
             def __enter__(self):
@@ -414,8 +439,9 @@ class TestLoadDataFromFile:
             def _load_form(self, form_id):
                 return sample_form
 
-        def load_data_from_file(self, file_path, mapping=None):
+        def load_data_from_file(self, file_path, mapping=None, max_rows=None):
             assert file_path.endswith(".xlsx")
+            assert max_rows is not None
             return [{"q1": "Alice"}]
 
         monkeypatch.setattr(main_routes, "get_storage_service", lambda: Storage())
@@ -432,6 +458,33 @@ class TestLoadDataFromFile:
 
         assert response.status_code == 200
         assert response.get_json()["rows_loaded"] == 1
+
+
+    def test_load_data_route_rejects_too_many_rows(self, client, sample_form, monkeypatch):
+        class Storage:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                return None
+
+            def _load_form(self, form_id):
+                return sample_form
+
+        monkeypatch.setattr(main_routes, "get_storage_service", lambda: Storage())
+        monkeypatch.setattr(main_routes.Config, "MAX_UPLOAD_ROWS", 1)
+
+        response = client.post(
+            "/load_data",
+            data={
+                "form_id": sample_form.id,
+                "answer_file": (BytesIO(b"q1\nAlice\nBob\n"), "answers.csv"),
+            },
+            content_type="multipart/form-data",
+        )
+
+        assert response.status_code == 400
+        assert "maximum row limit of 1" in response.get_json()["error"]
 
 
 class TestApplyUserEdits:

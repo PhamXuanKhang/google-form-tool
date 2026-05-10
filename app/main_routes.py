@@ -8,6 +8,8 @@ for easier navigation and documentation.
 
 import os
 import sys
+import threading
+from urllib.parse import urlparse
 from flask import Blueprint, render_template, request, session, jsonify, current_app, Response
 from app.services import get_storage_service
 from datetime import datetime
@@ -21,6 +23,21 @@ from config import Config
 
 # Create blueprint
 bp = Blueprint('main', __name__)
+
+def _is_valid_google_forms_url(url: str) -> bool:
+    if not isinstance(url, str):
+        return False
+    if url != url.strip():
+        return False
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == 'https'
+        and parsed.hostname == 'docs.google.com'
+        and parsed.path.startswith('/forms/d/')
+    )
 
 
 #############################
@@ -270,7 +287,10 @@ def extract():
     form_url = data.get('form_url')
     if not form_url:
         return jsonify({"error": "No form URL provided"}), 400
-    if not isinstance(form_url, str) or not form_url.startswith('https://docs.google.com/forms/'):
+    if not isinstance(form_url, str):
+        return jsonify({"error": "Please enter a valid Google Form URL."}), 400
+    form_url = form_url.strip()
+    if not _is_valid_google_forms_url(form_url):
         return jsonify({"error": "Please enter a valid Google Form URL."}), 400
         
     session['form_url'] = form_url
@@ -358,6 +378,10 @@ def load_data():
     if not form_id:
         return jsonify({"error": "No form_id provided"}), 400
 
+    max_upload_bytes = current_app.config.get('MAX_CONTENT_LENGTH') or Config.MAX_UPLOAD_BYTES
+    if request.content_length and request.content_length > max_upload_bytes:
+        return jsonify({"error": f"Uploaded file exceeds maximum size of {max_upload_bytes} bytes"}), 413
+
     if 'answer_file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -390,7 +414,7 @@ def load_data():
                 import json
                 mapping = json.loads(mapping_json)
 
-            responses_list = processor.load_data_from_file(file_path, mapping)
+            responses_list = processor.load_data_from_file(file_path, mapping, max_rows=Config.MAX_UPLOAD_ROWS)
 
             return jsonify({
                 "success": True,
@@ -648,6 +672,7 @@ def save_edit():
 #############################
 
 active_submitters: dict = {}
+active_submitters_lock = threading.RLock()
 MAX_SUBMISSIONS_PER_BATCH = 500
 MAX_CONCURRENT_THREADS = 10
 
@@ -715,9 +740,10 @@ def _validate_submission_request(data):
 
 def _cleanup_finished_submitters():
     """Remove submitters that are no longer running."""
-    finished = [fid for fid, sub in active_submitters.items() if not sub.status.get("running", False)]
-    for fid in finished:
-        del active_submitters[fid]
+    with active_submitters_lock:
+        finished = [fid for fid, sub in active_submitters.items() if not sub.get_status().get("running", False)]
+        for fid in finished:
+            del active_submitters[fid]
 
 
 def _format_skipped_type_warning(skipped_summary):
@@ -776,8 +802,13 @@ def start_submission():
 
     _cleanup_finished_submitters()
 
-    if form_id in active_submitters and active_submitters[form_id].status.get("running", False):
-        active_submitters[form_id].stop()
+    previous_submitter = None
+    with active_submitters_lock:
+        current_submitter = active_submitters.get(form_id)
+        if current_submitter and current_submitter.get_status().get("running", False):
+            previous_submitter = current_submitter
+    if previous_submitter:
+        previous_submitter.stop()
 
     try:
         with get_storage_service() as storage:
@@ -793,7 +824,8 @@ def start_submission():
                 chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
                 headless=True
             )
-            active_submitters[form_id] = submitter
+            with active_submitters_lock:
+                active_submitters[form_id] = submitter
 
             prepared_count = num_submissions
             skipped_summary = {}
@@ -891,17 +923,21 @@ def stop_submission():
     form_id = data.get('form_id')
 
     if form_id:
-        if form_id not in active_submitters:
+        with active_submitters_lock:
+            submitter = active_submitters.get(form_id)
+        if not submitter:
             return jsonify({"success": False, "message": f"No active submission for form {form_id}"})
         try:
-            active_submitters[form_id].stop()
+            submitter.stop()
             return jsonify({"success": True, "message": f"Submission for form {form_id} stopped"})
         except Exception as e:
             return jsonify({"error": f"Error stopping submission: {str(e)}"}), 500
     else:
+        with active_submitters_lock:
+            submitters = list(active_submitters.values())
         stopped = 0
-        for sub in active_submitters.values():
-            if sub.status.get("running", False):
+        for sub in submitters:
+            if sub.get_status().get("running", False):
                 sub.stop()
                 stopped += 1
         return jsonify({"success": True, "message": f"Stopped {stopped} active submission(s)"})
@@ -919,12 +955,16 @@ def submission_status():
     form_id = request.args.get('form_id')
 
     if form_id:
-        if form_id not in active_submitters:
+        with active_submitters_lock:
+            submitter = active_submitters.get(form_id)
+        if not submitter:
             return jsonify({"running": False, "message": f"No submission for form {form_id}"})
-        return jsonify(active_submitters[form_id].get_status())
+        return jsonify(submitter.get_status())
     else:
         _cleanup_finished_submitters()
-        all_status = {fid: sub.get_status() for fid, sub in active_submitters.items()}
+        with active_submitters_lock:
+            submitters = dict(active_submitters)
+        all_status = {fid: sub.get_status() for fid, sub in submitters.items()}
         return jsonify({"active_submissions": all_status, "count": len(all_status)})
 
 

@@ -55,3 +55,5 @@ class Config:
     TEST_GOOGLE_FORM_URL = os.getenv("TEST_GOOGLE_FORM_URL")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL")
     PREFILL_DEBUG_SAMPLE = os.getenv("PREFILL_DEBUG_SAMPLE", "0") == "1"
+    MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
+    MAX_UPLOAD_ROWS = int(os.getenv("MAX_UPLOAD_ROWS", "500"))

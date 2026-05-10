@@ -1,5 +1,6 @@
 """Storage service for TinyDB operations on Form data."""
 
+import threading
 from typing import List, Optional
 from tinydb import TinyDB, Query
 from pydantic import ValidationError
@@ -7,6 +8,8 @@ from app.models import Form, ResponseConfig, Submission
 from logging import getLogger
 
 logger = getLogger(__name__)
+
+_DB_WRITE_LOCK = threading.RLock()
 
 
 class StorageService:
@@ -154,7 +157,8 @@ class StorageService:
             bool: True if saved successfully, False otherwise.
         """
         try:
-            self.db.upsert(self._dump(form), self.query.id == form.id)
+            with _DB_WRITE_LOCK:
+                self.db.upsert(self._dump(form), self.query.id == form.id)
             logger.info(f"Saved form: {form.id}")
             return True
         except Exception as e:
@@ -172,12 +176,13 @@ class StorageService:
         Returns:
             bool: True if updated, False if form not found.
         """
-        form = self._load_form(form_id)
-        if form:
-            form.response_config = config
-            self.db.update(self._dump(form), self.query.id == form_id)
-            logger.info(f"Updated response config for form: {form_id}")
-            return True
+        with _DB_WRITE_LOCK:
+            form = self._load_form(form_id)
+            if form:
+                form.response_config = config
+                self.db.update(self._dump(form), self.query.id == form_id)
+                logger.info(f"Updated response config for form: {form_id}")
+                return True
         return False
 
     def add_submission(self, form_id: str, submission: Submission) -> bool:
@@ -191,14 +196,15 @@ class StorageService:
         Returns:
             bool: True if added, False if form not found.
         """
-        form = self._load_form(form_id)
-        if form:
-            if form.submissions is None:
-                form.submissions = []
-            form.submissions.append(submission)
-            self.db.update(self._dump(form), self.query.id == form_id)
-            logger.info(f"Added submission to form: {form_id}")
-            return True
+        with _DB_WRITE_LOCK:
+            form = self._load_form(form_id)
+            if form:
+                if form.submissions is None:
+                    form.submissions = []
+                form.submissions.append(submission)
+                self.db.update(self._dump(form), self.query.id == form_id)
+                logger.info(f"Added submission to form: {form_id}")
+                return True
         return False
 
     # -------------------- DELETE --------------------
@@ -213,7 +219,8 @@ class StorageService:
         Returns:
             bool: True (TinyDB remove returns empty list if no match).
         """
-        self.db.remove(self.query.id == form_id)
+        with _DB_WRITE_LOCK:
+            self.db.remove(self.query.id == form_id)
         logger.info(f"Deleted form: {form_id}")
         return True
 
@@ -228,13 +235,14 @@ class StorageService:
         Returns:
             bool: True if form found, False otherwise.
         """
-        form = self._load_form(form_id)
-        if form:
-            if form.submissions:
-                form.submissions = [
-                    s for s in form.submissions if s.submission_id != submission_id
-                ]
-            self.db.update(self._dump(form), self.query.id == form_id)
-            logger.info(f"Deleted submission from form: {form_id}")
-            return True
+        with _DB_WRITE_LOCK:
+            form = self._load_form(form_id)
+            if form:
+                if form.submissions:
+                    form.submissions = [
+                        s for s in form.submissions if s.submission_id != submission_id
+                    ]
+                self.db.update(self._dump(form), self.query.id == form_id)
+                logger.info(f"Deleted submission from form: {form_id}")
+                return True
         return False

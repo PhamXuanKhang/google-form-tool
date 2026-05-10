@@ -1,4 +1,4 @@
-# Google Form Automation Tool — Master Task Breakdown
+﻿# Google Form Automation Tool — Master Task Breakdown
 
 > Tổng hợp từ roadmap nâng cấp app hiện tại thành Electron desktop app + Windows installer + Vercel landing page + Google Form Copy MVP.
 > Cập nhật dựa trên current Flask/Selenium architecture, review findings, và `docs/diagram/usecase_list.md`.
@@ -430,6 +430,7 @@
 ### Task 5-B — Test and smoke matrix
 **Người phụ trách:** QA/Release + Backend/Core + Desktop/Packaging
 **Use cases:** all critical flows
+**QA matrix:** `docs/verification_matrix.md`
 
 #### Subtasks
 
@@ -489,3 +490,4 @@ All phases ───────────────────────
 | `app/models.py` | Pydantic data model |
 | `app/main_routes.py` | Existing UI/API routes |
 | `tests/` | Regression test patterns |
+

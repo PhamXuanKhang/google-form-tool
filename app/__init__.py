@@ -48,6 +48,7 @@ def create_app(testing: bool = False):
     app = Flask(__name__)
     app.config.from_object(Config)
     app.config["APP_VERSION"] = __version__
+    app.config["MAX_CONTENT_LENGTH"] = Config.MAX_UPLOAD_BYTES
 
     if testing:
         app.config["TESTING"] = True

@@ -43,6 +43,7 @@ import threading
 import time
 import random
 import unicodedata
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from datetime import datetime
 from functools import wraps
 from typing import Dict, List, Any, Optional, Callable
@@ -97,17 +98,8 @@ class FormSubmitter:
         self.chromedriver_path = chromedriver_path
         self.headless = headless
         
-        self.status = {
-            "running": False,
-            "total": 0,
-            "success": 0,
-            "failed": 0,
-            "current_threads": 0,
-            "start_time": None,
-            "end_time": None,
-            "success_rate": 0,
-            "warning": None
-        }
+        self.status_lock = threading.RLock()
+        self.status = self._new_status()
         
         self.stop_flag = threading.Event()
         self.threads = []
@@ -159,6 +151,32 @@ class FormSubmitter:
             logger.error(f"Failed to initialize WebDriver: {str(e)}")
             raise
     
+    @staticmethod
+    def _new_status() -> Dict[str, Any]:
+        return {
+            "running": False,
+            "total": 0,
+            "success": 0,
+            "failed": 0,
+            "current_threads": 0,
+            "start_time": None,
+            "end_time": None,
+            "success_rate": 0,
+            "warning": None,
+        }
+
+    def _increment_status(self, key: str, amount: int = 1) -> None:
+        with self.status_lock:
+            self.status[key] += amount
+
+    def _set_status_values(self, **values: Any) -> None:
+        with self.status_lock:
+            self.status.update(values)
+
+    def _status_snapshot(self) -> Dict[str, Any]:
+        with self.status_lock:
+            return dict(self.status)
+
     def submit_form(self,
                     num_submissions: int = 1,
                     concurrent_threads: int = 1,
@@ -233,17 +251,13 @@ class FormSubmitter:
             self.urls_lock = None
 
         # Reset status
-        self.status = {
-            "running": True,
-            "total": num_submissions,
-            "success": 0,
-            "failed": 0,
-            "current_threads": 0,
-            "start_time": datetime.now(),
-            "end_time": None,
-            "success_rate": 0,
-            "warning": None
-        }
+        with self.status_lock:
+            self.status = self._new_status()
+            self.status.update({
+                "running": True,
+                "total": num_submissions,
+                "start_time": datetime.now(),
+            })
         self.skipped_prefill_summary = {}
 
         self.stop_flag.clear()
@@ -271,43 +285,44 @@ class FormSubmitter:
             )
             self.threads.append(thread)
             thread.start()
-            self.status["current_threads"] += 1
+            self._increment_status("current_threads")
         
         # Wait for all threads to complete
         for thread in self.threads:
             thread.join()
         
         # Update final status
-        self.status["running"] = False
-        self.status["end_time"] = datetime.now()
-        
-        if self.status["total"] > 0:
-            self.status["success_rate"] = (self.status["success"] / self.status["total"]) * 100
+        with self.status_lock:
+            self.status["running"] = False
+            self.status["end_time"] = datetime.now()
+            if self.status["total"] > 0:
+                self.status["success_rate"] = (self.status["success"] / self.status["total"]) * 100
+            if self.status["success_rate"] < HIGH_FAILURE_WARNING_THRESHOLD:
+                self.status["warning"] = HIGH_FAILURE_WARNING_MESSAGE
+            else:
+                self.status["warning"] = None
+            final_status = dict(self.status)
 
-        if self.status["success_rate"] < HIGH_FAILURE_WARNING_THRESHOLD:
-            self.status["warning"] = HIGH_FAILURE_WARNING_MESSAGE
+        if final_status["warning"]:
             logger.warning(
-                f"{HIGH_FAILURE_WARNING_MESSAGE} Success rate: {self.status['success_rate']:.2f}% "
-                f"({self.status['success']}/{self.status['total']})"
+                f"{HIGH_FAILURE_WARNING_MESSAGE} Success rate: {final_status['success_rate']:.2f}% "
+                f"({final_status['success']}/{final_status['total']})"
             )
-        else:
-            self.status["warning"] = None
-        
-        # Create submission record
+
         time_used = 0
-        if self.status["start_time"] and self.status["end_time"]:
-            time_used = int((self.status["end_time"] - self.status["start_time"]).total_seconds())
+        if final_status["start_time"] and final_status["end_time"]:
+            time_used = int((final_status["end_time"] - final_status["start_time"]).total_seconds())
         
         submission = Submission(
-            num_submission=self.status["total"],
+            num_submission=final_status["total"],
             concurrent_thread=concurrent_threads,
             time_used=time_used,
-            success_rate=self.status["success_rate"],
+            success_rate=final_status["success_rate"],
             network_status="Completed"
         )
         
         logger.info(f"Form submission completed: {submission.submission_id}")
-        logger.info(f"Success rate: {submission.success_rate:.2f}% ({self.status['success']}/{self.status['total']})")
+        logger.info(f"Success rate: {submission.success_rate:.2f}% ({final_status['success']}/{final_status['total']})")
         
         return submission
     
@@ -346,9 +361,9 @@ class FormSubmitter:
                 success = self._submit_single_form(driver)
 
                 if success:
-                    self.status["success"] += 1
+                    self._increment_status("success")
                 else:
-                    self.status["failed"] += 1
+                    self._increment_status("failed")
 
                 if callback:
                     callback(success)
@@ -362,7 +377,7 @@ class FormSubmitter:
             logger.error(f"Error in submission worker: {str(e)}")
         
         finally:
-            self.status["current_threads"] -= 1
+            self._increment_status("current_threads", -1)
             if driver:
                 driver.quit()
     
@@ -436,9 +451,9 @@ class FormSubmitter:
                 success = self._submit_prefilled_url(driver, url)
 
                 if success:
-                    self.status["success"] += 1
+                    self._increment_status("success")
                 else:
-                    self.status["failed"] += 1
+                    self._increment_status("failed")
 
                 if callback:
                     callback(success)
@@ -450,7 +465,7 @@ class FormSubmitter:
             logger.error(f"Error in prefill worker: {str(e)}")
 
         finally:
-            self.status["current_threads"] -= 1
+            self._increment_status("current_threads", -1)
             if driver:
                 driver.quit()
 
@@ -512,7 +527,19 @@ class FormSubmitter:
 
     @staticmethod
     def _format_prefill_url_for_log(url: str) -> str:
-        return url
+        sensitive_params = {"emailAddress"}
+        try:
+            parts = urlsplit(url)
+            redacted_query = urlencode(
+                [
+                    (key, "[REDACTED]" if key.startswith("entry.") or key in sensitive_params else value)
+                    for key, value in parse_qsl(parts.query, keep_blank_values=True)
+                ],
+                doseq=True,
+            )
+            return urlunsplit((parts.scheme, parts.netloc, parts.path, redacted_query, parts.fragment))
+        except Exception:
+            return "[REDACTED_PREFILL_URL]"
 
     def _submit_prefilled_url(self, driver, url: str) -> bool:
         """Open a prefill URL and click through Next/Submit pages."""
@@ -1001,8 +1028,7 @@ class FormSubmitter:
             if thread.is_alive():
                 thread.join(timeout=5.0)
         
-        self.status["running"] = False
-        self.status["end_time"] = datetime.now()
+        self._set_status_values(running=False, end_time=datetime.now())
         
         logger.info("Form submission stopped")
     
@@ -1013,25 +1039,25 @@ class FormSubmitter:
         Returns:
             Dict[str, Any]: Current status information
         """
-        # Calculate elapsed time
+        status = self._status_snapshot()
         elapsed_time = None
-        if self.status["start_time"]:
-            end_time = self.status["end_time"] or datetime.now()
-            elapsed_time = int((end_time - self.status["start_time"]).total_seconds())
+        if status["start_time"]:
+            end_time = status["end_time"] or datetime.now()
+            elapsed_time = int((end_time - status["start_time"]).total_seconds())
         
-        # Calculate current success rate
+        completed = status["success"] + status["failed"]
         success_rate = 0
-        if self.status["success"] + self.status["failed"] > 0:
-            success_rate = (self.status["success"] / (self.status["success"] + self.status["failed"])) * 100
+        if completed > 0:
+            success_rate = (status["success"] / completed) * 100
         
         return {
-            "running": self.status["running"],
-            "total": self.status["total"],
-            "completed": self.status["success"] + self.status["failed"],
-            "success": self.status["success"],
-            "failed": self.status["failed"],
-            "current_threads": self.status["current_threads"],
+            "running": status["running"],
+            "total": status["total"],
+            "completed": completed,
+            "success": status["success"],
+            "failed": status["failed"],
+            "current_threads": status["current_threads"],
             "elapsed_time": elapsed_time,
             "success_rate": success_rate,
-            "warning": self.status.get("warning")
+            "warning": status.get("warning")
         }

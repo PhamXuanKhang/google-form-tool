@@ -211,7 +211,9 @@ def test_prepare_prefill_queue_keeps_rank_question():
     assert prepared_count == 1
     assert skipped_summary == {}
     assert "entry.333=1" in submitter.urls_queue[0]
-    assert debug_sample == submitter.urls_queue[0]
+    assert debug_sample != submitter.urls_queue[0]
+    assert "entry.333=%5BREDACTED%5D" in debug_sample
+    assert "entry.333=1" in submitter.urls_queue[0]
 
 
 def test_start_submission_accepts_dom_fill(client, monkeypatch, patch_thread):
@@ -553,10 +555,21 @@ def test_prefill_diagnostics_include_question_title_for_required_error():
     )
 
 
-def test_format_prefill_url_for_log_returns_original_url():
-    url = "https://docs.google.com/forms/d/e/FAKEID/viewform?usp=pp_url&entry.111=Alice"
+def test_format_prefill_url_for_log_redacts_answer_values():
+    url = (
+        "https://docs.google.com/forms/d/e/FAKEID/viewform?"
+        "usp=pp_url&entry.111=Alice&entry.222=Blue&emailAddress=a@example.com"
+    )
 
-    assert FormSubmitter._format_prefill_url_for_log(url) == url
+    formatted = FormSubmitter._format_prefill_url_for_log(url)
+
+    assert "usp=pp_url" in formatted
+    assert "entry.111=%5BREDACTED%5D" in formatted
+    assert "entry.222=%5BREDACTED%5D" in formatted
+    assert "emailAddress=%5BREDACTED%5D" in formatted
+    assert "Alice" not in formatted
+    assert "Blue" not in formatted
+    assert "a%40example.com" not in formatted
 
 
 def test_submit_form_prefill_mode_calls_prefill_worker(monkeypatch):

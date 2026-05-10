@@ -41,7 +41,10 @@ class FormProcessor:
         self.response_data = {}
     
     def load_data_from_file(
-        self, file_path: str, mapping: Optional[Dict[str, str]] = None
+        self,
+        file_path: str,
+        mapping: Optional[Dict[str, str]] = None,
+        max_rows: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Load data from an external file and map it to form fields.
@@ -55,6 +58,7 @@ class FormProcessor:
             file_path (str): Path to the data file (CSV, JSON, or XLSX)
             mapping (Dict[str, str], optional): Mapping of file columns to question IDs.
                                                If None, assumes column names match question IDs.
+            max_rows (int, optional): Maximum non-empty response rows to load.
 
         Returns:
             List[Dict[str, Any]]: List of response dictionaries, each representing
@@ -72,16 +76,16 @@ class FormProcessor:
         logger.info(f"Loading data from file: {file_path} (format: {suffix})")
 
         if suffix == ".csv":
-            return self._load_csv(path, mapping)
+            return self._load_csv(path, mapping, max_rows)
         elif suffix == ".json":
-            return self._load_json(path, mapping)
+            return self._load_json(path, mapping, max_rows)
         elif suffix == ".xlsx":
-            return self._load_xlsx(path, mapping)
+            return self._load_xlsx(path, mapping, max_rows)
         else:
             raise ValueError(f"Unsupported file format: {suffix}. Use .csv, .json, or .xlsx")
 
     def _load_csv(
-        self, path: Path, mapping: Optional[Dict[str, str]]
+        self, path: Path, mapping: Optional[Dict[str, str]], max_rows: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Load responses from a CSV file."""
         responses_list = []
@@ -97,12 +101,13 @@ class FormProcessor:
                     responses[question_id] = self._parse_value(value)
                 if responses:
                     responses_list.append(responses)
+                    self._raise_if_too_many_rows(responses_list, max_rows)
 
         logger.info(f"Loaded {len(responses_list)} response sets from CSV")
         return responses_list
 
     def _load_json(
-        self, path: Path, mapping: Optional[Dict[str, str]]
+        self, path: Path, mapping: Optional[Dict[str, str]], max_rows: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Load responses from a JSON file."""
         with open(path, "r", encoding="utf-8") as f:
@@ -123,12 +128,13 @@ class FormProcessor:
                 responses[question_id] = value
             if responses:
                 responses_list.append(responses)
+                self._raise_if_too_many_rows(responses_list, max_rows)
 
         logger.info(f"Loaded {len(responses_list)} response sets from JSON")
         return responses_list
 
     def _load_xlsx(
-        self, path: Path, mapping: Optional[Dict[str, str]]
+        self, path: Path, mapping: Optional[Dict[str, str]], max_rows: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Load responses from the first worksheet in an XLSX file."""
         try:
@@ -163,11 +169,17 @@ class FormProcessor:
 
                 if responses:
                     responses_list.append(responses)
+                    self._raise_if_too_many_rows(responses_list, max_rows)
 
             logger.info(f"Loaded {len(responses_list)} response sets from XLSX")
             return responses_list
         finally:
             workbook.close()
+
+    @staticmethod
+    def _raise_if_too_many_rows(responses_list: List[Dict[str, Any]], max_rows: Optional[int]) -> None:
+        if max_rows is not None and len(responses_list) > max_rows:
+            raise ValueError(f"Uploaded file exceeds maximum row limit of {max_rows}.")
 
     def _normalize_excel_value(self, value: Any) -> Any:
         """Normalize Excel-only values while preserving useful primitive types."""

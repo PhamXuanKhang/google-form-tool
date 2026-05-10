@@ -13,7 +13,9 @@ This module includes comprehensive tests for:
 Each test ensures correct behavior, data integrity, and proper logging under normal and exceptional conditions.
 """
 from app import Submission, ResponseConfig, Page, Form
+from app.services.storage_service import StorageService
 from datetime import datetime
+import threading
 import pytest
 import logging
 
@@ -219,6 +221,41 @@ def test_delete_submission_form_not_found(temp_db, caplog):
     result = temp_db.delete_submission("form_nonexistent", "sub_001")
     assert result is False
     assert "Form not found: form_nonexistent" in caplog.text
+
+
+
+def test_concurrent_add_submission_keeps_all_rows(temp_db, sample_form):
+    temp_db.save_form(sample_form)
+    db_path = temp_db.db_path
+    errors = []
+
+    def add_submission(index):
+        submission = Submission(
+            submission_id=f"thread_sub_{index}",
+            form_id="form_001",
+            num_submission=1,
+            concurrent_thread=1,
+            time_used=1,
+            success_rate=100.0,
+            network_status="ok",
+            created_at=datetime.now(),
+        )
+        try:
+            with StorageService(db_path) as storage:
+                assert storage.add_submission("form_001", submission) is True
+        except Exception as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=add_submission, args=(index,)) for index in range(10)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    form = temp_db._load_form("form_001")
+    submission_ids = {submission.submission_id for submission in form.submissions}
+    assert {f"thread_sub_{index}" for index in range(10)}.issubset(submission_ids)
 
 
 def test_form_id_generation_consistency():

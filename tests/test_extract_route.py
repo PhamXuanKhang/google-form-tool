@@ -26,6 +26,20 @@ def test_extract_route_rejects_invalid_google_form_url(client):
     assert "valid Google Form URL" in response.get_json()["error"]
 
 
+
+def test_extract_route_rejects_spoofed_google_form_urls(client):
+    invalid_urls = [
+        "http://docs.google.com/forms/d/example/viewform",
+        "https://docs.google.com.evil.com/forms/d/example/viewform",
+        "https://evil.com/https://docs.google.com/forms/d/example/viewform",
+        "https://docs.google.com/not-forms/d/example/viewform",
+    ]
+
+    for form_url in invalid_urls:
+        response = client.post("/form_filling/extract", json={"form_url": form_url})
+        assert response.status_code == 400
+        assert "valid Google Form URL" in response.get_json()["error"]
+
 def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch):
     class FailingExtractor:
         def __init__(self, **kwargs):

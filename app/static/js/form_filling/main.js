@@ -249,13 +249,15 @@ document.getElementById('file-upload-form')?.addEventListener('submit', async fu
                 <div class="alert alert-success">
                     <i class="fas fa-check-circle me-2"></i>
                     <strong>${t("fileLoadedSuccessfully", "File loaded successfully!")}</strong><br>
-                    ${result.rows_loaded} ${t("responseSetsReady", "response sets ready for submission.")}
+                    <span id="upload-row-count"></span> ${t("responseSetsReady", "response sets ready for submission.")}
                 </div>
                 <div class="card p-3">
                     <h6>${t("previewFirstRows", "Preview (first 3 rows):")}</h6>
-                    <pre style="max-height: 200px; overflow: auto; font-size: 12px;">${JSON.stringify(result.responses.slice(0, 3), null, 2)}</pre>
+                    <pre id="upload-preview" style="max-height: 200px; overflow: auto; font-size: 12px;"></pre>
                 </div>
             `;
+            document.getElementById("upload-row-count").textContent = String(result.rows_loaded);
+            document.getElementById("upload-preview").textContent = JSON.stringify(result.responses.slice(0, 3), null, 2);
 
             window.showPopup(result.message, 'success');
         } else {
