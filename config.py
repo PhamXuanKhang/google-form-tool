@@ -7,8 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Writable user-data directory — works in dev, frozen exe, and Docker.
-_APP_DATA = Path(os.getenv("APPDATA", Path.home())) / "GoogleFormTool"
+def get_app_data_path() -> Path:
+    base_path = Path(os.getenv("APPDATA") or Path.home())
+    return base_path / "GoogleFormTool"
+
+
+_APP_DATA = get_app_data_path()
 
 
 def _load_or_create_secret_key() -> str:
@@ -33,6 +37,10 @@ def _load_or_create_secret_key() -> str:
 
 class Config:
     """Base configuration class for the Flask application."""
+
+    APP_DATA_PATH = str(_APP_DATA)
+    LOG_DIR = os.getenv("LOG_DIR") or str(_APP_DATA / "logs")
+    DRIVERS_DIR = os.getenv("DRIVERS_DIR") or str(_APP_DATA / "drivers")
 
     # Session / CSRF protection — auto-generated and persisted on first run.
     SECRET_KEY = os.getenv("SECRET_KEY") or _load_or_create_secret_key()

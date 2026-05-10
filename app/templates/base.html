@@ -32,6 +32,9 @@
                         <a class="nav-link {% if active_page == 'form_filling' %}active{% endif %}" href="{{ url_for('main.form_filling') }}"><i class="fas fa-file-alt"></i> {{ _('Form Filling') }} </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'settings_diagnostics' %}active{% endif %}" href="{{ url_for('main.settings_diagnostics') }}"><i class="fas fa-gear"></i> {{ _('Settings') }} </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if active_page == 'about' %}active{% endif %}" href="{{ url_for('main.about') }}"><i class="fas fa-info-circle"></i> {{ _('About') }} </a>
                     </li>
                 </ul>

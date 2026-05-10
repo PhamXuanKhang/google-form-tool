@@ -1,0 +1,33 @@
+appId: com.phamxuankhang.googleformtool
+productName: Google Form Automation Tool
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+directories:
+  output: release
+files:
+  - package.json
+  - electron/**/*
+  - app/static/images/app_icon.ico
+extraResources:
+  - from: dist/GoogleFormTool
+    to: backend
+    filter:
+      - '**/*'
+win:
+  icon: app/static/images/app_icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: msi
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Google Form Automation Tool
+msi:
+  oneClick: false
+  perMachine: false

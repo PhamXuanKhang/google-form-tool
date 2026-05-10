@@ -7,6 +7,7 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
+console_enabled = os.environ.get("GOOGLE_FORM_TOOL_CONSOLE", "1") != "0"
 
 # Babel locale data is large but required for Flask-Babel i18n
 babel_datas = collect_data_files("babel", includes=["**/*.dat", "**/*.txt", "**/*.py"])
@@ -121,7 +122,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,           # Disabled — UPX can trigger antivirus false positives
-    console=True,        # Keep console window for log visibility during beta
+    console=console_enabled,
     icon="app/static/images/app_icon.ico",
 )
 

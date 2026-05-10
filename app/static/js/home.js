@@ -25,7 +25,9 @@ function openFormModal(formId) {
             <div id="submissionHistoryContainer" class="text-muted">${escapeHtml(i18n.loadingSubmissionHistory || 'Loading submission history...')}</div>
         `;
 
-        document.getElementById('deleteFormBtn').href = `/?form_url=${encodeURIComponent(selected.url)}`;
+        const deleteBtn = document.getElementById('deleteFormBtn');
+        deleteBtn.href = '#';
+        deleteBtn.onclick = () => deleteSelectedForm(selected.url);
         document.getElementById('fillFormBtn').href = `/form_filling?form_url=${encodeURIComponent(selected.url)}`;
 
         const exportBtn = document.getElementById('exportHistoryBtn');
@@ -35,6 +37,25 @@ function openFormModal(formId) {
         const modal = new bootstrap.Modal(document.getElementById('formModal'));
         modal.show();
         loadSubmissionHistory(selected.id);
+    }
+}
+
+async function deleteSelectedForm(formUrl) {
+    try {
+        const response = await fetch('/forms/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ form_url: formUrl }),
+        });
+        const data = await readJsonResponse(response);
+
+        if (!response.ok || data.error) {
+            throw new Error(data.error || 'Could not delete form.');
+        }
+
+        window.location.reload();
+    } catch (error) {
+        alert(error.message);
     }
 }
 

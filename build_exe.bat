@@ -9,6 +9,14 @@ echo.
 set "SCRIPT_DIR=%~dp0"
 set "VENV_PYTHON=%SCRIPT_DIR%.venv\Scripts\python.exe"
 set "VENV_PYBABEL=%SCRIPT_DIR%.venv\Scripts\pybabel.exe"
+set "BUILD_MODE=%~1"
+if "%BUILD_MODE%"=="" set "BUILD_MODE=debug"
+if /I "%BUILD_MODE%"=="release" (
+    set "GOOGLE_FORM_TOOL_CONSOLE=0"
+) else (
+    set "BUILD_MODE=debug"
+    set "GOOGLE_FORM_TOOL_CONSOLE=1"
+)
 
 :: Verify venv exists
 if not exist "%VENV_PYTHON%" (
@@ -18,6 +26,7 @@ if not exist "%VENV_PYTHON%" (
 )
 
 echo Using Python: %VENV_PYTHON%
+echo Build mode: %BUILD_MODE%
 "%VENV_PYTHON%" --version
 echo.
 
@@ -81,7 +90,7 @@ echo ============================================================
 echo  Build complete!
 echo  Exe: dist\GoogleFormTool\GoogleFormTool.exe
 echo.
-echo  To create distributable zip (run in PowerShell):
-echo    Compress-Archive -Path dist\GoogleFormTool -DestinationPath GoogleFormTool-v1.1.0-windows.zip
+echo  Backend artifact is ready for Electron packaging.
+echo  Use scripts\package-windows.ps1 to build versioned installers from package.json.
 echo ============================================================
 pause

@@ -36,6 +36,18 @@ def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch):
 
     monkeypatch.setattr(main_routes, "get_storage_service", lambda: EmptyStorage())
     monkeypatch.setattr(main_routes, "FormExtractor", FailingExtractor)
+    monkeypatch.setattr(
+        main_routes,
+        "_runtime_diagnostics",
+        lambda: {
+            "app_data_path": r"C:\Data",
+            "db_path": r"C:\Data\db.json",
+            "log_path": r"C:\Data\logs",
+            "chrome_path": r"C:\Chrome\chrome.exe",
+            "chromedriver_path": r"C:\Driver\chromedriver.exe",
+            "mode": "dev",
+        },
+    )
 
     response = client.post(
         "/form_filling/extract",
@@ -43,7 +55,11 @@ def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch):
     )
 
     assert response.status_code == 500
-    assert "Chrome or ChromeDriver" in response.get_json()["error"]
+    data = response.get_json()
+    assert "Chrome or ChromeDriver" in data["error"]
+    assert "Traceback" not in data["error"]
+    assert data["diagnostics"]["app_data_path"] == r"C:\Data"
+    assert data["diagnostics"]["mode"] == "dev"
 
 
 def test_extract_route_reports_form_load_error(client, monkeypatch):

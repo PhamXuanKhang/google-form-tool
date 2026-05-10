@@ -6,12 +6,14 @@ Google Form Automation Tool. Each section is grouped and separated
 for easier navigation and documentation.
 """
 
+import os
+import sys
 from flask import Blueprint, render_template, request, session, jsonify, current_app, Response
 from app.services import get_storage_service
 from datetime import datetime
 from app.core import FormExtractor
 from app.core.form_extractor import DriverStartupError, FormExtractionError, FormLoadError
-from app.core.driver_manager import get_chrome_binary, get_chromedriver_path
+from app.core.driver_manager import get_chrome_binary, get_chromedriver_path, get_driver_diagnostics
 from app.logging_config import logger
 from config import Config
 
@@ -28,6 +30,32 @@ def healthz():
     return jsonify({"status": "ok"})
 
 
+def _runtime_mode() -> str:
+    if os.getenv("GOOGLE_FORM_TOOL_ELECTRON") == "1":
+        return "electron"
+    if getattr(sys, "frozen", False):
+        return "frozen"
+    return "dev"
+
+
+def _runtime_diagnostics() -> dict:
+    diagnostics = get_driver_diagnostics()
+    return {
+        "app_data_path": Config.APP_DATA_PATH,
+        "db_path": Config.DB_PATH,
+        "log_path": Config.LOG_DIR,
+        "chrome_path": get_chrome_binary(Config.CHROME_BINARY_PATH),
+        "chromedriver_path": get_chromedriver_path(Config.CHROME_DRIVER_PATH, allow_download=False),
+        "mode": _runtime_mode(),
+        **diagnostics,
+    }
+
+
+@bp.route('/diagnostics/runtime', methods=['GET'])
+def runtime_diagnostics():
+    return jsonify(_runtime_diagnostics())
+
+
 @bp.route('/', methods=['GET'])
 def index():
     """
@@ -37,12 +65,8 @@ def index():
     - Allows searching and deleting forms
     """
     query = request.args.get('search', '').lower().strip()
-    delete_form_url = request.args.get('form_url', '').strip()
 
     with get_storage_service() as storage:
-        if delete_form_url:
-            del_form = storage.get_form_by_url(delete_form_url)
-            storage.delete_form(del_form.id)
         recent_forms = storage.get_all_forms_summary()
     
     recent_forms = [
@@ -56,9 +80,25 @@ def index():
             if query in form.get('title', '').lower() or query in form.get('description', '').lower()
         ]
 
-    return render_template('index.html', 
-                           recent_forms=recent_forms, 
+    return render_template('index.html',
+                           recent_forms=recent_forms,
                            active_page="home")
+
+
+@bp.route('/forms/delete', methods=['POST'])
+def delete_form():
+    data = request.get_json(silent=True) or {}
+    form_url = data.get('form_url', '')
+    if not isinstance(form_url, str) or not form_url.strip():
+        return jsonify({"error": "No form URL provided"}), 400
+
+    with get_storage_service() as storage:
+        form = storage.get_form_by_url(form_url.strip())
+        if not form:
+            return jsonify({"error": "Form not found"}), 404
+        storage.delete_form(form.id)
+
+    return jsonify({"success": True})
 
 
 @bp.route('/form_filling', methods=['GET', 'POST'])
@@ -82,6 +122,15 @@ def about():
     - Displays information about the tool
     """
     return render_template('about.html', active_page="about")
+
+
+@bp.route('/settings/diagnostics', methods=['GET'])
+def settings_diagnostics():
+    return render_template(
+        'settings_diagnostics.html',
+        active_page="settings_diagnostics",
+        diagnostics=_runtime_diagnostics(),
+    )
 
 
 #############################
@@ -125,9 +174,10 @@ def extract():
                 logger.exception(f"Chrome/ChromeDriver startup failed while extracting form: {e}")
                 return jsonify({
                     "error": (
-                        "Chrome or ChromeDriver could not start. Please check that Chrome is installed "
-                        "and the ChromeDriver path is configured correctly."
-                    )
+                        "Chrome or ChromeDriver could not start. Please check that Chrome is installed, "
+                        "ChromeDriver is available, and the runtime diagnostics paths are writable."
+                    ),
+                    "diagnostics": _runtime_diagnostics(),
                 }), 500
             except FormLoadError as e:
                 logger.exception(f"Google Form load/parse failed: {e}")

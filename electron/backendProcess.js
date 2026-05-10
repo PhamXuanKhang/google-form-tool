@@ -39,6 +39,7 @@ function startBackend({ appPath, isPackaged, port = DEFAULT_PORT }) {
         ...process.env,
         PORT: String(port),
         GOOGLE_FORM_TOOL_NO_BROWSER: '1',
+        GOOGLE_FORM_TOOL_ELECTRON: '1',
       },
       windowsHide: true,
     });
@@ -49,6 +50,7 @@ function startBackend({ appPath, isPackaged, port = DEFAULT_PORT }) {
         ...process.env,
         PORT: String(port),
         GOOGLE_FORM_TOOL_NO_BROWSER: '1',
+        GOOGLE_FORM_TOOL_ELECTRON: '1',
       },
       windowsHide: true,
     });

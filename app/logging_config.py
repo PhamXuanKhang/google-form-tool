@@ -12,10 +12,11 @@ Usage:
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from config import Config
 
 CONSOLE_HANDLER_NAME = "google_form_console"
 FILE_HANDLER_NAME = "google_form_file"
-DEFAULT_LOG_DIR = Path.cwd() / "logs"
+DEFAULT_LOG_DIR = Path(Config.LOG_DIR)
 LOG_FILE_NAME = "app.log"
 
 # Create logger
@@ -69,7 +70,7 @@ def init_app_logging(app):
     """
     Integrate this logger with a Flask app instance.
     """
-    configure_logging(Path(app.root_path).parent / "logs")
+    configure_logging(Config.LOG_DIR)
 
     app.logger.handlers.clear()
     app.logger.handlers = list(logger.handlers)

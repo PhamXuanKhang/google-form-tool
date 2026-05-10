@@ -12,6 +12,12 @@ const {
 
 const READINESS_TIMEOUT_MS = 30000;
 const READINESS_INTERVAL_MS = 500;
+const ALLOWED_EXTERNAL_HOSTS = new Set([
+  'github.com',
+  'www.linkedin.com',
+  'www.google.com',
+  'docs.google.com',
+]);
 
 let mainWindow = null;
 let backendUrl = `http://127.0.0.1:${DEFAULT_PORT}`;
@@ -99,7 +105,17 @@ function shouldOpenExternally(url) {
   try {
     const parsed = new URL(url);
     const appOrigin = new URL(backendUrl).origin;
-    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.origin !== appOrigin;
+
+    if (parsed.origin === appOrigin) {
+      return false;
+    }
+    if (parsed.protocol === 'mailto:') {
+      return true;
+    }
+    if (parsed.protocol !== 'https:') {
+      return false;
+    }
+    return ALLOWED_EXTERNAL_HOSTS.has(parsed.hostname);
   } catch (error) {
     return false;
   }

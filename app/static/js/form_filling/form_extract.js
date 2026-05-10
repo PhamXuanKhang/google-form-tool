@@ -71,6 +71,16 @@ function showPreviewError(container, message) {
 }
 
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+    }[char]));
+}
+
 function renderFormPreview(form) {
     let html = `
     <div class="card bg-light p-3">
@@ -79,8 +89,8 @@ function renderFormPreview(form) {
                 <i class="fas fa-file-alt text-dark"></i>
             </div>
             <div>
-                <h5 class="text-dark mb-0">${form.title}</h5>
-                <small class="text-muted">${form.description}</small>
+                <h5 class="text-dark mb-0">${escapeHtml(form.title)}</h5>
+                <small class="text-muted">${escapeHtml(form.description)}</small>
             </div>
         </div>
         <div>
@@ -97,8 +107,8 @@ function renderFormPreview(form) {
                 page.questions.forEach((q, qIndex) => {
                     html += `
                     <div class="question-block">
-                        <div class="question-title">Q${qIndex + 1}: ${q.text}</div>
-                        <div class="question-type">${t("type", "Type")}: ${q.type}</div>
+                        <div class="question-title">Q${qIndex + 1}: ${escapeHtml(q.text)}</div>
+                        <div class="question-type">${t("type", "Type")}: ${escapeHtml(q.type)}</div>
                     `;
 
                     if (
@@ -109,7 +119,7 @@ function renderFormPreview(form) {
                         html += `<div class="option-scroll-wrapper"><div class="option-scroll-inner">
                         `;
                         q.answer_config.options.forEach((opt) => {
-                            html += `<div class="option-card">${opt.text}</div>`;
+                            html += `<div class="option-card">${escapeHtml(opt.text)}</div>`;
                         });
                         html += `</div></div>
                         `;

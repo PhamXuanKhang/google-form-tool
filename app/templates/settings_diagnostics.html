@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Runtime Diagnostics') }} - {{ _('Google Form Automation Tool') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1">{{ _('Runtime Diagnostics') }}</h1>
+        <p class="text-muted mb-0">{{ _('Chrome, ChromeDriver, and writable app data paths used by the desktop runtime.') }}</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.runtime_diagnostics') }}" target="_blank" rel="noopener">
+        <i class="fas fa-code"></i> {{ _('View JSON') }}
+    </a>
+</div>
+
+<div class="alert alert-info" role="alert">
+    {{ _('Bundled Chromium is not included in this installer scope. The app uses installed Chrome/Chromium, cached ChromeDriver, or Selenium fallback diagnostics.') }}
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <tbody>
+                    <tr>
+                        <th scope="row" class="w-25">{{ _('Runtime mode') }}</th>
+                        <td><code>{{ diagnostics.mode }}</code></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">{{ _('App data path') }}</th>
+                        <td><code>{{ diagnostics.app_data_path }}</code></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">{{ _('Database path') }}</th>
+                        <td><code>{{ diagnostics.db_path }}</code></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">{{ _('Log path') }}</th>
+                        <td><code>{{ diagnostics.log_path }}</code></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">{{ _('Chrome path') }}</th>
+                        <td><code>{{ diagnostics.chrome_path or _('Selenium auto-detect') }}</code></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">{{ _('ChromeDriver path') }}</th>
+                        <td><code>{{ diagnostics.chromedriver_path or _('Selenium Manager fallback') }}</code></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">{{ _('Bundled drivers directory') }}</th>
+                        <td><code>{{ diagnostics.bundled_drivers_dir }}</code></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">{{ _('Cached drivers directory') }}</th>
+                        <td><code>{{ diagnostics.cache_drivers_dir }}</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
