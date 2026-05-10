@@ -9,6 +9,7 @@ for easier navigation and documentation.
 import os
 import sys
 import threading
+import time
 from urllib.parse import urlparse
 from flask import Blueprint, render_template, request, session, jsonify, current_app, Response
 from app.services import get_storage_service
@@ -23,6 +24,27 @@ from config import Config
 
 # Create blueprint
 bp = Blueprint('main', __name__)
+
+
+def _same_origin_host(header_value: str) -> str:
+    """Extract netloc (host:port) from an Origin or Referer header value."""
+    try:
+        return urlparse(header_value).netloc
+    except Exception:
+        return ""
+
+
+@bp.before_request
+def _check_same_origin():
+    if request.method not in ("POST", "PUT", "DELETE", "PATCH"):
+        return None
+    origin = request.headers.get("Origin") or request.headers.get("Referer")
+    if not origin:
+        return None
+    if _same_origin_host(origin) != request.host:
+        return jsonify({"error": "Forbidden"}), 403
+    return None
+
 
 def _is_valid_google_forms_url(url: str) -> bool:
     if not isinstance(url, str):
@@ -428,8 +450,8 @@ def load_data():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        logger.error(f"Error loading data: {e}")
-        return jsonify({"error": f"Error loading data: {str(e)}"}), 500
+        logger.exception("Unexpected error loading data")
+        return jsonify({"error": "An unexpected error occurred"}), 500
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -484,8 +506,8 @@ def generate_response():
             })
 
     except Exception as e:
-        logger.error(f"Error generating responses: {e}")
-        return jsonify({"error": f"Error generating responses: {str(e)}"}), 500
+        logger.exception("Unexpected error generating responses")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 @bp.route('/validate_api_key', methods=['POST'])
@@ -675,6 +697,7 @@ active_submitters: dict = {}
 active_submitters_lock = threading.RLock()
 MAX_SUBMISSIONS_PER_BATCH = 500
 MAX_CONCURRENT_THREADS = 10
+FINISHED_STATUS_TTL = 60  # seconds to retain final status after submission ends
 
 
 def _parse_integer_field(value, field_label, minimum, maximum):
@@ -739,9 +762,14 @@ def _validate_submission_request(data):
 
 
 def _cleanup_finished_submitters():
-    """Remove submitters that are no longer running."""
+    """Remove finished submitters whose final-status TTL has expired."""
+    now = time.monotonic()
     with active_submitters_lock:
-        finished = [fid for fid, sub in active_submitters.items() if not sub.get_status().get("running", False)]
+        finished = [
+            fid for fid, sub in active_submitters.items()
+            if not sub.get_status().get("running", False)
+            and (now - getattr(sub, "_finished_at", 0)) > FINISHED_STATUS_TTL
+        ]
         for fid in finished:
             del active_submitters[fid]
 
@@ -802,13 +830,10 @@ def start_submission():
 
     _cleanup_finished_submitters()
 
-    previous_submitter = None
     with active_submitters_lock:
         current_submitter = active_submitters.get(form_id)
         if current_submitter and current_submitter.get_status().get("running", False):
-            previous_submitter = current_submitter
-    if previous_submitter:
-        previous_submitter.stop()
+            return jsonify({"error": "A submission is already running for this form."}), 409
 
     try:
         with get_storage_service() as storage:
@@ -876,7 +901,8 @@ def start_submission():
             return jsonify(response_body)
 
     except Exception as e:
-        return jsonify({"error": f"Error starting submission: {str(e)}"}), 500
+        logger.exception("Unexpected error starting submission")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None):
@@ -908,6 +934,8 @@ def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min
 
     except Exception as e:
         logger.error(f"Error in submission thread: {str(e)}")
+    finally:
+        submitter._finished_at = time.monotonic()
 
 
 @bp.route('/stop_submission', methods=['POST'])
@@ -1066,8 +1094,8 @@ def export_history(form_id):
                 return response
 
     except Exception as e:
-        logger.error(f"Error exporting history: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.exception("Unexpected error exporting history")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 #############################
@@ -1091,8 +1119,8 @@ def system_status():
         return jsonify(collector.get_system_status())
     
     except Exception as e:
-        logger.error(f"Error getting system status: {str(e)}")
-        return jsonify({"error": "Failed to get system status", "details": str(e)}), 500
+        logger.exception("Unexpected error getting system status")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 @bp.route('/monitoring_history', methods=['GET'])
@@ -1114,6 +1142,6 @@ def monitoring_history():
         return jsonify(history)
     
     except Exception as e:
-        logger.error(f"Error getting monitoring history: {str(e)}")
-        return jsonify({"error": "Failed to get monitoring history", "details": str(e)}), 500
+        logger.exception("Unexpected error getting monitoring history")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 

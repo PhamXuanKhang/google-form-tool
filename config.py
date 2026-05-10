@@ -57,3 +57,5 @@ class Config:
     PREFILL_DEBUG_SAMPLE = os.getenv("PREFILL_DEBUG_SAMPLE", "0") == "1"
     MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
     MAX_UPLOAD_ROWS = int(os.getenv("MAX_UPLOAD_ROWS", "500"))
+    MAX_UPLOAD_COLUMNS = int(os.getenv("MAX_UPLOAD_COLUMNS", "100"))
+    MAX_UPLOAD_CELL_LENGTH = int(os.getenv("MAX_UPLOAD_CELL_LENGTH", "10000"))

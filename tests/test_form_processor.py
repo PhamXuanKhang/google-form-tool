@@ -486,6 +486,106 @@ class TestLoadDataFromFile:
         assert response.status_code == 400
         assert "maximum row limit of 1" in response.get_json()["error"]
 
+    # ------------------------------------------------------------------ A-6 caps
+
+    def test_xlsx_too_many_columns_raises(self, processor, monkeypatch):
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 3)
+        workbook = Workbook()
+        ws = workbook.active
+        ws.append(["c1", "c2", "c3", "c4"])  # 4 columns > limit of 3
+        ws.append(["v1", "v2", "v3", "v4"])
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            path = f.name
+        try:
+            workbook.save(path)
+            with pytest.raises(ValueError, match="maximum column limit"):
+                processor.load_data_from_file(path)
+        finally:
+            workbook.close()
+            os.unlink(path)
+
+    def test_xlsx_cell_too_long_raises(self, processor, monkeypatch):
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 5)
+        workbook = Workbook()
+        ws = workbook.active
+        ws.append(["q1"])
+        ws.append(["toolongvalue"])  # 12 chars > limit of 5
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            path = f.name
+        try:
+            workbook.save(path)
+            with pytest.raises(ValueError, match="maximum length"):
+                processor.load_data_from_file(path)
+        finally:
+            workbook.close()
+            os.unlink(path)
+
+    def test_xlsx_valid_file_passes(self, processor, monkeypatch):
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 100)
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 10000)
+        workbook = Workbook()
+        ws = workbook.active
+        ws.append(["q1", "q2"])
+        ws.append(["hello", "world"])
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            path = f.name
+        try:
+            workbook.save(path)
+            result = processor.load_data_from_file(path)
+            assert len(result) == 1
+            assert result[0]["q1"] == "hello"
+        finally:
+            workbook.close()
+            os.unlink(path)
+
+    def test_csv_too_many_columns_raises(self, processor, monkeypatch):
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 2)
+        csv_content = "c1,c2,c3\nv1,v2,v3"
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
+            f.write(csv_content)
+            path = f.name
+        try:
+            with pytest.raises(ValueError, match="maximum column limit"):
+                processor.load_data_from_file(path)
+        finally:
+            os.unlink(path)
+
+    def test_csv_cell_too_long_raises(self, processor, monkeypatch):
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 3)
+        csv_content = "q1\ntoolong"
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
+            f.write(csv_content)
+            path = f.name
+        try:
+            with pytest.raises(ValueError, match="maximum length"):
+                processor.load_data_from_file(path)
+        finally:
+            os.unlink(path)
+
+    def test_json_too_many_columns_raises(self, processor, monkeypatch):
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 2)
+        data = [{"c1": "v1", "c2": "v2", "c3": "v3"}]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
+            json.dump(data, f)
+            path = f.name
+        try:
+            with pytest.raises(ValueError, match="maximum column limit"):
+                processor.load_data_from_file(path)
+        finally:
+            os.unlink(path)
+
+    def test_json_cell_too_long_raises(self, processor, monkeypatch):
+        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 3)
+        data = [{"q1": "toolong"}]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
+            json.dump(data, f)
+            path = f.name
+        try:
+            with pytest.raises(ValueError, match="maximum length"):
+                processor.load_data_from_file(path)
+        finally:
+            os.unlink(path)
+
 
 class TestApplyUserEdits:
     """Tests for applying user edits to form configuration."""

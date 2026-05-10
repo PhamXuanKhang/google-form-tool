@@ -819,34 +819,31 @@ class FormSubmitter:
                 
                 # Try to find and click Next or Submit button
                 try:
-                    # Look for Next button
-                    next_button = driver.find_element(
-                        By.XPATH,
-                        "//div[@role='button']//span[contains(text(), 'Next') or contains(text(), 'Tiếp')]"
-                    )
+                    next_button = self._find_form_button(driver, ("next", "tiep"))
+                    if not next_button:
+                        raise NoSuchElementException("Next button not found")
                     driver.execute_script("arguments[0].click();", next_button)
                     current_page += 1
-                    
-                    # Wait for next page to load
                     time.sleep(1)
-                    
+
                 except NoSuchElementException:
                     # If no Next button, look for Submit button
                     try:
-                        submit_button = driver.find_element(
-                            By.XPATH,
-                            "//div[@role='button']//span[contains(text(), 'Submit') or contains(text(), 'Gửi')]"
+                        submit_button = self._find_form_button(
+                            driver, ("submit", "gui"), fallback_initials=("g",)
                         )
+                        if not submit_button:
+                            raise NoSuchElementException("Submit button not found")
                         driver.execute_script("arguments[0].click();", submit_button)
-                        
+
                         # Wait for submission confirmation
                         WebDriverWait(driver, 10).until(
                             EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'response') or contains(text(), 'submitted') or contains(text(), 'gửi')]"))
                         )
-                        
+
                         logger.info("Form submitted successfully")
                         return True
-                        
+
                     except (NoSuchElementException, TimeoutException):
                         logger.error("Could not find Submit button or submission failed")
                         return False
@@ -938,19 +935,17 @@ class FormSubmitter:
                     date_field.send_keys(str(response))
                 
                 elif question.type == "dropdown":
-                    # Click dropdown to open it
-                    dropdown = question_container.find_element(By.XPATH, ".//div[contains(@role, 'listbox')]")
+                    dropdown = question_container.find_element(By.XPATH, ".//div[@role='listbox']")
                     driver.execute_script("arguments[0].click();", dropdown)
                     time.sleep(0.5)
-                    
-                    # Find and click the option matching our response
-                    options = driver.find_elements(By.XPATH, f"//div[@role='option']//span[text()='{response}']")
-                    if options:
-                        driver.execute_script("arguments[0].click();", options[0])
-                    else:
-                        # If exact match not found, click first option
-                        first_option = driver.find_element(By.XPATH, "//div[@role='option']")
-                        driver.execute_script("arguments[0].click();", first_option)
+
+                    options = driver.find_elements(By.XPATH, "//div[@role='option']")
+                    target = self._normalize_button_text(str(response))
+                    matched = [o for o in options if self._normalize_button_text(o.text) == target]
+                    if not matched:
+                        matched = options
+                    if matched:
+                        driver.execute_script("arguments[0].click();", matched[0])
                 
                 elif question.type == "multiple_choice":
                     # Find radio option matching our response

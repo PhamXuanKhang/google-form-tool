@@ -14,6 +14,7 @@ from typing import Dict, List, Any, Optional
 
 from app.models import Form, Question, AnswerConfig, AnswerOption
 from app.logging_config import logger
+from config import Config
 
 
 BRANCH_SUBMIT_SENTINEL = "__submit__"
@@ -92,11 +93,14 @@ class FormProcessor:
 
         with open(path, "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
+            if reader.fieldnames:
+                self._check_column_count(len(reader.fieldnames))
             for row in reader:
                 responses = {}
                 for col_name, value in row.items():
                     if not col_name or not value:
                         continue
+                    self._check_cell_length(value)
                     question_id = mapping.get(col_name, col_name) if mapping else col_name
                     responses[question_id] = self._parse_value(value)
                 if responses:
@@ -120,10 +124,12 @@ class FormProcessor:
         for item in data:
             if not isinstance(item, dict):
                 continue
+            self._check_column_count(len(item))
             responses = {}
             for col_name, value in item.items():
                 if value is None:
                     continue
+                self._check_cell_length(value)
                 question_id = mapping.get(col_name, col_name) if mapping else col_name
                 responses[question_id] = value
             if responses:
@@ -151,6 +157,9 @@ class FormProcessor:
             if not headers:
                 return []
 
+            valid_headers = [h for h in headers if h is not None]
+            self._check_column_count(len(valid_headers))
+
             responses_list = []
             for row in rows:
                 responses = {}
@@ -164,8 +173,10 @@ class FormProcessor:
                     if not col_key:
                         continue
 
+                    normalized = self._normalize_excel_value(value)
+                    self._check_cell_length(normalized)
                     question_id = mapping.get(col_key, col_key) if mapping else col_key
-                    responses[question_id] = self._normalize_excel_value(value)
+                    responses[question_id] = normalized
 
                 if responses:
                     responses_list.append(responses)
@@ -180,6 +191,18 @@ class FormProcessor:
     def _raise_if_too_many_rows(responses_list: List[Dict[str, Any]], max_rows: Optional[int]) -> None:
         if max_rows is not None and len(responses_list) > max_rows:
             raise ValueError(f"Uploaded file exceeds maximum row limit of {max_rows}.")
+
+    @staticmethod
+    def _check_column_count(n_cols: int) -> None:
+        limit = Config.MAX_UPLOAD_COLUMNS
+        if n_cols > limit:
+            raise ValueError(f"Uploaded file exceeds maximum column limit of {limit}.")
+
+    @staticmethod
+    def _check_cell_length(value: Any) -> None:
+        limit = Config.MAX_UPLOAD_CELL_LENGTH
+        if isinstance(value, str) and len(value) > limit:
+            raise ValueError(f"Cell value exceeds maximum length of {limit} characters.")
 
     def _normalize_excel_value(self, value: Any) -> Any:
         """Normalize Excel-only values while preserving useful primitive types."""
