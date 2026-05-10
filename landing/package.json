@@ -1,0 +1,11 @@
+{
+  "name": "google-form-tool-landing",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Static landing page for Google Form Automation Tool",
+  "scripts": {
+    "dev": "npx --yes serve@14.2.4 . -l 4173",
+    "build": "node -e \"require('fs').mkdirSync('dist', { recursive: true }); for (const f of ['index.html','styles.css','banner.png']) require('fs').copyFileSync(f, 'dist/' + f);\""
+  },
+  "devDependencies": {}
+}

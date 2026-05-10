@@ -9,6 +9,7 @@ echo.
 set "SCRIPT_DIR=%~dp0"
 set "VENV_PYTHON=%SCRIPT_DIR%.venv\Scripts\python.exe"
 set "VENV_PYBABEL=%SCRIPT_DIR%.venv\Scripts\pybabel.exe"
+set "CI_MODE=%CI%"
 set "BUILD_MODE=%~1"
 if "%BUILD_MODE%"=="" set "BUILD_MODE=debug"
 if /I "%BUILD_MODE%"=="release" (
@@ -22,6 +23,7 @@ if /I "%BUILD_MODE%"=="release" (
 if not exist "%VENV_PYTHON%" (
     echo [ERROR] .venv not found. Run this first:
     echo   uv sync
+    if /I "%CI_MODE%"=="true" exit /b 1
     pause & exit /b 1
 )
 
@@ -58,6 +60,7 @@ if errorlevel 1 (
     )
     if errorlevel 1 (
         echo [ERROR] Failed to install PyInstaller. Check internet connection.
+        if /I "%CI_MODE%"=="true" exit /b 1
         pause & exit /b 1
     )
 ) else (
@@ -67,13 +70,43 @@ echo.
 
 :: [3/4] Sync dependencies
 echo [3/4] Syncing dependencies...
-where uv >nul 2>&1
-if not errorlevel 1 (
-    uv sync --quiet
-    echo       Dependencies synced via uv.
+if exist "%SCRIPT_DIR%pyproject.toml" (
+    where uv >nul 2>&1
+    if not errorlevel 1 (
+        uv sync --quiet
+        if errorlevel 1 (
+            echo [ERROR] uv sync failed.
+            if /I "%CI_MODE%"=="true" exit /b 1
+            pause & exit /b 1
+        )
+        echo       Dependencies synced via uv.
+    ) else (
+        where uv >nul 2>&1
+        if not errorlevel 1 (
+            uv pip install --python "%VENV_PYTHON%" -r "%SCRIPT_DIR%requirements.txt" --quiet
+        ) else (
+            "%VENV_PYTHON%" -m pip install --timeout 120 --retries 5 -r "%SCRIPT_DIR%requirements.txt" --quiet
+        )
+        if errorlevel 1 (
+            echo [ERROR] dependency install failed.
+            if /I "%CI_MODE%"=="true" exit /b 1
+            pause & exit /b 1
+        )
+        echo       Dependencies installed.
+    )
 ) else (
-    "%VENV_PYTHON%" -m pip install --timeout 120 --retries 5 -r "%SCRIPT_DIR%requirements.txt" --quiet
-    echo       Dependencies installed via pip.
+    where uv >nul 2>&1
+    if not errorlevel 1 (
+        uv pip install --python "%VENV_PYTHON%" -r "%SCRIPT_DIR%requirements.txt" --quiet
+    ) else (
+        "%VENV_PYTHON%" -m pip install --timeout 120 --retries 5 -r "%SCRIPT_DIR%requirements.txt" --quiet
+    )
+    if errorlevel 1 (
+        echo [ERROR] dependency install failed.
+        if /I "%CI_MODE%"=="true" exit /b 1
+        pause & exit /b 1
+    )
+    echo       Dependencies installed.
 )
 echo.
 
@@ -82,6 +115,7 @@ echo [4/4] Building exe with PyInstaller...
 "%VENV_PYTHON%" -m PyInstaller "%SCRIPT_DIR%google_form_tool.spec" --clean --noconfirm
 if errorlevel 1 (
     echo [ERROR] Build failed. See output above.
+    if /I "%CI_MODE%"=="true" exit /b 1
     pause & exit /b 1
 )
 
@@ -93,4 +127,4 @@ echo.
 echo  Backend artifact is ready for Electron packaging.
 echo  Use scripts\package-windows.ps1 to build versioned installers from package.json.
 echo ============================================================
-pause
+if /I not "%CI_MODE%"=="true" pause

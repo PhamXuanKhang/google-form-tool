@@ -1,15 +1,26 @@
 # Windows Release Checklist
 
 ## Build artifacts
-- [ ] Run `scripts/package-windows.ps1` from PowerShell.
+- [ ] For local builds, run `uv sync` first so `.venv` exists.
+- [ ] Run `scripts/package-windows.ps1` from PowerShell or trigger `.github/workflows/release.yml` manually.
+- [ ] Confirm GitHub Actions installs uv and runs `uv sync` before packaging.
 - [ ] Confirm backend sidecar exists at `dist/GoogleFormTool/GoogleFormTool.exe`.
 - [ ] Confirm NSIS `.exe` installer exists in `release/`.
-- [ ] Confirm MSI installer exists in `release/`.
+- [ ] Confirm MSI installer exists in `release/` if MSI is enabled for this release.
+- [ ] Confirm `release/SHA256SUMS.txt` exists and includes every `.exe`/`.msi` artifact.
 - [ ] Confirm artifact version matches `package.json`.
+
+## Landing and download smoke
+- [ ] Run `cd landing && npm run build`.
+- [ ] Run `cd landing && npm run dev` and open the local preview.
+- [ ] Confirm landing CTA links to `https://github.com/PhamXuanKhang/google-form-tool/releases/latest`.
+- [ ] Confirm landing does not hardcode direct release asset URLs.
+- [ ] Replace README placeholder `https://<your-vercel-app>.vercel.app` with the real Vercel URL before public release.
+- [ ] Confirm README links to the landing page and GitHub Releases latest.
 
 ## Install smoke
 - [ ] Install NSIS `.exe` on a clean Windows user profile.
-- [ ] Install MSI on a clean Windows user profile.
+- [ ] Install MSI on a clean Windows user profile if MSI is included.
 - [ ] Launch from Start Menu shortcut.
 - [ ] Launch from Desktop shortcut.
 - [ ] Confirm Electron window loads without opening the external browser.
@@ -29,11 +40,14 @@
 
 ## Uninstall smoke
 - [ ] Uninstall NSIS install and confirm app binaries are removed.
-- [ ] Uninstall MSI install and confirm app binaries are removed.
+- [ ] Uninstall MSI install and confirm app binaries are removed if MSI is included.
 - [ ] Confirm uninstall does not delete user data under app data by default.
 
-## Release notes
-- [ ] Note that Windows SmartScreen may warn until the app is code signed or has reputation.
-- [ ] Note that bundled Chromium is deferred; users need installed Chrome/Chromium or Selenium fallback support.
-- [ ] Upload NSIS `.exe`, MSI, and checksums to GitHub Releases.
+## GitHub Release
+- [ ] Create or push a `v*` tag only after local smoke checks pass.
+- [ ] Confirm GitHub Actions uploaded `.exe`, optional `.msi`, and `SHA256SUMS.txt`.
+- [ ] Keep release as draft until install smoke is completed on downloaded artifacts.
 - [ ] Include version, date, major changes, known limitations, and install/uninstall instructions in the GitHub Release body.
+- [ ] Note that Windows SmartScreen may warn until the app is code signed or has reputation.
+- [ ] Note that bundled Chromium is deferred; users need installed Chrome/Chromium, while ChromeDriver may be resolved automatically when available.
+- [ ] Confirm the landing download CTA resolves to GitHub Releases latest after publishing.

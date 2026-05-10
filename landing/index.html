@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Google Form Automation Tool</title>
+  <meta name="description" content="Công cụ desktop Windows để extract, cấu hình và submit Google Form hàng loạt ngay trên máy của bạn.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Điều hướng chính">
+      <a class="brand" href="#top">Google Form Tool</a>
+      <div class="nav-links">
+        <a href="#features">Tính năng</a>
+        <a href="#install">Cài đặt</a>
+        <a href="#limits">Lưu ý</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero section">
+      <div class="hero-copy">
+        <p class="eyebrow">Desktop app cho Windows</p>
+        <h1>Tự động hoá Google Form hàng loạt, chạy local trên máy của bạn.</h1>
+        <p class="lead">Extract cấu trúc form, cấu hình xác suất câu trả lời và submit nhiều lượt bằng Electron desktop app — không cần Google Forms API.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="https://github.com/PhamXuanKhang/google-form-tool/releases/latest" target="_blank" rel="noopener noreferrer">Tải bản mới nhất</a>
+          <a class="button secondary" href="#install">Xem cách cài</a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-label="Banner Google Form Automation Tool">
+        <img src="banner.png" alt="Google Form Automation Tool banner">
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Tính năng chính</p>
+        <h2>Một workflow từ extract đến submit</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="card"><h3>Auto extract</h3><p>Đọc title, description, page và 12 loại câu hỏi từ Google Form respondent URL.</p></article>
+        <article class="card"><h3>Tuỳ chỉnh xác suất</h3><p>Thiết lập xác suất cho multiple choice, checkbox, dropdown và câu trả lời tuỳ biến.</p></article>
+        <article class="card"><h3>Bulk submit</h3><p>Chạy nhiều lượt submit với threads, delay ngẫu nhiên và stop graceful.</p></article>
+        <article class="card"><h3>Monitoring realtime</h3><p>Theo dõi success/fail, CPU, network và thread trong quá trình submit.</p></article>
+        <article class="card"><h3>Copy Form MVP</h3><p>Preview và copy best-effort sang target editable form, kèm cảnh báo unsupported types.</p></article>
+        <article class="card"><h3>Chạy local</h3><p>Dữ liệu runtime nằm trên máy của bạn; app desktop tự start backend local.</p></article>
+      </div>
+    </section>
+
+    <section id="install" class="section split">
+      <div>
+        <p class="eyebrow">Cài đặt</p>
+        <h2>Tải installer từ GitHub Releases</h2>
+        <p>Landing page luôn trỏ tới trang Releases mới nhất để bạn chọn file installer phù hợp.</p>
+        <a class="button primary" href="https://github.com/PhamXuanKhang/google-form-tool/releases/latest" target="_blank" rel="noopener noreferrer">Mở GitHub Releases</a>
+      </div>
+      <ol class="steps">
+        <li><span>1</span><p>Tải Windows installer <code>.exe</code> mới nhất từ GitHub Releases.</p></li>
+        <li><span>2</span><p>Cài app và mở từ Start Menu hoặc Desktop shortcut.</p></li>
+        <li><span>3</span><p>Đảm bảo máy có Chrome/Chromium; app có thể tự resolve ChromeDriver khi khả dụng.</p></li>
+        <li><span>4</span><p>Paste Google Form URL, preview cấu trúc và bắt đầu cấu hình.</p></li>
+      </ol>
+    </section>
+
+    <section id="limits" class="section notice">
+      <p class="eyebrow">Lưu ý an toàn</p>
+      <h2>Không claim exact clone, không lưu binary trong repo</h2>
+      <ul>
+        <li>App chạy local desktop và không dùng Google Forms API chính thức.</li>
+        <li>Copy Form là best-effort; grid, file upload, rating, quiz/theme/branching có thể chỉ được cảnh báo hoặc hỗ trợ một phần.</li>
+        <li>Windows SmartScreen có thể cảnh báo cho tới khi app có code signing hoặc đủ reputation.</li>
+        <li>Installer được phát hành qua GitHub Releases, không commit binary vào repository.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Google Form Automation Tool · <a href="https://github.com/PhamXuanKhang/google-form-tool/releases/latest" target="_blank" rel="noopener noreferrer">GitHub Releases</a></p>
+  </footer>
+</body>
+</html>

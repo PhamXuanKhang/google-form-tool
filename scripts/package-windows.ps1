@@ -46,4 +46,21 @@ if ($LASTEXITCODE -ne 0) {
     throw "electron-builder failed with exit code $LASTEXITCODE"
 }
 
-Write-Host "Windows installers built for version $version in $(Join-Path $repoRoot 'release')"
+$releaseDir = Join-Path $repoRoot 'release'
+$artifacts = Get-ChildItem -Path $releaseDir -File | Where-Object {
+    $_.Extension -in @('.exe', '.msi')
+}
+
+if (-not $artifacts) {
+    throw "No installer artifacts found in $releaseDir"
+}
+
+$checksumPath = Join-Path $releaseDir 'SHA256SUMS.txt'
+$checksumLines = foreach ($artifact in $artifacts) {
+    $hash = Get-FileHash -Path $artifact.FullName -Algorithm SHA256
+    "$($hash.Hash.ToLowerInvariant())  $($artifact.Name)"
+}
+$checksumLines | Set-Content -Path $checksumPath -Encoding ascii
+
+Write-Host "SHA256 checksums written to $checksumPath"
+Write-Host "Windows installers built for version $version in $releaseDir"
