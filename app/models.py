@@ -3,10 +3,9 @@ Define data classes for form data and response configuration.
 """
 from pydantic import BaseModel, HttpUrl, Field
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from app.utils import generate_uuid_from_url
 from uuid import uuid4
-
 
 class AnswerOption(BaseModel):
     """
@@ -21,7 +20,6 @@ class AnswerOption(BaseModel):
     percentage: float = Field(ge=0, le=100)
     next_page_id: Optional[str] = None
 
-
 class AnswerConfig(BaseModel):
     """
     Configuration for how a question should be automatically answered.
@@ -34,7 +32,6 @@ class AnswerConfig(BaseModel):
     fill_percentage: Optional[float] = Field(default=None, ge=0, le=100)
     answers: Optional[List[str]] = None
     options: Optional[List[AnswerOption]] = None
-
 
 class Question(BaseModel):
     """
@@ -69,7 +66,6 @@ class Question(BaseModel):
             return f"entry.{self.question_id}"
         return None
 
-
 class Page(BaseModel):
     """
     Represents a page in a form, which contains a list of questions.
@@ -81,7 +77,6 @@ class Page(BaseModel):
     page_id: str = Field(default_factory=lambda: f"page_{uuid4().hex[:8]}")
     questions: Optional[List[Question]]
 
-
 class ResponseConfig(BaseModel):
     """
     Defines the structure of the form's response flow.
@@ -91,6 +86,40 @@ class ResponseConfig(BaseModel):
     """
     pages: List[Page]
 
+class CopyWarning(BaseModel):
+    warning_id: str = Field(default_factory=lambda: f"warn_{uuid4().hex[:8]}")
+    code: str
+    message: str
+    question_id: Optional[str] = None
+    question_text: Optional[str] = None
+    capability: Optional[str] = None
+
+class CopyOperation(BaseModel):
+    operation_id: str = Field(default_factory=lambda: f"op_{uuid4().hex[:8]}")
+    kind: str
+    capability: str
+    source_question_id: Optional[str] = None
+    source_question_text: Optional[str] = None
+    question_type: Optional[str] = None
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+class CopyPlan(BaseModel):
+    plan_id: str = Field(default_factory=lambda: f"plan_{uuid4().hex[:8]}")
+    source_form_id: str
+    source_title: str
+    source_description: str = ""
+    operations: List[CopyOperation] = Field(default_factory=list)
+    warnings: List[CopyWarning] = Field(default_factory=list)
+    capability_matrix: Dict[str, List[str]] = Field(default_factory=dict)
+
+class CopyResult(BaseModel):
+    result_id: str = Field(default_factory=lambda: f"copy_{uuid4().hex[:8]}")
+    status: str
+    operations_total: int = 0
+    operations_succeeded: int = 0
+    operations_failed: int = 0
+    warnings: List[CopyWarning] = Field(default_factory=list)
+    operation_results: List[Dict[str, Any]] = Field(default_factory=list)
 
 class Submission(BaseModel):
     """
@@ -110,7 +139,6 @@ class Submission(BaseModel):
     time_used: int
     success_rate: float = Field(ge=0, le=100)
     network_status: str
-
 
 class Form(BaseModel):
     """
@@ -161,7 +189,6 @@ class Form(BaseModel):
             Form: A new Form instance with ID generated from the URL.
         """
         return cls(id=cls.get_id_from_url(url), url=url, **kwargs)
-
 
 class FormData(BaseModel):
     """

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Copy Form{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="h3 mb-3">Copy Form</h1>
+                <p class="text-muted mb-0">Best-effort Google Form copy for forms you own or control. This does not claim an exact clone.</p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h5">1. Source form</h2>
+                <div class="input-group">
+                    <input id="source-form-url" class="form-control" type="url" placeholder="https://docs.google.com/forms/.../viewform">
+                    <button id="extract-source-btn" class="btn btn-primary" type="button">Extract source</button>
+                </div>
+                <div id="source-summary" class="mt-3"></div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h5">2. Preview copy plan</h2>
+                <button id="preview-plan-btn" class="btn btn-outline-primary" type="button" disabled>Preview plan</button>
+                <div id="capability-matrix" class="mt-3"></div>
+                <div id="warnings-list" class="mt-3"></div>
+                <div id="plan-summary" class="mt-3"></div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h5">3. Target editable form</h2>
+                <input id="target-edit-url" class="form-control mb-3" type="url" placeholder="https://docs.google.com/forms/d/.../edit">
+                <div class="form-check mb-3">
+                    <input id="ownership-confirmation" class="form-check-input" type="checkbox">
+                    <label class="form-check-label" for="ownership-confirmation">I own or control this editable target form and accept that copy will mutate it.</label>
+                </div>
+                <button id="apply-copy-btn" class="btn btn-danger" type="button" disabled>Apply copy to target</button>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Copy report</h2>
+                <div id="copy-report" class="text-muted">No copy job has run yet.</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/form_copy/main.js') }}"></script>
+{% endblock %}
