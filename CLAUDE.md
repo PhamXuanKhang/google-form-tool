@@ -64,6 +64,18 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
+<!-- HARNESS:BEGIN -->
+## Harness
+
+Claude Code loads this file into every session. Keep Harness context focused and agent-native:
+
+@AGENTS.md
+
+@docs/FEATURE_INTAKE.md
+
+Before normal or high-risk work, also read `docs/CONTEXT_RULES.md` and run `scripts/bin/harness-cli.exe query matrix` when the local CLI exists.
+<!-- HARNESS:END -->
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 

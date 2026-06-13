@@ -64,6 +64,22 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
+<!-- HARNESS:BEGIN -->
+## Harness
+
+This repo uses Repository Harness for agent-native planning and validation. Before work, read or query the smallest relevant set:
+
+- `README.md`
+- `docs/AGENT_CONTEXT.md`
+- `docs/FEATURE_INTAKE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/CONTEXT_RULES.md`
+- `docs/TEST_MATRIX.md`
+- `scripts/bin/harness-cli.exe query matrix` on Windows when the local CLI exists
+
+Use Harness for intake/risk/validation framing, and GitNexus for code impact and execution-flow analysis. Keep both lightweight: do not create story packets for tiny docs or narrow maintenance edits.
+<!-- HARNESS:END -->
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
