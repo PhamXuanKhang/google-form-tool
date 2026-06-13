@@ -70,7 +70,7 @@ Branch: `goal-project-refactor-audit`
 | npm dependency audit | `npm audit --audit-level=high` | Windows PowerShell after `npm install` completed during packaging smoke | PASS | `found 0 vulnerabilities` |
 | GitNexus status before refresh | `npx gitnexus status` | Windows PowerShell on `goal-project-refactor-audit` | PENDING | Initial sandboxed status reported indexed commit `9d9cc08` while current branch was newer; required re-index before further code impact work. |
 | GitNexus full re-index | `npx gitnexus analyze --force` | Windows PowerShell, GitNexus CLI via `npx`, elevated filesystem access | PASS | Rebuilt index successfully: `2,389 nodes`, `5,532 edges`, `87 clusters`, `113 flows`; AGENTS/CLAUDE context counts updated. |
-| GitNexus status after latest refresh | `npx gitnexus analyze`; `npx gitnexus status` with approved filesystem access | Windows PowerShell, GitNexus CLI via `npx`, full `.git` access | PASS | Incremental analyze completed and status reported `Indexed commit: 6192486`, `Current commit: 6192486`, `Status: ✅ up-to-date`. Sandboxed status still cannot read current commit reliably. |
+| GitNexus status after latest refresh | `npx gitnexus analyze`; `npx gitnexus status` with approved filesystem access | Windows PowerShell, GitNexus CLI via `npx`, full `.git` access | PASS | Incremental analyze completed and status reported `Indexed commit: 8409a9a`, `Current commit: 8409a9a`, `Status: ✅ up-to-date`. Sandboxed status still cannot read current commit reliably. |
 | GitNexus MCP query after latest refresh | `mcp__gitnexus.query("healthz diagnostics runtime")` | Current Codex MCP session | PENDING | Query still reported `FTS indexes missing` after CLI refresh; likely MCP server/session cache or FTS-specific index issue. Restart Codex/MCP or run GitNexus query in a fresh session to verify. |
 | Live Google Form/API-provider checks | Not run | Requires safe external form/API key/network credentials | PENDING | No safe target form or API key provided. |
 
@@ -127,6 +127,8 @@ Branch: `goal-project-refactor-audit`
 - `d74ab7d docs: record harness matrix sync`
 - `a73abdc docs: refresh audit report evidence`
 - `6192486 docs: stabilize gitnexus evidence wording`
+- `4e864f8 docs: align audit pending evidence`
+- `8409a9a docs: record reliability backlog triage`
 
 ## Remaining Risks
 
