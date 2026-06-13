@@ -57,6 +57,9 @@ Branch: `goal-project-refactor-audit`
 | Windows packaging smoke | `.\scripts\package-windows.ps1` | Windows PowerShell, Python 3.12.12 venv, npm install allowed, Electron/PyInstaller caches allowed | PASS | Built `dist\GoogleFormTool\GoogleFormTool.exe`, `release\Google Form Automation Tool-1.1.0-win-x64.exe`, `release\Google Form Automation Tool-1.1.0-win-x64.msi`, and `release\SHA256SUMS.txt`. Generated release artifacts were not committed. |
 | Source backend health smoke | Start `wsgi.py` with `PORT=5055` and `GOOGLE_FORM_TOOL_NO_BROWSER=1`; request `/healthz` and `/diagnostics/runtime` | Windows PowerShell, Python 3.12.12 venv, local Flask dev server | PASS | `/healthz` returned `{"status":"ok"}`; diagnostics returned `mode: dev`, AppData paths, Chrome path, and ChromeDriver path. |
 | Packaged backend health smoke | Start `dist\GoogleFormTool\GoogleFormTool.exe` with `PORT=5056` and `GOOGLE_FORM_TOOL_NO_BROWSER=1`; request `/healthz` and `/diagnostics/runtime` | Windows PowerShell, packaged PyInstaller backend from packaging smoke | PASS | `/healthz` returned `{"status":"ok"}`; diagnostics returned `mode: frozen` and packaged driver directory under `dist\GoogleFormTool`. |
+| Electron entrypoint syntax smoke | `node --check electron\main.js`; `node --check electron\backendProcess.js`; `node --check electron\preload.js` | Windows PowerShell, Node.js local install | PASS | All Electron entrypoint files parsed successfully without opening a GUI. |
+| Electron backend module smoke | `node -e "const backend=require('./electron/backendProcess'); ..."` | Windows PowerShell, Node.js local install | PASS | Verified `DEFAULT_PORT === 5123`, `startBackend` export, and `stopBackend` export. |
+| Electron builder config smoke | Node script checking `electron-builder.yml` | Windows PowerShell, Node.js local install | PASS | Verified config still includes `extraResources`, `dist/GoogleFormTool` backend source, `backend` target path, NSIS target, and MSI target. |
 | npm dependency audit | `npm audit --audit-level=high` | Windows PowerShell after `npm install` completed during packaging smoke | PASS | `found 0 vulnerabilities` |
 | GitNexus status before refresh | `npx gitnexus status` | Windows PowerShell on `goal-project-refactor-audit` | PENDING | Initial sandboxed status reported indexed commit `9d9cc08` while current branch was newer; required re-index before further code impact work. |
 | GitNexus full re-index | `npx gitnexus analyze --force` | Windows PowerShell, GitNexus CLI via `npx`, elevated filesystem access | PASS | Rebuilt index successfully: `2,389 nodes`, `5,532 edges`, `87 clusters`, `113 flows`; AGENTS/CLAUDE context counts updated. |
@@ -70,6 +73,7 @@ Branch: `goal-project-refactor-audit`
 - Added this audit/progress report.
 - Fixed Windows packaging smoke by removing obsolete `pkg_resources` hidden import from `google_form_tool.spec`, cleaning stale generated `build/dist` directories before packaging, and installing npm dependencies when `electron-builder` is missing.
 - Verified source backend and packaged backend health endpoints without opening a browser.
+- Verified Electron entrypoint syntax, backend process exports, and builder config without launching the GUI.
 - Refreshed GitNexus index and updated generated GitNexus context counts in `AGENTS.md` and `CLAUDE.md`.
 - No application runtime behavior changed.
 
@@ -83,12 +87,13 @@ Branch: `goal-project-refactor-audit`
 - PENDING: interactive GUI smoke, live Google Form submission, clean installer install/uninstall, and live AI provider checks.
 - PASS: GitNexus CLI full re-index completed for current branch state before further impact analysis.
 - PASS: GitNexus CLI status is up-to-date when run with approved `.git` access.
+- PASS: Electron entrypoint/config static smoke completed without launching GUI.
 
 ## Pending Items
 
 | Priority | Item | Reason | Next verification step |
 | --- | --- | --- | --- |
-| P1 | Interactive extract/configure/submit smoke | Requires interactive browser/Electron and safe Google Form target | Run `npm run electron:dev`, extract a test form, configure a tiny safe plan, and verify UI status/history. |
+| P1 | Interactive extract/configure/submit smoke | Requires interactive Electron/browser session and safe Google Form target; static Electron checks passed but do not prove rendered UI behavior | Run `npm run electron:dev`, extract a test form, configure a tiny safe plan, and verify UI status/history. |
 | P1 | GitNexus MCP FTS warning | Current MCP session still reports `FTS indexes missing` after CLI `--force` re-index, despite CLI status being up-to-date with approved `.git` access | Restart Codex/MCP or run GitNexus query in a fresh session before relying on keyword/semantic query results. |
 | P2 | Live AI provider check | Requires API key and provider/network access | Configure a non-production key and run AI route smoke with bounded prompt. |
 | P2 | Candidate reliability improvements | Backlog is intentionally broad | Promote a specific recurring failure from `docs/stories/backlog.md` into a story before implementation. |
@@ -98,10 +103,12 @@ Branch: `goal-project-refactor-audit`
 - `d1c4b54 docs: add project refactor audit baseline`
 - `d149613 fix: make windows packaging smoke reproducible`
 - `511957c docs: record backend smoke verification`
+- `33c0b2b docs: refresh gitnexus audit evidence`
+- `d94ebdf docs: clarify gitnexus freshness evidence`
 
 ## Remaining Risks
 
-- Automated tests do not prove real Google Forms DOM behavior against current production Google Forms.
+- Automated tests and Electron static smoke do not prove real Google Forms DOM behavior or interactive desktop rendering against current production Google Forms.
 - Packaging and packaged backend health pass in this environment, but generated installers still need install/uninstall smoke on a clean Windows profile.
 - Live AI provider behavior may differ from mocked/local validation paths.
 - GitNexus CLI status is up-to-date with approved `.git` access, but current MCP session may still serve stale FTS state until restarted.
