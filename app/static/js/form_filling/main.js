@@ -44,8 +44,11 @@ window.fileUploaded = false;
 /** @type {string|null} The ID of the currently loaded form */
 window.currentFormId = null;
 
-/** @type {Array|null} Loaded responses from file upload */
-window.loadedResponses = null;
+/** @type {string|null} Server-side upload cache ID */
+window.uploadId = null;
+
+/** @type {number} Loaded response row count */
+window.loadedResponseCount = 0;
 
 // Function to collect form settings from the UI
 function getFormSettings() {
@@ -57,8 +60,8 @@ function getFormSettings() {
     let formCount = parseInt(formCountInput?.value || 10, 10);
 
     // If file uploaded, use the number of loaded responses
-    if (window.fileUploaded && window.loadedResponses) {
-        formCount = window.loadedResponses.length;
+    if (window.fileUploaded && window.uploadId) {
+        formCount = window.loadedResponseCount;
     }
 
     // Get form URL from session (was entered in step 1)
@@ -78,8 +81,8 @@ function getFormSettings() {
     };
 
     // Include loaded responses if file was uploaded
-    if (window.fileUploaded && window.loadedResponses) {
-        settings.responses_list = window.loadedResponses;
+    if (window.fileUploaded && window.uploadId) {
+        settings.upload_id = window.uploadId;
         settings.use_file_data = true;
     }
 
@@ -165,14 +168,17 @@ window.addEventListener('DOMContentLoaded', () => {
 /**
  * Resolve a Gemini API key for inline AI generation.
  *
- * Returns localStorage value when present; otherwise prompts the user via a
+ * Returns a remembered key when present; otherwise prompts the user via a
  * native popup. Newly entered keys are validated through /validate_api_key
- * and persisted to localStorage on success. Returns null when the user
+ * and persisted to sessionStorage by default or localStorage when opted in. Returns null when the user
  * cancels or validation fails so callers can short-circuit.
  */
 window.getOrAskGeminiKey = async function () {
-    const stored = localStorage.getItem('gemini_api_key');
-    if (stored && stored.trim()) return stored.trim();
+    const localStored = localStorage.getItem('gemini_api_key');
+    if (localStored && localStored.trim()) return localStored.trim();
+
+    const sessionStored = sessionStorage.getItem('gemini_api_key');
+    if (sessionStored && sessionStored.trim()) return sessionStored.trim();
 
     const entered = window.prompt(t("aiKeyPrompt", "Enter your Google Gemini API key (get one at https://aistudio.google.com/apikey):"));
     if (!entered || !entered.trim()) {
@@ -188,7 +194,12 @@ window.getOrAskGeminiKey = async function () {
         });
         const result = await res.json().catch(() => ({}));
         if (res.ok && result.valid) {
-            localStorage.setItem('gemini_api_key', key);
+            const rememberKey = document.getElementById('remember-gemini-key')?.checked;
+            if (rememberKey) {
+                localStorage.setItem('gemini_api_key', key);
+            } else {
+                sessionStorage.setItem('gemini_api_key', key);
+            }
             window.showPopup?.(t("aiKeySaved", "API key saved."), 'success');
             return key;
         }
@@ -240,7 +251,8 @@ document.getElementById('file-upload-form')?.addEventListener('submit', async fu
 
         if (result.success) {
             window.fileUploaded = true;
-            window.loadedResponses = result.responses;
+            window.uploadId = result.upload_id;
+            window.loadedResponseCount = result.row_count ?? result.rows_loaded ?? 0;
 
             // Show success message with row count
             const questionsContainer = document.getElementById("step-2-questions");
@@ -256,8 +268,8 @@ document.getElementById('file-upload-form')?.addEventListener('submit', async fu
                     <pre id="upload-preview" style="max-height: 200px; overflow: auto; font-size: 12px;"></pre>
                 </div>
             `;
-            document.getElementById("upload-row-count").textContent = String(result.rows_loaded);
-            document.getElementById("upload-preview").textContent = JSON.stringify(result.responses.slice(0, 3), null, 2);
+            document.getElementById("upload-row-count").textContent = String(window.loadedResponseCount);
+            document.getElementById("upload-preview").textContent = JSON.stringify((result.preview || []).slice(0, 5), null, 2);
 
             window.showPopup(result.message, 'success');
         } else {

@@ -206,6 +206,11 @@ class FormSubmitter:
                 f"Unknown submission_mode '{submission_mode}'. "
                 f"Expected one of: {VALID_SUBMISSION_MODES}"
             )
+        if num_submissions <= 0:
+            raise ValueError("num_submissions must be greater than 0")
+        if concurrent_threads <= 0:
+            raise ValueError("concurrent_threads must be greater than 0")
+
         self.submission_mode = submission_mode
 
         # Data-driven mode: each item in responses_list is one submission
@@ -272,36 +277,37 @@ class FormSubmitter:
             else self._submission_worker
         )
 
-        # Start submission threads
-        for i in range(min(concurrent_threads, num_submissions)):
-            submissions_per_thread = num_submissions // concurrent_threads
+        effective_threads = min(concurrent_threads, num_submissions)
+        base_submissions = num_submissions // effective_threads
+        remainder = num_submissions % effective_threads
 
-            if i < num_submissions % concurrent_threads:
-                submissions_per_thread += 1
+        try:
+            # Start submission threads
+            for i in range(effective_threads):
+                submissions_per_thread = base_submissions + (1 if i < remainder else 0)
 
-            thread = threading.Thread(
-                target=worker_target,
-                args=(submissions_per_thread, min_delay, max_delay, callback)
-            )
-            self.threads.append(thread)
-            thread.start()
-            self._increment_status("current_threads")
-        
-        # Wait for all threads to complete
-        for thread in self.threads:
-            thread.join()
-        
-        # Update final status
-        with self.status_lock:
-            self.status["running"] = False
-            self.status["end_time"] = datetime.now()
-            if self.status["total"] > 0:
-                self.status["success_rate"] = (self.status["success"] / self.status["total"]) * 100
-            if self.status["success_rate"] < HIGH_FAILURE_WARNING_THRESHOLD:
-                self.status["warning"] = HIGH_FAILURE_WARNING_MESSAGE
-            else:
-                self.status["warning"] = None
-            final_status = dict(self.status)
+                thread = threading.Thread(
+                    target=worker_target,
+                    args=(submissions_per_thread, min_delay, max_delay, callback)
+                )
+                self.threads.append(thread)
+                thread.start()
+                self._increment_status("current_threads")
+
+            # Wait for all threads to complete
+            for thread in self.threads:
+                thread.join()
+        finally:
+            with self.status_lock:
+                self.status["running"] = False
+                self.status["end_time"] = datetime.now()
+                if self.status["total"] > 0:
+                    self.status["success_rate"] = (self.status["success"] / self.status["total"]) * 100
+                if self.status["success_rate"] < HIGH_FAILURE_WARNING_THRESHOLD:
+                    self.status["warning"] = HIGH_FAILURE_WARNING_MESSAGE
+                else:
+                    self.status["warning"] = None
+                final_status = dict(self.status)
 
         if final_status["warning"]:
             logger.warning(

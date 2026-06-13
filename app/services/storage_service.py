@@ -97,6 +97,18 @@ class StorageService:
             logger.error(f"Error loading form {form_id}: {e}")
             raise
 
+    def get_form_by_id(self, form_id: str) -> Optional[Form]:
+        """
+        Get a form by its ID.
+
+        Args:
+            form_id (str): The form ID.
+
+        Returns:
+            Optional[Form]: The form or None.
+        """
+        return self._load_form(form_id)
+
     def get_form_by_url(self, url: str) -> Optional[Form]:
         """
         Get a form by its URL.

@@ -1,493 +1,338 @@
-﻿# Google Form Automation Tool — Master Task Breakdown
+# Google Form Automation Tool — Hardening Task Breakdown
 
-> Tổng hợp từ roadmap nâng cấp app hiện tại thành Electron desktop app + Windows installer + Vercel landing page + Google Form Copy MVP.
-> Cập nhật dựa trên current Flask/Selenium architecture, review findings, và `docs/diagram/usecase_list.md`.
+> Roadmap mới để nâng điểm Security, Reliability, Architecture và Performance lên khoảng 9/10 sau các review gần nhất. Scope tài liệu này thay thế roadmap phase cũ và chia việc thành 3 mảng A/B/C để triển khai tuần tự, có kiểm chứng rõ ràng.
 
 ---
 
-## 📌 Quy ước đọc tài liệu
+## Mục tiêu chất lượng
+
+| Mảng | Hiện tại ước lượng | Mục tiêu |
+|------|-------------------|----------|
+| Security | ~7/10 | 9/10 |
+| Reliability | ~7/10 | 9/10 |
+| Architecture | ~7/10 | 8.5–9/10 |
+| Performance | ~7/10 | 8.5–9/10 sau A/B, 9/10 sau C |
+
+## Quy ước
 
 | Ký hiệu | Ý nghĩa |
 |---------|--------|
-| 🟥 P0 | Must-have — blocking nếu thiếu |
-| 🟧 P1 | Should-have — cần cho UX hoàn chỉnh |
-| 🟦 P2 | Nice-to-have — Phase sau |
-| `[UC: Xx]` | Use case ID tương ứng trong `docs/diagram/usecase_list.md` |
-| `→` | Output chuyển thành input của task tiếp theo |
+| P0 | Bắt buộc, ưu tiên cao nhất |
+| P1 | Nên làm để đạt mức hardening tốt |
+| P2 | Tối ưu sau khi A/B ổn định |
 
-**Vai trò triển khai đề xuất:**
-- **Backend/Core** — Flask routes, Selenium core, TinyDB, models, tests.
-- **Desktop/Packaging** — Electron shell, PyInstaller sidecar, electron-builder, installer scripts.
-- **Frontend/UX** — Jinja templates, vanilla JS modules, CSS, landing page.
-- **QA/Release** — automated tests, manual Windows smoke, GitHub Release, docs.
+## Verification chung
 
----
+Sau mỗi task có sửa `app/core/`, `app/services/`, route xử lý submit/upload, hoặc security boundary, chạy tối thiểu:
 
-## ═══════════════════════════════════════
-## PHASE 1 — Desktop Shell Foundation
-### Mục tiêu: App hiện tại chạy được trong Electron window, không mở browser ngoài
----
-
-### Task 1-A — Electron shell bootstrap
-**Người phụ trách:** Desktop/Packaging
-**Use cases:** G1, G2, G3, G4, G5
-
-#### Subtasks
-
-**[1-A.1] Tạo root Electron project** 🟥 P0
-- **Input:** Flask app hiện tại (`wsgi.py`, `app/main_routes.py`, templates/static).
-- **Output:** `package.json`, `electron/main.js`, `electron/preload.js` tối thiểu; `npm run electron:dev` khởi động Electron được.
-- **Ghi chú:** Không rewrite UI sang React ở phase này; Electron chỉ wrap Flask UI.
-
-**[1-A.2] Backend process supervisor** 🟥 P0
-- **Input:** `wsgi.py` có thể nhận env `PORT`.
-- **Output:** `electron/backendProcess.js` spawn Python backend, set `GOOGLE_FORM_TOOL_NO_BROWSER=1`, set port, kill backend khi Electron quit.
-- **Ghi chú:** Dev mode có thể spawn `python wsgi.py`; packaged mode spawn PyInstaller sidecar.
-
-**[1-A.3] Backend readiness health check** 🟥 P0
-- **Input:** Flask route mới `/healthz`.
-- **Output:** Electron poll `/healthz`, chỉ load app khi ready; timeout thì show error screen.
-- **Ghi chú:** Health endpoint trả JSON nhẹ, không gọi Selenium/TinyDB nặng.
-
-**[1-A.4] Disable external browser auto-open under Electron** 🟥 P0
-- **Input:** Current `wsgi.py` auto-open browser khi frozen.
-- **Output:** Nếu `GOOGLE_FORM_TOOL_NO_BROWSER=1`, backend không gọi `webbrowser.open()`.
-- **Ghi chú:** Tránh UX bị mở cả Electron lẫn browser mặc định.
-
-**[1-A.5] Native app window polish cơ bản** 🟧 P1
-- **Input:** `app/static/images/app_icon.ico`.
-- **Output:** BrowserWindow title/icon/size hợp lý; external links mở default browser.
-- **Ghi chú:** Reuse existing icon.
-
-**Verify**
-- `npm run electron:dev`
-- Đóng Electron → backend process tắt.
-- `pytest tests/ -v`
-
----
-
-### Task 1-B — Desktop runtime config
-**Người phụ trách:** Backend/Core + Desktop/Packaging
-**Use cases:** H3, H5, H6
-
-#### Subtasks
-
-**[1-B.1] Chuẩn hóa app-data paths** 🟥 P0
-- **Input:** `config.py` hiện dùng `%APPDATA%\GoogleFormTool`.
-- **Output:** DB, secret key, logs, downloaded drivers đều dùng writable app-data path.
-- **Ghi chú:** Không ghi runtime data vào install directory.
-
-**[1-B.2] Add diagnostics endpoint** 🟧 P1
-- **Input:** Driver manager + config paths.
-- **Output:** `/diagnostics/runtime` trả app data path, DB path, Chrome path, driver path, mode dev/frozen/electron.
-- **Ghi chú:** UI dùng endpoint này cho troubleshooting.
-
-**[1-B.3] Error messages actionable hơn** 🟧 P1
-- **Input:** Existing extraction driver startup errors.
-- **Output:** User thấy hướng dẫn kiểm tra Chrome/driver thay vì raw stack trace.
-- **Ghi chú:** Reuse existing error handling trong `/form_filling/extract`.
-
-**Verify**
-- Unit test config path với temp env nếu feasible.
-- Smoke diagnostics endpoint trong browser/Electron.
-
----
-
-## ═══════════════════════════════════════
-## PHASE 2 — Driver Strategy + Windows Installer
-### Mục tiêu: User tải installer, cài app, không cần Python/ChromeDriver thủ công
----
-
-### Task 2-A — Chrome/ChromeDriver resolution desktop-safe
-**Người phụ trách:** Backend/Core
-**Use cases:** H1, H2, H3, H4, H5
-
-#### Subtasks
-
-**[2-A.1] Move managed ChromeDriver cache vào app data** 🟥 P0
-- **Input:** `app/core/driver_manager.py` hiện có logic `drivers/chromedriver` cạnh exe.
-- **Output:** webdriver-manager/Selenium Manager cache hoặc copied driver nằm trong `%APPDATA%\GoogleFormTool\drivers`.
-- **Ghi chú:** Cài vào `Program Files` thường không writable.
-
-**[2-A.2] Driver resolution order rõ ràng** 🟥 P0
-- **Input:** Env vars `CHROME_BINARY_PATH`, `CHROME_DRIVER_PATH`.
-- **Output:** Order: env → bundled resources → app-data managed → installed Chrome common paths → Selenium fallback.
-- **Ghi chú:** Log resolved path, không log secrets.
-
-**[2-A.3] Optional bundled Chromium/driver mode** 🟧 P1
-- **Input:** Packaging artifact hoặc `drivers/chrome` directory.
-- **Output:** App có thể chạy trên máy chưa cài Chrome nếu bundle được Chromium.
-- **Ghi chú:** Tradeoff là installer size tăng mạnh.
-
-**[2-A.4] Runtime diagnostics UI** 🟧 P1
-- **Input:** `/diagnostics/runtime`.
-- **Output:** About/Settings hiển thị Chrome found, driver found, app data path.
-- **Ghi chú:** Giúp support user non-technical.
-
-**Verify**
-- `pytest tests/test_extract_route.py -v`
-- Manual extract trên máy không có `.env`.
-- Windows VM smoke nếu bundle Chromium.
-
----
-
-### Task 2-B — PyInstaller sidecar packaging
-**Người phụ trách:** Desktop/Packaging
-**Use cases:** I1, I2, H6
-
-#### Subtasks
-
-**[2-B.1] Reuse và cập nhật PyInstaller spec** 🟥 P0
-- **Input:** `google_form_tool.spec`, `build_exe.bat`.
-- **Output:** Backend executable build ổn định, bundle templates/static/translations/Selenium dependencies.
-- **Ghi chú:** Có thể giữ console trong debug build, tắt console cho release.
-
-**[2-B.2] Build script cho backend artifact** 🟥 P0
-- **Input:** Existing `build_exe.bat`.
-- **Output:** Script tạo artifact mà Electron packaging có thể consume.
-- **Ghi chú:** Output path cố định để `electron-builder` include.
-
-**[2-B.3] Packaged backend launch contract** 🟥 P0
-- **Input:** `electron/backendProcess.js`, backend sidecar path.
-- **Output:** Electron launch đúng backend trong packaged app.
-- **Ghi chú:** Dev mode và packaged mode tách rõ.
-
-**Verify**
-- Chạy build PyInstaller.
-- Electron dev/package launch đúng backend artifact.
-
----
-
-### Task 2-C — Electron-builder Windows installers
-**Người phụ trách:** Desktop/Packaging + QA/Release
-**Use cases:** I3, I4, I5, I6, I7, I8
-
-#### Subtasks
-
-**[2-C.1] Add electron-builder config** 🟥 P0
-- **Input:** Electron shell + backend artifact.
-- **Output:** `electron-builder.yml` hoặc config trong `package.json`, NSIS `.exe` target.
-- **Ghi chú:** Include icon, appId, productName, files/resources.
-
-**[2-C.2] Windows package script** 🟥 P0
-- **Input:** Backend build step + electron-builder.
-- **Output:** `scripts/package-windows.ps1` chạy build end-to-end.
-- **Ghi chú:** Script nên fail fast nếu backend artifact thiếu.
-
-**[2-C.3] MSI evaluation** 🟧 P1
-- **Input:** electron-builder MSI/WiX constraints.
-- **Output:** Quyết định build `.msi` ngay hoặc defer; document lý do.
-- **Ghi chú:** `.exe` NSIS đủ cho MVP download/install.
-
-**[2-C.4] Version sync** 🟧 P1
-- **Input:** Version đang lệch giữa README, `app/__init__.py`, build script.
-- **Output:** Một nguồn version chính hoặc script sync.
-- **Ghi chú:** Tránh landing/download ghi sai version.
-
-**[2-C.5] Release checklist** 🟧 P1
-- **Input:** Installer artifact.
-- **Output:** Checklist test cài/gỡ, SmartScreen note, GitHub Release steps.
-- **Ghi chú:** Code signing là future nếu chưa có cert.
-
-**Verify**
-- `scripts/package-windows.ps1`
-- Install/uninstall trên Windows.
-- Launch app từ Start Menu/Desktop shortcut.
-
----
-
-## ═══════════════════════════════════════
-## PHASE 3 — Google Form Copy MVP
-### Mục tiêu: Copy form best-effort không đăng nhập, dùng source respondent URL + target public edit link
----
-
-### Task 3-A — Copy planner models + capability matrix
-**Người phụ trách:** Backend/Core
-**Use cases:** J3, J4, J5, J6, J7, J20, J24
-
-#### Subtasks
-
-**[3-A.1] Add copy report models** 🟥 P0
-- **Input:** Existing `Form`, `Page`, `Question`, `AnswerOption` trong `app/models.py`.
-- **Output:** Pydantic models như `CopyOperation`, `CopyWarning`, `CopyPlan`, `CopyResult`.
-- **Ghi chú:** Giữ models nhỏ, phục vụ planner/routes/UI.
-
-**[3-A.2] Implement `form_copy_planner.py`** 🟥 P0
-- **Input:** Extracted `Form`.
-- **Output:** Pure function/class tạo copy plan, giữ order, map question types sang operations.
-- **Ghi chú:** Không dùng Selenium trong planner để test nhanh.
-
-**[3-A.3] Capability matrix** 🟥 P0
-- **Input:** Current supported question types.
-- **Output:** supported: short answer, paragraph, multiple choice, checkbox, dropdown; partial: linear scale/date/time; unsupported: grids/file upload/rating/quiz/theme/branching/validation.
-- **Ghi chú:** UI dùng matrix để không claim exact clone.
-
-**[3-A.4] Planner tests** 🟥 P0
-- **Input:** Fixture `Form` objects.
-- **Output:** `tests/test_form_copy_planner.py` cover supported/partial/unsupported warnings.
-- **Ghi chú:** Đây là lớp ổn định nhất của copy feature.
-
-**Verify**
-- `pytest tests/test_form_copy_planner.py -v`
-
----
-
-### Task 3-B — Copy Form backend routes
-**Người phụ trách:** Backend/Core
-**Use cases:** J1, J2, J3, J5, J8, J9, J21, J22
-
-#### Subtasks
-
-**[3-B.1] Render Copy Form page route** 🟥 P0
-- **Input:** Flask blueprint `app/main_routes.py`.
-- **Output:** `GET /form_copy` render `form_copy.html`.
-- **Ghi chú:** Pass `active_page="form_copy"`.
-
-**[3-B.2] Extract source endpoint** 🟥 P0
-- **Input:** Source Google Form URL.
-- **Output:** `POST /form_copy/extract_source` reuse `FormExtractor`, storage cache, return form summary.
-- **Ghi chú:** Reuse error handling từ `/form_filling/extract`.
-
-**[3-B.3] Preview plan endpoint** 🟥 P0
-- **Input:** `form_id` hoặc source form payload.
-- **Output:** `POST /form_copy/preview_plan` trả `CopyPlan` + warnings.
-- **Ghi chú:** Không mutate target.
-
-**[3-B.4] Apply endpoint skeleton** 🟥 P0
-- **Input:** `form_id`, target edit link, ownership confirmation.
-- **Output:** `POST /form_copy/apply_to_target` validate input và gọi copier.
-- **Ghi chú:** Refuse nếu chưa confirm ownership.
-
-**[3-B.5] Route tests** 🟥 P0
-- **Input:** Mock extractor/planner/copier.
-- **Output:** `tests/test_form_copy_routes.py` cover invalid URL, missing target, no confirmation, success, partial warnings.
-
-**Verify**
-- `pytest tests/test_form_copy_routes.py -v`
-- `pytest tests/ -v`
-
----
-
-### Task 3-C — Selenium target editor automation MVP
-**Người phụ trách:** Backend/Core
-**Use cases:** J9, J11, J12, J13, J14, J15, J16, J17, J18, J19, J21, J22
-
-#### Subtasks
-
-**[3-C.1] Implement `form_copier.py` skeleton** 🟥 P0
-- **Input:** `CopyPlan`, target edit URL, driver paths.
-- **Output:** Class mở target edit link, validate editable UI, return `CopyResult`.
-- **Ghi chú:** Always close WebDriver in `finally`.
-
-**[3-C.2] Title/description operations** 🟥 P0
-- **Input:** Source form title/description.
-- **Output:** Target title/description updated.
-- **Ghi chú:** Selectors của Google Forms editor cần isolated helper methods.
-
-**[3-C.3] Basic question create operations** 🟧 P1
-- **Input:** Copy operations for short answer, paragraph, multiple choice, checkbox, dropdown.
-- **Output:** Target questions/options created best-effort.
-- **Ghi chú:** Nếu selector fail thì record warning, không crash toàn job nếu có thể.
-
-**[3-C.4] Partial type handling** 🟧 P1
-- **Input:** linear scale/date/time operations.
-- **Output:** Copy partial hoặc warn rõ nếu chưa thao tác ổn định.
-- **Ghi chú:** Không im lặng bỏ qua.
-
-**[3-C.5] Mocked Selenium tests** 🟧 P1
-- **Input:** Fake driver/elements.
-- **Output:** `tests/test_form_copier.py` verify operation order and error handling.
-- **Ghi chú:** Full integration với Google Forms là manual smoke do UI external brittle.
-
-**Verify**
-- `pytest tests/test_form_copier.py -v`
-- Manual smoke với disposable public editable target form.
-
----
-
-### Task 3-D — Copy Form UI
-**Người phụ trách:** Frontend/UX
-**Use cases:** J1, J2, J4, J6, J7, J8, J10, J21, J22, J24
-
-#### Subtasks
-
-**[3-D.1] Navbar và template** 🟥 P0
-- **Input:** `app/templates/base.html`.
-- **Output:** Navbar item “Copy Form”, `app/templates/form_copy.html`.
-- **Ghi chú:** Reuse Bootstrap cards/wizard style hiện có.
-
-**[3-D.2] Frontend JS flow** 🟥 P0
-- **Input:** New copy endpoints.
-- **Output:** `app/static/js/form_copy/main.js` handle extract → preview plan → target link → apply → report.
-- **Ghi chú:** Keep vanilla JS pattern như `form_filling`.
-
-**[3-D.3] Safety confirmation UX** 🟥 P0
-- **Input:** Ownership confirmation requirement.
-- **Output:** Apply button disabled until user confirms target is theirs/editable/disposable.
-- **Ghi chú:** Copy operation can mutate target form.
-
-**[3-D.4] Capability/warnings display** 🟧 P1
-- **Input:** `CopyPlan.warnings`.
-- **Output:** UI shows supported/partial/unsupported list before apply.
-- **Ghi chú:** Avoid “copy y sì” wording in UI.
-
-**[3-D.5] Render tests** 🟧 P1
-- **Input:** Flask test client.
-- **Output:** Update `tests/test_i18n_render.py` or new render test.
-
-**Verify**
-- Browser/Electron smoke: invalid URL, preview warnings, disabled apply, mocked success.
-
----
-
-## ═══════════════════════════════════════
-## PHASE 4 — Vercel Landing Page + Release Flow
-### Mục tiêu: User có landing page để tải installer và hiểu cách cài/dùng
----
-
-### Task 4-A — Landing page project
-**Người phụ trách:** Frontend/UX
-**Use cases:** K1, K2, K3, K4, K5, K10
-
-#### Subtasks
-
-**[4-A.1] Create `landing/` app** 🟧 P1
-- **Input:** Product copy từ README, assets hiện có.
-- **Output:** `landing/package.json`, page/layout, `vercel.json` nếu cần.
-- **Ghi chú:** Landing tách riêng khỏi Flask app.
-
-**[4-A.2] Landing content sections** 🟧 P1
-- **Input:** Features hiện có và roadmap Copy Form/Desktop.
-- **Output:** Hero, feature grid, install steps, limitations, screenshots/banner.
-- **Ghi chú:** Nói rõ app chạy local desktop, không cần login.
-
-**[4-A.3] Responsive polish** 🟦 P2
-- **Input:** Landing page layout.
-- **Output:** Mobile/desktop responsive.
-
-**Verify**
-- `cd landing && npm run dev`
-- Vercel preview.
-
----
-
-### Task 4-B — Download and release wiring
-**Người phụ trách:** QA/Release + Desktop/Packaging
-**Use cases:** K6, K7, K8, K9, K11, K12, K13, I7
-
-#### Subtasks
-
-**[4-B.1] GitHub Release artifact strategy** 🟧 P1
-- **Input:** Installer output from Phase 2.
-- **Output:** Stable latest download URL or release asset naming convention.
-- **Ghi chú:** Landing should link to Releases, not store binary in repo.
-
-**[4-B.2] Landing download buttons** 🟧 P1
-- **Input:** Release URLs.
-- **Output:** Download `.exe`; optional `.msi` if available.
-
-**[4-B.3] README update** 🟧 P1
-- **Input:** Landing URL and release flow.
-- **Output:** README points users to landing/latest release with correct version.
-
-**[4-B.4] Release workflow** 🟦 P2
-- **Input:** Local packaging script.
-- **Output:** `.github/workflows/release.yml` builds/uploads artifact or documented manual release.
-- **Ghi chú:** Automate after local packaging is stable.
-
-**Verify**
-- Download link resolves.
-- Release checklist completed on test release.
-
----
-
-## ═══════════════════════════════════════
-## PHASE 5 — Documentation + Verification Hardening
-### Mục tiêu: Docs rõ ràng, test plan đủ để ship từng milestone
----
-
-### Task 5-A — Documentation deliverables
-**Người phụ trách:** QA/Release
-**Use cases:** all
-
-#### Subtasks
-
-**[5-A.1] Maintain use case list** 🟥 P0
-- **Input:** Current roadmap.
-- **Output:** `docs/diagram/usecase_list.md` cập nhật khi scope thay đổi.
-
-**[5-A.2] Maintain task breakdown** 🟥 P0
-- **Input:** Implementation phases.
-- **Output:** `docs/task_breakdown.md` cập nhật theo progress.
-
-**[5-A.3] Add diagrams nếu cần** 🟦 P2
-- **Input:** Use cases and flows.
-- **Output:** Mermaid diagrams cho desktop startup, filling flow, copy flow, release flow.
-- **Ghi chú:** Có thể thêm dưới `docs/diagram/`.
-
----
-
-### Task 5-B — Test and smoke matrix
-**Người phụ trách:** QA/Release + Backend/Core + Desktop/Packaging
-**Use cases:** all critical flows
-**QA matrix:** `docs/verification_matrix.md`
-
-#### Subtasks
-
-**[5-B.1] Python regression suite** 🟥 P0
-- **Input:** Existing tests.
-- **Output:** `pytest tests/ -v` green after every backend/core change.
-
-**[5-B.2] Copy feature tests** 🟥 P0
-- **Input:** New planner/routes/copier modules.
-- **Output:** Targeted tests for `test_form_copy_planner.py`, `test_form_copy_routes.py`, `test_form_copier.py`.
-
-**[5-B.3] Electron smoke checklist** 🟧 P1
-- **Input:** Electron app.
-- **Output:** Manual checklist: launch, health, close, external links, invalid URL flow.
-
-**[5-B.4] Windows installer smoke checklist** 🟧 P1
-- **Input:** Installer artifact.
-- **Output:** Clean VM install, launch, extract, submit small batch, uninstall.
-
-**[5-B.5] Copy manual smoke checklist** 🟧 P1
-- **Input:** Disposable source/target Google Forms.
-- **Output:** Copy report verified, target mutated as expected, unsupported types warned.
-
----
-
-## 🔗 Dependency Map
-
-```
-1-A Electron shell ───────────────► 1-B runtime config
-1-B runtime config ───────────────► 2-A driver strategy
-2-A driver strategy ──────────────► 2-B PyInstaller sidecar
-2-B sidecar ──────────────────────► 2-C installer
-3-A copy planner ─────────────────► 3-B copy routes
-3-B copy routes ──────────────────► 3-C Selenium copier
-3-B copy routes ──────────────────► 3-D Copy UI
-2-C installer ────────────────────► 4-B download/release wiring
-4-A landing page ─────────────────► 4-B download/release wiring
-All phases ───────────────────────► 5-B verification matrix
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
+Nếu task chỉ sửa tài liệu thì không bắt buộc chạy test, nhưng phải đọc lại diff/nội dung để xác nhận đúng scope.
+
 ---
 
-## 📎 Tài liệu tham chiếu
+# Part A — Security/Reliability Quick Wins
 
-| Document | Dùng cho |
-|---------|---------|
-| `CLAUDE.md` | Project architecture, commands, rules |
-| `docs/diagram/usecase_list.md` | Use case IDs và phase scope |
-| `docs/task_breakdown.md` | Implementation tasks |
-| `README.md` | Product copy, current install/build instructions |
-| `build_exe.bat` | Existing PyInstaller build flow |
-| `google_form_tool.spec` | Existing backend executable bundle config |
-| `wsgi.py` | Flask/Waitress entrypoint |
-| `app/core/driver_manager.py` | Chrome/ChromeDriver resolution |
-| `app/core/form_extractor.py` | Source Google Form extraction |
-| `app/core/form_submitter.py` | Existing submit automation |
-| `app/models.py` | Pydantic data model |
-| `app/main_routes.py` | Existing UI/API routes |
-| `tests/` | Regression test patterns |
+Mục tiêu: vá các điểm rủi ro thực tế, ít refactor, giúp app local desktop an toàn hơn và giảm lỗi race/UX khi thao tác nhanh.
 
+## Task A-1 — Same-origin guard cho mutating requests
+
+**Priority:** P0  
+**Mảng:** Security  
+**Files dự kiến:** `app/main_routes.py`, `tests/test_extract_route.py` hoặc test route security mới.
+
+### Scope
+- Thêm guard dùng chung cho các route mutating như extract, load data, save edit, start/stop submission, copy form apply.
+- Cho phép request không có `Origin`/`Referer` để không phá local clients hợp lệ.
+- Nếu có `Origin` hoặc `Referer`, chỉ chấp nhận same host/localhost hiện tại.
+- Trả `403` JSON rõ ràng khi bị chặn.
+
+### Verify
+- Test request same-origin pass.
+- Test cross-origin `Origin: https://evil.example` bị `403`.
+- Full regression pass.
+
+## Task A-2 — Generic 500 responses, detailed server logs only
+
+**Priority:** P0  
+**Mảng:** Security/Reliability  
+**Files dự kiến:** `app/main_routes.py`, route tests liên quan.
+
+### Scope
+- Chuẩn hóa các `except Exception` ở route boundary.
+- Client nhận lỗi chung kiểu `Internal server error` cho lỗi ngoài dự kiến.
+- Lỗi validation/user-action vẫn trả `400`/`409` với message actionable.
+- Log server vẫn giữ exception detail bằng `logger.exception(...)`.
+
+### Verify
+- Test forced unexpected exception không leak traceback/class/path ra JSON response.
+- Existing validation tests vẫn pass.
+- Full regression pass.
+
+## Task A-3 — Refuse duplicate submission start with 409 Conflict
+
+**Priority:** P0  
+**Mảng:** Reliability  
+**Files dự kiến:** `app/main_routes.py`, `tests/test_prefill_submission.py` hoặc route submission test.
+
+### Scope
+- Khi `active_submitters[form_id]` đang chạy, `/start_submission` phải từ chối request mới bằng `409`.
+- Không silently replace submitter đang chạy.
+- Response JSON nói form này đang có submission chạy.
+
+### Verify
+- Test start lần 2 khi submitter running trả `409`.
+- Test start sau khi finished/cleanup vẫn cho phép.
+- Full regression pass.
+
+## Task A-4 — Retain finished status for polling
+
+**Priority:** P0  
+**Mảng:** Reliability/UX  
+**Files dự kiến:** `app/main_routes.py`, possibly `app/core/form_submitter.py`, tests submission status.
+
+### Scope
+- Sau khi submission kết thúc, giữ final status đủ lâu để frontend poll thấy kết quả cuối.
+- Không cleanup submitter ngay lập tức trước khi UI đọc được final state.
+- Có TTL nhỏ hoặc cache final status theo `form_id`.
+
+### Verify
+- Test `submission_status` sau khi submitter finished vẫn trả final success/failed/end_time.
+- Test cleanup không giữ dữ liệu vô hạn.
+- Full regression pass.
+
+## Task A-5 — Selenium selector hardening for dropdown/options
+
+**Priority:** P1  
+**Mảng:** Reliability  
+**Files dự kiến:** `app/core/form_submitter.py`, `tests/test_form_submitter.py`.
+
+### Scope
+- Làm selector cho dropdown/options bớt phụ thuộc text/class dễ vỡ.
+- Ưu tiên `role`, `aria-*`, stable structural selectors khi phù hợp.
+- Không rewrite toàn bộ Selenium flow; chỉ harden điểm dễ flake.
+
+### Verify
+- Existing form submitter tests pass.
+- Add/adjust focused unit tests for selector decision helpers nếu có helper.
+- Full regression pass.
+
+## Task A-6 — XLSX column/cell caps
+
+**Priority:** P1  
+**Mảng:** Security/Performance  
+**Files dự kiến:** `config.py`, `app/core/form_processor.py`, `tests/test_form_processor.py`.
+
+### Scope
+- Thêm giới hạn số cột và độ dài cell khi parse CSV/JSON/XLSX upload.
+- Reuse style `MAX_UPLOAD_ROWS` hiện có.
+- Trả `ValueError` controlled khi vượt giới hạn.
+
+### Verify
+- Test file quá nhiều cột bị reject.
+- Test cell quá dài bị reject.
+- Test file hợp lệ vẫn parse bình thường.
+- Full regression pass.
+
+---
+
+# Part B — Reliability/Architecture Hardening
+
+Mục tiêu: làm runtime ổn định hơn khi có lỗi worker, API nội bộ rõ hơn, route exception policy nhất quán hơn.
+
+## Task B-1 — Worker accounting on thread-level failures
+
+**Priority:** P0  
+**Mảng:** Reliability  
+**Files dự kiến:** `app/core/form_submitter.py`, `tests/test_form_submitter.py`.
+
+### Scope
+- Đảm bảo mọi worker thread giảm `current_threads` trong `finally` kể cả crash sớm.
+- Đảm bảo batch không kẹt `running=True` khi worker lỗi ngoài dự kiến.
+- Final status phải phản ánh success/failed/total nhất quán.
+
+### Verify
+- Test giả lập worker exception vẫn có `current_threads == 0` và `running == False` cuối batch.
+- Full regression pass.
+
+## Task B-2 — Correct worker distribution for direct class usage
+
+**Priority:** P1  
+**Mảng:** Reliability/Architecture  
+**Files dự kiến:** `app/core/form_submitter.py`, `tests/test_form_submitter.py`.
+
+### Scope
+- Đảm bảo `FormSubmitter` phân phối số lượng submit đúng kể cả khi class được gọi trực tiếp, không chỉ qua route.
+- Xử lý remainder rõ ràng khi `num_submission` không chia hết cho số thread.
+- Không thay đổi public status response shape.
+
+### Verify
+- Test direct submitter call với `num_submission=5`, `threads=2` tạo tổng đúng 5 attempts.
+- Full regression pass.
+
+## Task B-3 — Public StorageService.get_form_by_id
+
+**Priority:** P1  
+**Mảng:** Architecture  
+**Files dự kiến:** `app/services/storage_service.py`, routes/tests đang dùng `_load_form`.
+
+### Scope
+- Thêm method public `get_form_by_id(form_id)` thay cho việc route/test gọi private `_load_form` khi không cần private API.
+- Giữ `_load_form` nếu nội bộ vẫn cần, nhưng route mới dùng public API.
+- Không refactor rộng storage layer ngoài điểm này.
+
+### Verify
+- Test `get_form_by_id` trả form đúng và `None` khi không có.
+- Existing storage tests pass.
+- Full regression pass.
+
+## Task B-4 — Gemini key persistence opt-in
+
+**Priority:** P1  
+**Mảng:** Security/UX  
+**Files dự kiến:** template/JS liên quan Gemini settings, tests frontend static nếu có.
+
+### Scope
+- Không lưu Gemini API key vào `localStorage` mặc định.
+- Thêm lựa chọn user rõ ràng nếu muốn remember locally.
+- Nếu không opt-in, giữ key trong memory/session runtime của page.
+- UI wording nói rõ key lưu local trên máy nếu bật remember.
+
+### Verify
+- Static/frontend test hoặc manual check xác nhận không gọi `localStorage.setItem` cho key nếu chưa opt-in.
+- Existing frontend tests pass.
+- Full regression pass nếu sửa backend/core; nếu chỉ JS có thể chạy targeted frontend tests.
+
+## Task B-5 — Route exception policy cleanup
+
+**Priority:** P1  
+**Mảng:** Architecture/Reliability  
+**Files dự kiến:** `app/main_routes.py`, route tests.
+
+### Scope
+- Sau A-2, gom pattern lỗi route thành helper nhỏ hoặc decorator nhẹ nếu thật sự giảm lặp.
+- Phân biệt validation error, conflict, not found, unexpected error.
+- Không đổi response contract của các route đang được frontend dùng trừ khi test update rõ ràng.
+
+### Verify
+- Route tests pass.
+- Full regression pass.
+
+---
+
+# Part C — Performance/Scalability Upgrades
+
+Mục tiêu: giảm session bloat, kiểm soát cost/latency AI, và làm app sẵn sàng hơn cho packaged/local production mode.
+
+## Task C-1 — Server-side upload cache by upload_id
+
+**Priority:** P1  
+**Mảng:** Performance/Architecture  
+**Files dự kiến:** `app/main_routes.py`, storage/cache module nếu cần, tests load/start submission.
+
+### Scope
+- `/load_data` không nhét toàn bộ uploaded responses vào Flask session.
+- Lưu parsed responses server-side theo `upload_id` ngắn hạn.
+- Session chỉ giữ `upload_id`/metadata nhỏ.
+- `/start_submission` đọc responses từ cache theo `upload_id`.
+
+### Verify
+- Test load data trả/upload lưu `upload_id`.
+- Test start submission dùng cached uploaded data.
+- Test missing/expired upload cache trả lỗi controlled.
+- Full regression pass.
+
+## Task C-2 — AI endpoint timeout and cost guard
+
+**Priority:** P1  
+**Mảng:** Performance/Security  
+**Files dự kiến:** `app/core/ai_responder.py`, route AI nếu có, tests AI responder/route.
+
+### Scope
+- Thêm timeout cho Gemini calls.
+- Giới hạn prompt/input size và số request hợp lý cho local app.
+- Trả lỗi controlled khi timeout hoặc vượt giới hạn.
+- Không log API key hoặc prompt nhạy cảm quá chi tiết.
+
+### Verify
+- Test timeout/failure path không crash route.
+- Test oversized prompt bị reject.
+- Full regression pass.
+
+## Task C-3 — Upload cache lifecycle and cleanup
+
+**Priority:** P2  
+**Mảng:** Performance/Reliability  
+**Files dự kiến:** upload cache module/routes tests.
+
+### Scope
+- Thêm TTL cleanup cho upload cache sau khi submission xong hoặc sau thời gian ngắn.
+- Không xóa cache đang được active submission dùng.
+- Có giới hạn tổng số upload cache entries hoặc tổng bytes.
+
+### Verify
+- Test expired cache cleanup.
+- Test active cache không bị xóa khi đang dùng.
+- Full regression pass.
+
+## Task C-4 — Production deployment guardrails
+
+**Priority:** P2  
+**Mảng:** Security/Operations  
+**Files dự kiến:** `config.py`, app startup docs/tests nếu cần.
+
+### Scope
+- Nếu chạy như public web server, yêu cầu cấu hình rõ ràng thay vì mặc định desktop-local unsafe.
+- Document local desktop assumptions và các biến môi trường cần bật khi expose network.
+- Không tự ý thêm auth system trong task này; chỉ guardrails/warnings/config checks.
+
+### Verify
+- Config tests cho desktop default không bị phá.
+- Test production/public mode thiếu cấu hình bắt buộc sẽ warning/fail controlled theo design.
+- Full regression pass nếu sửa config/app init.
+
+---
+
+# Dependency map
+
+```text
+A-1 same-origin guard ───────────────► C-4 production guardrails
+A-2 generic 500 responses ───────────► B-5 route exception policy cleanup
+A-3 duplicate start 409 ─────────────► A-4 final status retention
+A-4 final status retention ──────────► B-1 worker accounting
+A-5 selector hardening ──────────────► B-1 worker accounting
+A-6 XLSX caps ───────────────────────► C-1 server-side upload cache
+B-2 worker distribution ─────────────► B-1 worker accounting
+B-3 public storage API ──────────────► B-5 route exception policy cleanup
+B-4 Gemini key opt-in ───────────────► C-2 AI cost guard
+C-1 upload cache ────────────────────► C-3 cache lifecycle
+```
+
+# Recommended execution order
+
+1. A-1 same-origin guard.
+2. A-2 generic 500 responses.
+3. A-3 duplicate submission 409.
+4. A-4 final status retention.
+5. A-5 Selenium selector hardening.
+6. A-6 XLSX caps.
+7. B-2 worker distribution.
+8. B-1 worker crash accounting.
+9. B-4 Gemini key opt-in.
+10. B-3 public storage API.
+11. B-5 route exception policy cleanup.
+12. C-1 server-side upload cache.
+13. C-3 upload cache lifecycle.
+14. C-2 AI timeout and cost guard.
+15. C-4 production deployment guardrails.
+
+# Completion target
+
+App được coi là đạt mục tiêu hardening khi:
+
+- A-1 đến A-6 pass full regression.
+- B-1 đến B-5 pass full regression và không đổi UI contract ngoài các lỗi đã test.
+- C-1/C-2 pass nếu muốn đạt performance/security khoảng 9/10.
+- C-3/C-4 hoàn tất trước release/public distribution rộng hơn.

@@ -5,7 +5,11 @@ This module provides the application factory pattern for creating a Flask app.
 It handles configuration, logging initialization, and blueprint registration.
 """
 
+import os
+
 from flask import Flask, request, session
+
+from app.logging_config import logger
 
 from app.models import *
 from app.main_routes import bp
@@ -21,6 +25,13 @@ except ImportError:
 SUPPORTED_LANGUAGES = ["en", "vi"]
 
 __version__ = "1.1.0"
+
+
+def _warn_production_guardrails() -> None:
+    if str(os.getenv("FLASK_DEBUG", "0")) == "1":
+        logger.warning(
+            "Running in DEBUG mode. Do not expose this application to public networks."
+        )
 
 
 def get_locale():
@@ -54,6 +65,7 @@ def create_app(testing: bool = False):
         app.config["TESTING"] = True
 
     init_app_logging(app)
+    _warn_production_guardrails()
 
     if BABEL_AVAILABLE:
         app.config["BABEL_DEFAULT_LOCALE"] = "en"

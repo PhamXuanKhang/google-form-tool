@@ -57,6 +57,14 @@ def test_load_form_not_found(temp_db, caplog):
     assert "Form not found: form_nonexistent" in caplog.text
 
 
+def test_get_form_by_id(temp_db, sample_form):
+    temp_db.save_form(sample_form)
+    form = temp_db.get_form_by_id("form_001")
+    assert form is not None
+    assert form.id == "form_001"
+    assert temp_db.get_form_by_id("form_nonexistent") is None
+
+
 def test_load_form_validation_error(temp_db, caplog, monkeypatch):
     caplog.set_level(logging.ERROR)
     # Simulate invalid form data

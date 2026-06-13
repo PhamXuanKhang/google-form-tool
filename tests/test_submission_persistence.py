@@ -27,7 +27,7 @@ class FakeStorageContext:
         self.closed = True
         return None
 
-    def _load_form(self, form_id):
+    def get_form_by_id(self, form_id):
         return self.form
 
     def add_submission(self, form_id, submission):

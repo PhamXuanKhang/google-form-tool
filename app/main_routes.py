@@ -10,6 +10,7 @@ import os
 import sys
 import threading
 import time
+import uuid
 from urllib.parse import urlparse
 from flask import Blueprint, render_template, request, session, jsonify, current_app, Response
 from app.services import get_storage_service
@@ -24,6 +25,13 @@ from config import Config
 
 # Create blueprint
 bp = Blueprint('main', __name__)
+
+_upload_cache = {}
+_upload_cache_lock = threading.RLock()
+
+
+def _json_error(message: str, code: int = 400):
+    return jsonify({"error": message}), code
 
 
 def _same_origin_host(header_value: str) -> str:
@@ -60,6 +68,50 @@ def _is_valid_google_forms_url(url: str) -> bool:
         and parsed.hostname == 'docs.google.com'
         and parsed.path.startswith('/forms/d/')
     )
+
+
+def _cleanup_expired_upload_cache(now: float = None) -> None:
+    now = now or time.monotonic()
+    ttl = Config.UPLOAD_CACHE_TTL_SECONDS
+    with _upload_cache_lock:
+        expired_ids = [
+            upload_id
+            for upload_id, entry in _upload_cache.items()
+            if now - entry["created_at"] > ttl
+        ]
+        for upload_id in expired_ids:
+            _upload_cache.pop(upload_id, None)
+
+
+def _store_uploaded_responses(responses_list):
+    _cleanup_expired_upload_cache()
+    with _upload_cache_lock:
+        if len(_upload_cache) >= Config.UPLOAD_CACHE_MAX_ENTRIES:
+            return None
+        upload_id = uuid.uuid4().hex[:12]
+        while upload_id in _upload_cache:
+            upload_id = uuid.uuid4().hex[:12]
+        _upload_cache[upload_id] = {
+            "responses": responses_list,
+            "created_at": time.monotonic(),
+        }
+        return upload_id
+
+
+def _get_cached_upload(upload_id: str):
+    _cleanup_expired_upload_cache()
+    with _upload_cache_lock:
+        entry = _upload_cache.get(upload_id)
+        if not entry:
+            return None
+        return entry["responses"]
+
+
+def _delete_cached_upload(upload_id: str) -> None:
+    if not upload_id:
+        return
+    with _upload_cache_lock:
+        _upload_cache.pop(upload_id, None)
 
 
 #############################
@@ -251,7 +303,7 @@ def form_copy_preview_plan():
         return jsonify({"error": "No form_id provided"}), 400
 
     with get_storage_service() as storage:
-        form = storage._load_form(form_id)
+        form = storage.get_form_by_id(form_id)
 
     if not form:
         return jsonify({"error": "Form not found"}), 404
@@ -277,7 +329,7 @@ def form_copy_apply_to_target():
         return jsonify({"error": "Please confirm you own or control the target form before applying changes."}), 400
 
     with get_storage_service() as storage:
-        form = storage._load_form(form_id)
+        form = storage.get_form_by_id(form_id)
 
     if not form:
         return jsonify({"error": "Form not found"}), 404
@@ -398,24 +450,24 @@ def load_data():
     """
     form_id = request.form.get('form_id')
     if not form_id:
-        return jsonify({"error": "No form_id provided"}), 400
+        return _json_error("No form_id provided", 400)
 
     max_upload_bytes = current_app.config.get('MAX_CONTENT_LENGTH') or Config.MAX_UPLOAD_BYTES
     if request.content_length and request.content_length > max_upload_bytes:
-        return jsonify({"error": f"Uploaded file exceeds maximum size of {max_upload_bytes} bytes"}), 413
+        return _json_error(f"Uploaded file exceeds maximum size of {max_upload_bytes} bytes", 413)
 
     if 'answer_file' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+        return _json_error("No file uploaded", 400)
 
     file = request.files['answer_file']
     if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+        return _json_error("No selected file", 400)
 
     import os
     import tempfile
     suffix = os.path.splitext(file.filename)[1].lower()
     if suffix not in ('.csv', '.json', '.xlsx'):
-        return jsonify({"error": "Unsupported file format. Use CSV, JSON, or XLSX"}), 400
+        return _json_error("Unsupported file format. Use CSV, JSON, or XLSX", 400)
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         file_path = tmp.name
@@ -423,9 +475,9 @@ def load_data():
 
     try:
         with get_storage_service() as storage:
-            form = storage._load_form(form_id)
+            form = storage.get_form_by_id(form_id)
             if not form:
-                return jsonify({"error": "Form not found"}), 404
+                return _json_error("Form not found", 404)
 
             from app.core.form_processor import FormProcessor
             processor = FormProcessor(form)
@@ -437,21 +489,26 @@ def load_data():
                 mapping = json.loads(mapping_json)
 
             responses_list = processor.load_data_from_file(file_path, mapping, max_rows=Config.MAX_UPLOAD_ROWS)
+            upload_id = _store_uploaded_responses(responses_list)
+            if not upload_id:
+                return _json_error("Upload cache full", 503)
 
             return jsonify({
                 "success": True,
+                "upload_id": upload_id,
+                "row_count": len(responses_list),
                 "rows_loaded": len(responses_list),
-                "responses": responses_list,
+                "preview": responses_list[:5],
                 "message": f"Loaded {len(responses_list)} response sets"
             })
 
     except FileNotFoundError as e:
-        return jsonify({"error": str(e)}), 404
+        return _json_error(str(e), 404)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return _json_error(str(e), 400)
     except Exception as e:
         logger.exception("Unexpected error loading data")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return _json_error("An unexpected error occurred", 500)
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -477,7 +534,7 @@ def generate_response():
 
     try:
         with get_storage_service() as storage:
-            form = storage._load_form(form_id)
+            form = storage.get_form_by_id(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
 
@@ -591,7 +648,7 @@ def generate_ai_text_answers():
 
     try:
         with get_storage_service() as storage:
-            form = storage._load_form(form_id)
+            form = storage.get_form_by_id(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
 
@@ -627,9 +684,13 @@ def generate_ai_text_answers():
             )
             return jsonify({"success": True, "answers": answers})
 
+    except ValueError as e:
+        return _json_error(str(e), 400)
+    except TimeoutError:
+        return _json_error("AI request timed out", 504)
     except Exception as e:
         # Never echo api_key into logs/response.
-        logger.error(f"Error generating AI text answers for question {question_id}: {e}")
+        logger.error("Error generating AI text answers for question %s: %s", question_id, type(e).__name__)
         return jsonify({"error": "Failed to generate AI answers"}), 500
 
 
@@ -667,7 +728,7 @@ def save_edit():
     
     try:
         with get_storage_service() as storage:
-            form = storage._load_form(form_id)
+            form = storage.get_form_by_id(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
             
@@ -799,6 +860,7 @@ def start_submission():
     data = request.get_json(silent=True) or {}
 
     form_id = data.get('form_id')
+    upload_id = data.get('upload_id')
     responses_list = data.get('responses_list')
     responses = data.get('responses')
     use_file_data = data.get('use_file_data', False)
@@ -823,6 +885,11 @@ def start_submission():
             )
         }), 400
 
+    if upload_id:
+        responses_list = _get_cached_upload(upload_id)
+        if responses_list is None:
+            return _json_error("Upload expired or not found. Please re-upload.", 400)
+
     try:
         num_submissions, concurrent_threads, min_delay, max_delay = _validate_submission_request(data)
     except ValueError as e:
@@ -837,7 +904,7 @@ def start_submission():
 
     try:
         with get_storage_service() as storage:
-            form = storage._load_form(form_id)
+            form = storage.get_form_by_id(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
 
@@ -876,7 +943,7 @@ def start_submission():
             import threading
             submission_thread = threading.Thread(
                 target=_run_submission,
-                args=(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list, responses, submission_mode)
+                args=(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list, responses, submission_mode, upload_id)
             )
             submission_thread.daemon = True
             submission_thread.start()
@@ -905,7 +972,7 @@ def start_submission():
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 
-def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None):
+def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None, upload_id=None):
     """Internal helper: Runs submission in background thread"""
     try:
         submit_kwargs = dict(
@@ -935,6 +1002,7 @@ def _run_submission(submitter, form_id, num_submissions, concurrent_threads, min
     except Exception as e:
         logger.error(f"Error in submission thread: {str(e)}")
     finally:
+        _delete_cached_upload(upload_id)
         submitter._finished_at = time.monotonic()
 
 
@@ -1006,7 +1074,7 @@ def submission_history(form_id):
     """
     try:
         with get_storage_service() as storage:
-            form = storage._load_form(form_id)
+            form = storage.get_form_by_id(form_id)
             if not form:
                 return jsonify({"error": "Form not found. Please refresh the page and try again."}), 404
 
@@ -1047,7 +1115,7 @@ def export_history(form_id):
 
     try:
         with get_storage_service() as storage:
-            form = storage._load_form(form_id)
+            form = storage.get_form_by_id(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
 

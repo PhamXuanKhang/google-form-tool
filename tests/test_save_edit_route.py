@@ -16,7 +16,7 @@ class FakeStorage:
     def __exit__(self, exc_type, exc_value, traceback):
         return None
 
-    def _load_form(self, form_id):
+    def get_form_by_id(self, form_id):
         if self.form and self.form.id == form_id:
             return self.form
         return None

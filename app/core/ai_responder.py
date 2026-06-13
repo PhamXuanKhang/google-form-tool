@@ -4,6 +4,7 @@ AI Responder Module
 Uses Google Gemini API to generate context-aware responses for form questions.
 API key is provided by user via UI (not from env) for flexibility.
 """
+import concurrent.futures
 import json
 from typing import Optional, Dict, Any, List
 from app.models import Question
@@ -41,6 +42,21 @@ class AIResponder:
         self.client = genai.Client(api_key=api_key)
         self.model_name = self._resolve_model_name(self.client, Config.GEMINI_MODEL)
         self._cache: Dict[str, str] = {}
+        self.timeout_seconds = Config.AI_REQUEST_TIMEOUT_SECONDS
+
+    def _generate_content(self, prompt: str):
+        if len(prompt) > Config.AI_MAX_PROMPT_CHARS:
+            raise ValueError("Input too large")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                self.client.models.generate_content,
+                model=self.model_name,
+                contents=prompt,
+            )
+            try:
+                return future.result(timeout=self.timeout_seconds)
+            except concurrent.futures.TimeoutError as exc:
+                raise TimeoutError("AI request timed out") from exc
 
     def generate_response(self, question: Question, context: Optional[str] = None) -> str:
         """
@@ -60,9 +76,7 @@ class AIResponder:
         prompt = self._build_prompt(question, context)
 
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name, contents=prompt
-            )
+            response = self._generate_content(prompt)
             answer = self._extract_answer(response.text, question)
             self._cache[cache_key] = answer
             logger.info(f"AI generated response for question: {question.question_id}")
@@ -125,9 +139,7 @@ class AIResponder:
         )
 
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name, contents=prompt
-            )
+            response = self._generate_content(prompt)
             answers = self._parse_text_array(response.text)
             if answers:
                 # Pad/truncate to the exact count requested.
@@ -277,9 +289,7 @@ Question Type: {q_type}
             bool: True if key is valid, False otherwise
         """
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name, contents="Say 'OK'"
-            )
+            response = self._generate_content("Say 'OK'")
             return bool(response.text)
         except Exception as e:
             logger.error("API key validation failed: %s", type(e).__name__)

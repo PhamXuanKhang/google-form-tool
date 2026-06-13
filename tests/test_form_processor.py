@@ -436,7 +436,7 @@ class TestLoadDataFromFile:
             def __exit__(self, exc_type, exc_value, traceback):
                 return None
 
-            def _load_form(self, form_id):
+            def get_form_by_id(self, form_id):
                 return sample_form
 
         def load_data_from_file(self, file_path, mapping=None, max_rows=None):
@@ -468,7 +468,7 @@ class TestLoadDataFromFile:
             def __exit__(self, exc_type, exc_value, traceback):
                 return None
 
-            def _load_form(self, form_id):
+            def get_form_by_id(self, form_id):
                 return sample_form
 
         monkeypatch.setattr(main_routes, "get_storage_service", lambda: Storage())

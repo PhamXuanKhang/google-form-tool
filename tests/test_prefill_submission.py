@@ -82,8 +82,10 @@ def _build_prefill_form() -> Form:
 @pytest.fixture(autouse=True)
 def _clear_active():
     main_routes.active_submitters.clear()
+    main_routes._upload_cache.clear()
     yield
     main_routes.active_submitters.clear()
+    main_routes._upload_cache.clear()
 
 
 class FakeStorageContext:
@@ -97,7 +99,7 @@ class FakeStorageContext:
     def __exit__(self, *exc):
         return None
 
-    def _load_form(self, form_id):
+    def get_form_by_id(self, form_id):
         return self.form
 
     def add_submission(self, form_id, submission):
@@ -152,9 +154,39 @@ def test_start_submission_default_mode_is_prefill(client, monkeypatch, patch_thr
 
     assert response.status_code == 200
     args = patch_thread.instances[0].args
-    # _run_submission signature: (submitter, form_id, num, threads, min, max,
-    # responses_list, responses, submission_mode)
-    assert args[-1] == SUBMISSION_MODE_PREFILL
+    # _run_submission signature ends with submission_mode, upload_id.
+    assert args[-2] == SUBMISSION_MODE_PREFILL
+    assert args[-1] is None
+
+
+def test_start_submission_uses_cached_upload_id(client, monkeypatch, patch_thread):
+    form = _build_prefill_form()
+    monkeypatch.setattr(
+        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
+    )
+    main_routes._upload_cache["abc123"] = {
+        "responses": [{"111": "Alice"}, {"111": "Bob"}],
+        "created_at": main_routes.time.monotonic(),
+    }
+
+    response = _post_start(client, upload_id="abc123", num_submissions=2)
+
+    assert response.status_code == 200
+    args = patch_thread.instances[0].args
+    assert args[6] == [{"111": "Alice"}, {"111": "Bob"}]
+    assert args[-1] == "abc123"
+
+
+def test_start_submission_rejects_missing_upload_id(client, monkeypatch, patch_thread):
+    form = _build_prefill_form()
+    monkeypatch.setattr(
+        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
+    )
+
+    response = _post_start(client, upload_id="missing")
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Upload expired or not found. Please re-upload."
 
 
 def test_start_submission_prefill_prepares_queue_before_thread(client, monkeypatch, patch_thread):
@@ -225,7 +257,8 @@ def test_start_submission_accepts_dom_fill(client, monkeypatch, patch_thread):
     response = _post_start(client, submission_mode="dom_fill")
 
     assert response.status_code == 200
-    assert patch_thread.instances[0].args[-1] == SUBMISSION_MODE_DOM_FILL
+    assert patch_thread.instances[0].args[-2] == SUBMISSION_MODE_DOM_FILL
+    assert patch_thread.instances[0].args[-1] is None
 
 
 def test_start_submission_rejects_unknown_mode(client, monkeypatch):
