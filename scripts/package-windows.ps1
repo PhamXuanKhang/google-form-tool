@@ -4,6 +4,10 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $packageJsonPath = Join-Path $repoRoot 'package.json'
 $buildScript = Join-Path $repoRoot 'build_exe.bat'
 $backendArtifact = Join-Path $repoRoot 'dist\GoogleFormTool\GoogleFormTool.exe'
+$generatedBuildDirs = @(
+    (Join-Path $repoRoot 'build\google_form_tool'),
+    (Join-Path $repoRoot 'dist\GoogleFormTool')
+)
 
 if (-not (Test-Path $packageJsonPath)) {
     throw "package.json not found at $packageJsonPath"
@@ -20,6 +24,15 @@ if (-not (Test-Path $buildScript)) {
 }
 
 Write-Host "Packaging Google Form Automation Tool version $version"
+foreach ($generatedDir in $generatedBuildDirs) {
+    if (Test-Path $generatedDir) {
+        Get-ChildItem -Path $generatedDir -Recurse -Force | ForEach-Object {
+            $_.Attributes = 'Normal'
+        }
+        Remove-Item -Path $generatedDir -Recurse -Force
+    }
+}
+
 Write-Host 'Building backend sidecar in release mode...'
 & $buildScript release
 if ($LASTEXITCODE -ne 0) {
@@ -32,7 +45,7 @@ if (-not (Test-Path $backendArtifact)) {
 
 Write-Host "Backend artifact ready: $backendArtifact"
 
-if (-not (Test-Path (Join-Path $repoRoot 'node_modules'))) {
+if (-not (Test-Path (Join-Path $repoRoot 'node_modules')) -or -not (Test-Path (Join-Path $repoRoot 'node_modules\.bin\electron-builder.cmd'))) {
     Write-Host 'Installing npm dependencies...'
     npm install
     if ($LASTEXITCODE -ne 0) {
