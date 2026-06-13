@@ -116,22 +116,10 @@ Branch: `goal-project-refactor-audit`
 
 Authoritative command: `git log --oneline --reverse master..HEAD`.
 
-- `d1c4b54 docs: add project refactor audit baseline`
-- `d149613 fix: make windows packaging smoke reproducible`
-- `511957c docs: record backend smoke verification`
-- `33c0b2b docs: refresh gitnexus audit evidence`
-- `d94ebdf docs: clarify gitnexus freshness evidence`
-- `16791d5 docs: record electron static smoke`
-- `b917633 fix: include landing script in build output`
-- `e08a198 docs: refresh gitnexus after landing fix`
-- `6760df4 docs: normalize gitnexus counts after cleanup`
-- `edd6934 docs: sync landing test matrix evidence`
-- `d74ab7d docs: record harness matrix sync`
-- `a73abdc docs: refresh audit report evidence`
-- `6192486 docs: stabilize gitnexus evidence wording`
-- `4e864f8 docs: align audit pending evidence`
-- `8409a9a docs: record reliability backlog triage`
-- `9c8e4bf docs: reconcile audit commit history`
+- Baseline/audit docs: project refactor audit report and subsequent evidence refreshes.
+- Runtime-support fixes: Windows packaging reproducibility and landing build asset inclusion.
+- Verification records: backend smoke, Electron static smoke, landing smoke, Harness matrix sync, reliability backlog triage, and GitNexus verification updates.
+- Current exact commit list is intentionally command-derived to avoid stale report-only commits after each evidence update.
 
 ## Remaining Risks
 
