@@ -23,3 +23,5 @@ docs/beta-task-instruction-packs.md
 docs/TIP-*.md
 
 .claude/
+.codeboarding/
+report.html
