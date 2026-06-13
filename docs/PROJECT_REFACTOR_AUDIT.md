@@ -112,6 +112,7 @@ Branch: `goal-project-refactor-audit`
 - `33c0b2b docs: refresh gitnexus audit evidence`
 - `d94ebdf docs: clarify gitnexus freshness evidence`
 - `16791d5 docs: record electron static smoke`
+- `b917633 fix: include landing script in build output`
 
 ## Remaining Risks
 
