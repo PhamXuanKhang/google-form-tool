@@ -58,8 +58,9 @@ Branch: `goal-project-refactor-audit`
 | Source backend health smoke | Start `wsgi.py` with `PORT=5055` and `GOOGLE_FORM_TOOL_NO_BROWSER=1`; request `/healthz` and `/diagnostics/runtime` | Windows PowerShell, Python 3.12.12 venv, local Flask dev server | PASS | `/healthz` returned `{"status":"ok"}`; diagnostics returned `mode: dev`, AppData paths, Chrome path, and ChromeDriver path. |
 | Packaged backend health smoke | Start `dist\GoogleFormTool\GoogleFormTool.exe` with `PORT=5056` and `GOOGLE_FORM_TOOL_NO_BROWSER=1`; request `/healthz` and `/diagnostics/runtime` | Windows PowerShell, packaged PyInstaller backend from packaging smoke | PASS | `/healthz` returned `{"status":"ok"}`; diagnostics returned `mode: frozen` and packaged driver directory under `dist\GoogleFormTool`. |
 | npm dependency audit | `npm audit --audit-level=high` | Windows PowerShell after `npm install` completed during packaging smoke | PASS | `found 0 vulnerabilities` |
-| GitNexus status before refresh | `npx gitnexus status` | Windows PowerShell on `goal-project-refactor-audit` | PENDING | Reported indexed commit `9d9cc08` while current branch was newer; required re-index before further code impact work. |
+| GitNexus status before refresh | `npx gitnexus status` | Windows PowerShell on `goal-project-refactor-audit` | PENDING | Initial sandboxed status reported indexed commit `9d9cc08` while current branch was newer; required re-index before further code impact work. |
 | GitNexus full re-index | `npx gitnexus analyze --force` | Windows PowerShell, GitNexus CLI via `npx`, elevated filesystem access | PASS | Rebuilt index successfully: `2,389 nodes`, `5,532 edges`, `87 clusters`, `113 flows`; AGENTS/CLAUDE context counts updated. |
+| GitNexus status after re-index | `npx gitnexus status` with approved filesystem access | Windows PowerShell, GitNexus CLI via `npx`, full `.git` access | PASS | Reported `Indexed commit: 33c0b2b`, `Current commit: 33c0b2b`, `Status: ✅ up-to-date`. Sandboxed status still cannot read current commit reliably. |
 | GitNexus MCP query after re-index | `mcp__gitnexus.query("healthz diagnostics runtime")` | Current Codex MCP session | PENDING | Query still reported `FTS indexes missing`; likely MCP server/session cache because CLI full re-index completed. Restart Codex/MCP or rerun status in a fresh session to verify. |
 | Live Google Form/API-provider checks | Not run | Requires safe external form/API key/network credentials | PENDING | No safe target form or API key provided. |
 
@@ -81,13 +82,14 @@ Branch: `goal-project-refactor-audit`
 - PASS: npm high-severity audit after dependency install.
 - PENDING: interactive GUI smoke, live Google Form submission, clean installer install/uninstall, and live AI provider checks.
 - PASS: GitNexus CLI full re-index completed for current branch state before further impact analysis.
+- PASS: GitNexus CLI status is up-to-date when run with approved `.git` access.
 
 ## Pending Items
 
 | Priority | Item | Reason | Next verification step |
 | --- | --- | --- | --- |
 | P1 | Interactive extract/configure/submit smoke | Requires interactive browser/Electron and safe Google Form target | Run `npm run electron:dev`, extract a test form, configure a tiny safe plan, and verify UI status/history. |
-| P1 | GitNexus MCP FTS warning | Current MCP session still reports `FTS indexes missing` after CLI `--force` re-index | Restart Codex/MCP or run GitNexus query in a fresh session before relying on keyword/semantic query results. |
+| P1 | GitNexus MCP FTS warning | Current MCP session still reports `FTS indexes missing` after CLI `--force` re-index, despite CLI status being up-to-date with approved `.git` access | Restart Codex/MCP or run GitNexus query in a fresh session before relying on keyword/semantic query results. |
 | P2 | Live AI provider check | Requires API key and provider/network access | Configure a non-production key and run AI route smoke with bounded prompt. |
 | P2 | Candidate reliability improvements | Backlog is intentionally broad | Promote a specific recurring failure from `docs/stories/backlog.md` into a story before implementation. |
 
@@ -102,12 +104,12 @@ Branch: `goal-project-refactor-audit`
 - Automated tests do not prove real Google Forms DOM behavior against current production Google Forms.
 - Packaging and packaged backend health pass in this environment, but generated installers still need install/uninstall smoke on a clean Windows profile.
 - Live AI provider behavior may differ from mocked/local validation paths.
-- GitNexus CLI index refreshed, but current MCP session may still serve stale FTS state until restarted.
+- GitNexus CLI status is up-to-date with approved `.git` access, but current MCP session may still serve stale FTS state until restarted.
 - App logging writes outside the workspace, so restricted sandbox test runs can fail unless log paths are redirected or elevation is approved.
 
 ## Recommended Next Steps
 
-1. Restart Codex/MCP or verify GitNexus FTS in a fresh session before relying on GitNexus query ranking for deeper edits.
+1. Restart Codex/MCP or verify GitNexus FTS in a fresh session before relying on GitNexus keyword/semantic query ranking for deeper edits.
 2. Run interactive Electron/browser smoke with a safe public test form before runtime refactoring.
 3. If a runtime issue is selected, run GitNexus impact analysis on the exact symbol before editing.
 4. Keep changes in small reviewable commits after `mcp__gitnexus.detect_changes` confirms expected scope.
