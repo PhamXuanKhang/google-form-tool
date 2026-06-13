@@ -21,6 +21,16 @@ repomix-output.xml
 docs/beta-debug-phase.md
 docs/beta-task-instruction-packs.md
 docs/TIP-*.md
+docs/code-review.md
+docs/desktop-test-plan-and-risk-review.md
+docs/task_breakdown.md
+docs/verification_matrix.md
+docs/change_language_function.md
+docs/release_checklist.md
+docs/diagram/
+extract_form.py
+extracted_form_data.json
+sample_entry_structure.json
 
 .claude/
 .codeboarding/

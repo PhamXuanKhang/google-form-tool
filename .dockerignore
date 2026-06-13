@@ -35,7 +35,6 @@ docs/
 
 # Data files (will be mounted as volume)
 *.json
-!sample_entry_structure.json
 
 # Misc
 .DS_Store

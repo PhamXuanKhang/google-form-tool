@@ -7,7 +7,7 @@ prerequisite for running the dev server, so we shell out to it for
 unit-level coverage of the validator module.
 
 If Node is not available the test is skipped with a clear message,
-documenting the manual verification path in docs/beta-test-runbook.md.
+documenting the manual verification path in docs/TESTING.md.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ JS_TEST = REPO_ROOT / "tests" / "js" / "test_prefill_validator.mjs"
 
 @pytest.mark.skipif(
     shutil.which("node") is None,
-    reason="Node.js not on PATH; see docs/beta-test-runbook.md §7 for manual verification.",
+    reason="Node.js not on PATH; see docs/TESTING.md for manual verification.",
 )
 def test_prefill_validator_js_suite():
     assert JS_TEST.exists(), f"Missing JS test file: {JS_TEST}"
