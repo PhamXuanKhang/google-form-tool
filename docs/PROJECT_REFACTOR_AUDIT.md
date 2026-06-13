@@ -69,8 +69,8 @@ Branch: `goal-project-refactor-audit`
 | npm dependency audit | `npm audit --audit-level=high` | Windows PowerShell after `npm install` completed during packaging smoke | PASS | `found 0 vulnerabilities` |
 | GitNexus status before refresh | `npx gitnexus status` | Windows PowerShell on `goal-project-refactor-audit` | PENDING | Initial sandboxed status reported indexed commit `9d9cc08` while current branch was newer; required re-index before further code impact work. |
 | GitNexus full re-index | `npx gitnexus analyze --force` | Windows PowerShell, GitNexus CLI via `npx`, elevated filesystem access | PASS | Rebuilt index successfully: `2,389 nodes`, `5,532 edges`, `87 clusters`, `113 flows`; AGENTS/CLAUDE context counts updated. |
-| GitNexus status after re-index | `npx gitnexus status` with approved filesystem access | Windows PowerShell, GitNexus CLI via `npx`, full `.git` access | PASS | Reported `Indexed commit: 33c0b2b`, `Current commit: 33c0b2b`, `Status: ✅ up-to-date`. Sandboxed status still cannot read current commit reliably. |
-| GitNexus MCP query after re-index | `mcp__gitnexus.query("healthz diagnostics runtime")` | Current Codex MCP session | PENDING | Query still reported `FTS indexes missing`; likely MCP server/session cache because CLI full re-index completed. Restart Codex/MCP or rerun status in a fresh session to verify. |
+| GitNexus status after latest refresh | `npx gitnexus analyze`; `npx gitnexus status` with approved filesystem access | Windows PowerShell, GitNexus CLI via `npx`, full `.git` access | PASS | Incremental analyze completed and status reported `Indexed commit: d74ab7d`, `Current commit: d74ab7d`, `Status: ✅ up-to-date`. Sandboxed status still cannot read current commit reliably. |
+| GitNexus MCP query after latest refresh | `mcp__gitnexus.query("healthz diagnostics runtime")` | Current Codex MCP session | PENDING | Query still reported `FTS indexes missing` after CLI refresh at `d74ab7d`; likely MCP server/session cache or FTS-specific index issue. Restart Codex/MCP or run GitNexus query in a fresh session to verify. |
 | Live Google Form/API-provider checks | Not run | Requires safe external form/API key/network credentials | PENDING | No safe target form or API key provided. |
 
 ## Changes Implemented
@@ -118,6 +118,10 @@ Branch: `goal-project-refactor-audit`
 - `d94ebdf docs: clarify gitnexus freshness evidence`
 - `16791d5 docs: record electron static smoke`
 - `b917633 fix: include landing script in build output`
+- `e08a198 docs: refresh gitnexus after landing fix`
+- `6760df4 docs: normalize gitnexus counts after cleanup`
+- `edd6934 docs: sync landing test matrix evidence`
+- `d74ab7d docs: record harness matrix sync`
 
 ## Remaining Risks
 
