@@ -69,8 +69,8 @@ Branch: `goal-project-refactor-audit`
 | npm dependency audit | `npm audit --audit-level=high` | Windows PowerShell after `npm install` completed during packaging smoke | PASS | `found 0 vulnerabilities` |
 | GitNexus status before refresh | `npx gitnexus status` | Windows PowerShell on `goal-project-refactor-audit` | PENDING | Initial sandboxed status reported indexed commit `9d9cc08` while current branch was newer; required re-index before further code impact work. |
 | GitNexus full re-index | `npx gitnexus analyze --force` | Windows PowerShell, GitNexus CLI via `npx`, elevated filesystem access | PASS | Rebuilt index successfully: `2,389 nodes`, `5,532 edges`, `87 clusters`, `113 flows`; AGENTS/CLAUDE context counts updated. |
-| GitNexus status after latest refresh | `npx gitnexus analyze`; `npx gitnexus status` with approved filesystem access | Windows PowerShell, GitNexus CLI via `npx`, full `.git` access | PASS | Incremental analyze completed and status reported matching indexed/current commits with `Status: ✅ up-to-date`. Sandboxed status still cannot read current commit reliably. |
-| GitNexus MCP query after latest refresh | `mcp__gitnexus.query("healthz diagnostics runtime")` | Current Codex MCP session | PENDING | Query still reported `FTS indexes missing` after CLI refresh at `d74ab7d`; likely MCP server/session cache or FTS-specific index issue. Restart Codex/MCP or run GitNexus query in a fresh session to verify. |
+| GitNexus status after latest refresh | `npx gitnexus analyze`; `npx gitnexus status` with approved filesystem access | Windows PowerShell, GitNexus CLI via `npx`, full `.git` access | PASS | Incremental analyze completed and status reported `Indexed commit: 6192486`, `Current commit: 6192486`, `Status: ✅ up-to-date`. Sandboxed status still cannot read current commit reliably. |
+| GitNexus MCP query after latest refresh | `mcp__gitnexus.query("healthz diagnostics runtime")` | Current Codex MCP session | PENDING | Query still reported `FTS indexes missing` after CLI refresh; likely MCP server/session cache or FTS-specific index issue. Restart Codex/MCP or run GitNexus query in a fresh session to verify. |
 | Live Google Form/API-provider checks | Not run | Requires safe external form/API key/network credentials | PENDING | No safe target form or API key provided. |
 
 ## Changes Implemented
@@ -106,6 +106,8 @@ Branch: `goal-project-refactor-audit`
 | --- | --- | --- | --- |
 | P1 | Interactive extract/configure/submit smoke | Requires interactive Electron/browser session and safe Google Form target; static Electron checks passed but do not prove rendered UI behavior | Run `npm run electron:dev`, extract a test form, configure a tiny safe plan, and verify UI status/history. |
 | P1 | GitNexus MCP FTS warning | Current MCP session still reports `FTS indexes missing` after CLI `--force` re-index, despite CLI status being up-to-date with approved `.git` access | Restart Codex/MCP or run GitNexus query in a fresh session before relying on keyword/semantic query results. |
+| P1 | Live Google Form submission/pre-fill check | Requires a safe external Google Form target and test data; automated/local tests do not prove current production Google Forms DOM behavior | Use a disposable form, run extract, prefill, and one tiny safe submission, then verify response/status/history. |
+| P2 | Clean installer install/uninstall smoke | Requires running generated installer on a clean Windows profile; packaging smoke only proves artifact generation | Install generated NSIS/MSI artifact on a clean profile or VM, launch once, verify health/diagnostics, then uninstall and check cleanup. |
 | P2 | Live AI provider check | Requires API key and provider/network access | Configure a non-production key and run AI route smoke with bounded prompt. |
 | P2 | Candidate reliability improvements | Backlog is intentionally broad | Promote a specific recurring failure from `docs/stories/backlog.md` into a story before implementation. |
 
@@ -122,6 +124,8 @@ Branch: `goal-project-refactor-audit`
 - `6760df4 docs: normalize gitnexus counts after cleanup`
 - `edd6934 docs: sync landing test matrix evidence`
 - `d74ab7d docs: record harness matrix sync`
+- `a73abdc docs: refresh audit report evidence`
+- `6192486 docs: stabilize gitnexus evidence wording`
 
 ## Remaining Risks
 
