@@ -23,6 +23,7 @@ Branch: `goal-project-refactor-audit`
 | Runtime diagnostics | implemented | `docs/TEST_MATRIX.md`, `tests/test_healthz.py`, `tests/test_runtime_diagnostics_route.py`, `tests/test_monitoring_routes.py` | Automated tests passed. |
 | Form copy MVP | implemented | `docs/TEST_MATRIX.md`, `tests/test_form_copier.py`, `tests/test_form_copy_planner.py`, `tests/test_form_copy_routes.py`, `tests/test_form_copy_ui.py` | Automated tests passed. Best-effort limitations remain documented. |
 | Windows packaging | implemented | `scripts/package-windows.ps1`, `google_form_tool.spec`, `electron-builder.yml` | Packaging smoke PASS on 2026-06-13; installers and checksums generated. |
+| Landing page | implemented | `landing/index.html`, `landing/package.json`, `landing/styles.css` | Static build and CTA checks PASS on 2026-06-13. |
 
 ## Use Cases
 
@@ -37,6 +38,7 @@ Branch: `goal-project-refactor-audit`
 | Diagnose runtime | User opens diagnostics/support endpoints | App reports health, paths, monitoring, and driver details | implemented; automated PASS |
 | Copy a form best-effort | User previews/applies supported form copy | App previews supported/unsupported features and applies supported copy plan | implemented; automated PASS; exact clone not claimed |
 | Package Windows app | Maintainer builds installer | Backend sidecar and Electron installers are produced with checksums | implemented; packaging smoke PASS |
+| Open release landing page | Visitor opens landing page to download latest app | Landing page links to GitHub Releases latest and includes expected install/safety sections | implemented; static build/CTA smoke PASS |
 
 ## Acceptance Criteria
 
@@ -51,7 +53,7 @@ Branch: `goal-project-refactor-audit`
 | Check | Command / method | Environment | Result | Evidence |
 | --- | --- | --- | --- | --- |
 | Harness matrix query | `scripts\bin\harness-cli.exe query matrix` | Windows PowerShell, repo venv not required | PASS | Listed 9 implemented product stories. |
-| Full pytest suite | `.\.venv\Scripts\python.exe -m pytest -q` | Windows PowerShell, Python 3.12.12 venv, elevated filesystem access for `%APPDATA%` logs | PASS | `215 passed, 1 deselected in 11.19s` |
+| Full pytest suite | `.\.venv\Scripts\python.exe -m pytest -q` | Windows PowerShell, Python 3.12.12 venv, elevated filesystem access for `%APPDATA%` logs | PASS | `215 passed, 1 deselected in 4.44s` after landing build metadata change. |
 | Sandbox pytest attempt | `.\.venv\Scripts\python.exe -m pytest -q` | Restricted workspace sandbox | PENDING | Blocked by `PermissionError` writing `C:\Users\Khang\AppData\Roaming\GoogleFormTool\logs\app.log`; rerun with approved elevation passed. |
 | Manual desktop smoke | Not run | Requires interactive Electron/browser session | PENDING | Codex did not launch GUI in this slice. |
 | Windows packaging smoke | `.\scripts\package-windows.ps1` | Windows PowerShell, Python 3.12.12 venv, npm install allowed, Electron/PyInstaller caches allowed | PASS | Built `dist\GoogleFormTool\GoogleFormTool.exe`, `release\Google Form Automation Tool-1.1.0-win-x64.exe`, `release\Google Form Automation Tool-1.1.0-win-x64.msi`, and `release\SHA256SUMS.txt`. Generated release artifacts were not committed. |
@@ -60,6 +62,8 @@ Branch: `goal-project-refactor-audit`
 | Electron entrypoint syntax smoke | `node --check electron\main.js`; `node --check electron\backendProcess.js`; `node --check electron\preload.js` | Windows PowerShell, Node.js local install | PASS | All Electron entrypoint files parsed successfully without opening a GUI. |
 | Electron backend module smoke | `node -e "const backend=require('./electron/backendProcess'); ..."` | Windows PowerShell, Node.js local install | PASS | Verified `DEFAULT_PORT === 5123`, `startBackend` export, and `stopBackend` export. |
 | Electron builder config smoke | Node script checking `electron-builder.yml` | Windows PowerShell, Node.js local install | PASS | Verified config still includes `extraResources`, `dist/GoogleFormTool` backend source, `backend` target path, NSIS target, and MSI target. |
+| Landing build smoke | `cd landing; npm run build` | Windows PowerShell, Node.js local install | PASS | Generated `landing/dist/index.html`, `landing/dist/styles.css`, `landing/dist/script.js`, and `landing/dist/banner.png`; generated `dist` was not committed. |
+| Landing CTA/static smoke | PowerShell assertions against `landing/index.html` and `landing/package.json` | Windows PowerShell | PASS | Verified GitHub Releases latest URL, `noopener noreferrer`, section anchors, banner reference, and `script.js` inclusion in build script. |
 | npm dependency audit | `npm audit --audit-level=high` | Windows PowerShell after `npm install` completed during packaging smoke | PASS | `found 0 vulnerabilities` |
 | GitNexus status before refresh | `npx gitnexus status` | Windows PowerShell on `goal-project-refactor-audit` | PENDING | Initial sandboxed status reported indexed commit `9d9cc08` while current branch was newer; required re-index before further code impact work. |
 | GitNexus full re-index | `npx gitnexus analyze --force` | Windows PowerShell, GitNexus CLI via `npx`, elevated filesystem access | PASS | Rebuilt index successfully: `2,389 nodes`, `5,532 edges`, `87 clusters`, `113 flows`; AGENTS/CLAUDE context counts updated. |
@@ -74,6 +78,7 @@ Branch: `goal-project-refactor-audit`
 - Fixed Windows packaging smoke by removing obsolete `pkg_resources` hidden import from `google_form_tool.spec`, cleaning stale generated `build/dist` directories before packaging, and installing npm dependencies when `electron-builder` is missing.
 - Verified source backend and packaged backend health endpoints without opening a browser.
 - Verified Electron entrypoint syntax, backend process exports, and builder config without launching the GUI.
+- Fixed landing build script to copy the existing `script.js` asset and verified release CTA/static landing output.
 - Refreshed GitNexus index and updated generated GitNexus context counts in `AGENTS.md` and `CLAUDE.md`.
 - No application runtime behavior changed.
 
@@ -88,6 +93,7 @@ Branch: `goal-project-refactor-audit`
 - PASS: GitNexus CLI full re-index completed for current branch state before further impact analysis.
 - PASS: GitNexus CLI status is up-to-date when run with approved `.git` access.
 - PASS: Electron entrypoint/config static smoke completed without launching GUI.
+- PASS: Landing build and CTA/static smoke completed; generated `landing/dist` was removed before commit.
 
 ## Pending Items
 
@@ -105,6 +111,7 @@ Branch: `goal-project-refactor-audit`
 - `511957c docs: record backend smoke verification`
 - `33c0b2b docs: refresh gitnexus audit evidence`
 - `d94ebdf docs: clarify gitnexus freshness evidence`
+- `16791d5 docs: record electron static smoke`
 
 ## Remaining Risks
 
