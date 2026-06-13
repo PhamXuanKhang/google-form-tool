@@ -55,6 +55,7 @@ Branch: `goal-project-refactor-audit`
 | Harness matrix query | `scripts\bin\harness-cli.exe query matrix` | Windows PowerShell, repo venv not required | PASS | Listed 10 implemented product stories after brownfield import, including Landing page. |
 | Docs test matrix landing row | `Select-String -Path docs\TEST_MATRIX.md -Pattern 'Landing page'` | Windows PowerShell | PASS | `docs/TEST_MATRIX.md` includes Landing page story with static web platform evidence. |
 | Harness DB landing row | `scripts\bin\harness-cli.exe import brownfield`; `scripts\bin\harness-cli.exe query matrix` | Windows PowerShell, local `harness.db` | PASS | Brownfield import reported 10 stories imported or updated; query matrix includes Landing page. |
+| Reliability backlog triage | `Get-Content docs\stories\backlog.md`; `scripts\bin\harness-cli.exe query backlog --open` | Windows PowerShell, local docs and `harness.db` | PASS | Story backlog has candidate epics only; harness backlog query returned no open items, so no specific recurring reliability failure is ready for implementation. |
 | Full pytest suite | `.\.venv\Scripts\python.exe -m pytest -q` | Windows PowerShell, Python 3.12.12 venv, elevated filesystem access for `%APPDATA%` logs | PASS | `215 passed, 1 deselected in 4.44s` after landing build metadata change. |
 | Sandbox pytest attempt | `.\.venv\Scripts\python.exe -m pytest -q` | Restricted workspace sandbox | PENDING | Blocked by `PermissionError` writing `C:\Users\Khang\AppData\Roaming\GoogleFormTool\logs\app.log`; rerun with approved elevation passed. |
 | Manual desktop smoke | Not run | Requires interactive Electron/browser session | PENDING | Codex did not launch GUI in this slice. |
@@ -92,7 +93,7 @@ Branch: `goal-project-refactor-audit`
 - PASS: source backend `/healthz` and `/diagnostics/runtime` smoke on port `5055`.
 - PASS: packaged backend `/healthz` and `/diagnostics/runtime` smoke on port `5056`.
 - PASS: npm high-severity audit after dependency install.
-- PENDING: interactive GUI smoke, live Google Form submission, clean installer install/uninstall, and live AI provider checks.
+- PENDING: interactive GUI smoke, live Google Form submission, clean installer install/uninstall, live AI provider checks, and any reliability story until a recurring failure is identified.
 - PASS: GitNexus CLI full re-index completed for current branch state before further impact analysis.
 - PASS: GitNexus CLI status is up-to-date when run with approved `.git` access.
 - PASS: Electron entrypoint/config static smoke completed without launching GUI.
@@ -109,7 +110,7 @@ Branch: `goal-project-refactor-audit`
 | P1 | Live Google Form submission/pre-fill check | Requires a safe external Google Form target and test data; automated/local tests do not prove current production Google Forms DOM behavior | Use a disposable form, run extract, prefill, and one tiny safe submission, then verify response/status/history. |
 | P2 | Clean installer install/uninstall smoke | Requires running generated installer on a clean Windows profile; packaging smoke only proves artifact generation | Install generated NSIS/MSI artifact on a clean profile or VM, launch once, verify health/diagnostics, then uninstall and check cleanup. |
 | P2 | Live AI provider check | Requires API key and provider/network access | Configure a non-production key and run AI route smoke with bounded prompt. |
-| P2 | Candidate reliability improvements | Backlog is intentionally broad | Promote a specific recurring failure from `docs/stories/backlog.md` into a story before implementation. |
+| P2 | Candidate reliability improvements | `docs\stories\backlog.md` currently lists candidate epics only and `scripts\bin\harness-cli.exe query backlog --open` returns no open items; no specific recurring failure has enough evidence for implementation | Capture the next repeated extraction/submission/browser-cleanup failure as a story packet with acceptance criteria before editing runtime code. |
 
 ## Commit History
 
