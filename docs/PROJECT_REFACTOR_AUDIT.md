@@ -55,6 +55,8 @@ Branch: `goal-project-refactor-audit`
 | Sandbox pytest attempt | `.\.venv\Scripts\python.exe -m pytest -q` | Restricted workspace sandbox | PENDING | Blocked by `PermissionError` writing `C:\Users\Khang\AppData\Roaming\GoogleFormTool\logs\app.log`; rerun with approved elevation passed. |
 | Manual desktop smoke | Not run | Requires interactive Electron/browser session | PENDING | Codex did not launch GUI in this slice. |
 | Windows packaging smoke | `.\scripts\package-windows.ps1` | Windows PowerShell, Python 3.12.12 venv, npm install allowed, Electron/PyInstaller caches allowed | PASS | Built `dist\GoogleFormTool\GoogleFormTool.exe`, `release\Google Form Automation Tool-1.1.0-win-x64.exe`, `release\Google Form Automation Tool-1.1.0-win-x64.msi`, and `release\SHA256SUMS.txt`. Generated release artifacts were not committed. |
+| Source backend health smoke | Start `wsgi.py` with `PORT=5055` and `GOOGLE_FORM_TOOL_NO_BROWSER=1`; request `/healthz` and `/diagnostics/runtime` | Windows PowerShell, Python 3.12.12 venv, local Flask dev server | PASS | `/healthz` returned `{"status":"ok"}`; diagnostics returned `mode: dev`, AppData paths, Chrome path, and ChromeDriver path. |
+| Packaged backend health smoke | Start `dist\GoogleFormTool\GoogleFormTool.exe` with `PORT=5056` and `GOOGLE_FORM_TOOL_NO_BROWSER=1`; request `/healthz` and `/diagnostics/runtime` | Windows PowerShell, packaged PyInstaller backend from packaging smoke | PASS | `/healthz` returned `{"status":"ok"}`; diagnostics returned `mode: frozen` and packaged driver directory under `dist\GoogleFormTool`. |
 | npm dependency audit | `npm audit --audit-level=high` | Windows PowerShell after `npm install` completed during packaging smoke | PASS | `found 0 vulnerabilities` |
 | Live Google Form/API-provider checks | Not run | Requires safe external form/API key/network credentials | PENDING | No safe target form or API key provided. |
 
@@ -63,37 +65,41 @@ Branch: `goal-project-refactor-audit`
 - Created branch `goal-project-refactor-audit`.
 - Added this audit/progress report.
 - Fixed Windows packaging smoke by removing obsolete `pkg_resources` hidden import from `google_form_tool.spec`, cleaning stale generated `build/dist` directories before packaging, and installing npm dependencies when `electron-builder` is missing.
+- Verified source backend and packaged backend health endpoints without opening a browser.
 - No application runtime behavior changed.
 
 ## Test Results
 
 - PASS: full automated pytest suite with approved elevated filesystem access.
 - PASS: Windows packaging smoke generated backend sidecar, NSIS installer, MSI installer, and checksums.
+- PASS: source backend `/healthz` and `/diagnostics/runtime` smoke on port `5055`.
+- PASS: packaged backend `/healthz` and `/diagnostics/runtime` smoke on port `5056`.
 - PASS: npm high-severity audit after dependency install.
-- PENDING: GUI smoke, live Google Form submission, and live AI provider checks.
+- PENDING: interactive GUI smoke, live Google Form submission, clean installer install/uninstall, and live AI provider checks.
 
 ## Pending Items
 
 | Priority | Item | Reason | Next verification step |
 | --- | --- | --- | --- |
-| P1 | Manual extract/configure/submit smoke | Requires interactive browser/Electron and safe form target | Run `npm run electron:dev` or backend smoke with a test Google Form. |
+| P1 | Interactive extract/configure/submit smoke | Requires interactive browser/Electron and safe Google Form target | Run `npm run electron:dev`, extract a test form, configure a tiny safe plan, and verify UI status/history. |
 | P2 | Live AI provider check | Requires API key and provider/network access | Configure a non-production key and run AI route smoke with bounded prompt. |
 | P2 | Candidate reliability improvements | Backlog is intentionally broad | Promote a specific recurring failure from `docs/stories/backlog.md` into a story before implementation. |
 
 ## Commit History
 
 - `d1c4b54 docs: add project refactor audit baseline`
+- `d149613 fix: make windows packaging smoke reproducible`
 
 ## Remaining Risks
 
 - Automated tests do not prove real Google Forms DOM behavior against current production Google Forms.
-- Packaging scripts now pass in this environment, but generated installers still need install/uninstall smoke on a clean Windows profile.
+- Packaging and packaged backend health pass in this environment, but generated installers still need install/uninstall smoke on a clean Windows profile.
 - Live AI provider behavior may differ from mocked/local validation paths.
 - App logging writes outside the workspace, so restricted sandbox test runs can fail unless log paths are redirected or elevation is approved.
 
 ## Recommended Next Steps
 
-1. Select the remaining P1 manual desktop/browser smoke before runtime refactoring.
+1. Run interactive Electron/browser smoke with a safe public test form before runtime refactoring.
 2. If a runtime issue is selected, run GitNexus impact analysis on the exact symbol before editing.
 3. Keep changes in small reviewable commits after `mcp__gitnexus.detect_changes` confirms expected scope.
 4. Consider adding a test log-path override for sandboxed agent runs only if repeated verification friction justifies the change.
