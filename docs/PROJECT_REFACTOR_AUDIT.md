@@ -23,7 +23,7 @@ Branch: `goal-project-refactor-audit`
 | Runtime diagnostics | implemented | `docs/TEST_MATRIX.md`, `tests/test_healthz.py`, `tests/test_runtime_diagnostics_route.py`, `tests/test_monitoring_routes.py` | Automated tests passed. |
 | Form copy MVP | implemented | `docs/TEST_MATRIX.md`, `tests/test_form_copier.py`, `tests/test_form_copy_planner.py`, `tests/test_form_copy_routes.py`, `tests/test_form_copy_ui.py` | Automated tests passed. Best-effort limitations remain documented. |
 | Windows packaging | implemented | `scripts/package-windows.ps1`, `google_form_tool.spec`, `electron-builder.yml` | Packaging smoke PASS on 2026-06-13; installers and checksums generated. |
-| Landing page | implemented | `landing/index.html`, `landing/package.json`, `landing/styles.css` | Static build and CTA checks PASS on 2026-06-13. |
+| Landing page | implemented | `docs/TEST_MATRIX.md`, `landing/index.html`, `landing/package.json`, `landing/styles.css` | Static build and CTA checks PASS on 2026-06-13; docs matrix updated. |
 
 ## Use Cases
 
@@ -53,6 +53,8 @@ Branch: `goal-project-refactor-audit`
 | Check | Command / method | Environment | Result | Evidence |
 | --- | --- | --- | --- | --- |
 | Harness matrix query | `scripts\bin\harness-cli.exe query matrix` | Windows PowerShell, repo venv not required | PASS | Listed 9 implemented product stories. |
+| Docs test matrix landing row | `Select-String -Path docs\TEST_MATRIX.md -Pattern 'Landing page'` | Windows PowerShell | PASS | `docs/TEST_MATRIX.md` includes Landing page story with static web platform evidence. |
+| Harness DB landing row | `scripts\bin\harness-cli.exe query matrix` | Windows PowerShell, local `harness.db` | PENDING | CLI still lists 9 stories and does not include Landing page; docs matrix is updated, but harness DB sync path was not identified in this slice. |
 | Full pytest suite | `.\.venv\Scripts\python.exe -m pytest -q` | Windows PowerShell, Python 3.12.12 venv, elevated filesystem access for `%APPDATA%` logs | PASS | `215 passed, 1 deselected in 4.44s` after landing build metadata change. |
 | Sandbox pytest attempt | `.\.venv\Scripts\python.exe -m pytest -q` | Restricted workspace sandbox | PENDING | Blocked by `PermissionError` writing `C:\Users\Khang\AppData\Roaming\GoogleFormTool\logs\app.log`; rerun with approved elevation passed. |
 | Manual desktop smoke | Not run | Requires interactive Electron/browser session | PENDING | Codex did not launch GUI in this slice. |
@@ -79,6 +81,7 @@ Branch: `goal-project-refactor-audit`
 - Verified source backend and packaged backend health endpoints without opening a browser.
 - Verified Electron entrypoint syntax, backend process exports, and builder config without launching the GUI.
 - Fixed landing build script to copy the existing `script.js` asset and verified release CTA/static landing output.
+- Added Landing page to `docs/TEST_MATRIX.md`; local harness DB query still needs a sync path before it can be marked PASS.
 - Refreshed GitNexus index and updated generated GitNexus context counts in `AGENTS.md` and `CLAUDE.md`.
 - No application runtime behavior changed.
 
@@ -94,6 +97,8 @@ Branch: `goal-project-refactor-audit`
 - PASS: GitNexus CLI status is up-to-date when run with approved `.git` access.
 - PASS: Electron entrypoint/config static smoke completed without launching GUI.
 - PASS: Landing build and CTA/static smoke completed; generated `landing/dist` was removed before commit.
+- PASS: `docs/TEST_MATRIX.md` now includes Landing page coverage.
+- PENDING: local `harness.db` matrix query still omits Landing page until a harness sync/update path is identified.
 
 ## Pending Items
 
@@ -101,6 +106,7 @@ Branch: `goal-project-refactor-audit`
 | --- | --- | --- | --- |
 | P1 | Interactive extract/configure/submit smoke | Requires interactive Electron/browser session and safe Google Form target; static Electron checks passed but do not prove rendered UI behavior | Run `npm run electron:dev`, extract a test form, configure a tiny safe plan, and verify UI status/history. |
 | P1 | GitNexus MCP FTS warning | Current MCP session still reports `FTS indexes missing` after CLI `--force` re-index, despite CLI status being up-to-date with approved `.git` access | Restart Codex/MCP or run GitNexus query in a fresh session before relying on keyword/semantic query results. |
+| P2 | Harness DB matrix sync | `docs/TEST_MATRIX.md` includes Landing page, but `scripts\bin\harness-cli.exe query matrix` still reads 9 stories from local `harness.db` | Identify supported harness CLI/database update workflow before marking harness DB Landing row PASS. |
 | P2 | Live AI provider check | Requires API key and provider/network access | Configure a non-production key and run AI route smoke with bounded prompt. |
 | P2 | Candidate reliability improvements | Backlog is intentionally broad | Promote a specific recurring failure from `docs/stories/backlog.md` into a story before implementation. |
 
@@ -120,6 +126,7 @@ Branch: `goal-project-refactor-audit`
 - Packaging and packaged backend health pass in this environment, but generated installers still need install/uninstall smoke on a clean Windows profile.
 - Live AI provider behavior may differ from mocked/local validation paths.
 - GitNexus CLI status is up-to-date with approved `.git` access, but current MCP session may still serve stale FTS state until restarted.
+- `docs/TEST_MATRIX.md` and local `harness.db` are temporarily divergent for Landing page until the supported harness DB sync path is identified.
 - App logging writes outside the workspace, so restricted sandbox test runs can fail unless log paths are redirected or elevation is approved.
 
 ## Recommended Next Steps
