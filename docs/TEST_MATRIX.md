@@ -25,6 +25,7 @@ This file maps product behavior to proof for Google Form Automation Tool.
 | Runtime diagnostics | Report health, runtime paths, drivers, and monitoring status | yes | yes | manual | desktop/backend | implemented | `tests/test_healthz.py`, `tests/test_runtime_diagnostics_route.py`, `tests/test_monitoring_routes.py` |
 | Form copy MVP | Best-effort copy preview and apply flow | yes | yes | manual | desktop/browser | implemented | `tests/test_form_copier.py`, `tests/test_form_copy_planner.py`, `tests/test_form_copy_routes.py`, `tests/test_form_copy_ui.py` |
 | Windows packaging | Build backend sidecar and Electron installer | no | no | manual | Windows | implemented | `scripts/package-windows.ps1`, `google_form_tool.spec`, `electron-builder.yml` |
+| Landing page | Build static release landing page with latest-release CTA | no | yes | manual | static web | implemented | `landing/package.json`, `landing/index.html`, `landing/styles.css` |
 
 ## Evidence Rules
 

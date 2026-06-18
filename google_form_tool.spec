@@ -96,7 +96,6 @@ a = Analysis(
         "app.monitoring.network_monitor",
         "app.monitoring.thread_monitor",
         # Misc runtime deps
-        "pkg_resources",
         "email.mime.multipart",
         "email.mime.text",
     ],
