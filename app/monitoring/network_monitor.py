@@ -6,7 +6,7 @@ This module provides utilities for monitoring network activity by the applicatio
 import psutil
 import time
 import threading
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Optional
 from app.logging_config import logger
 
 class NetworkMonitor:

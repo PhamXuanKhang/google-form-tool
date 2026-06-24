@@ -8,9 +8,8 @@ from app.monitoring.cpu_monitor import CPUMonitor
 from app.monitoring.network_monitor import NetworkMonitor
 from app.monitoring.thread_monitor import ThreadMonitor
 import psutil
-import threading
 import time
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from app.logging_config import logger
 
 class MetricsCollector:

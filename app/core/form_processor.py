@@ -12,7 +12,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-from app.models import Form, Question, AnswerConfig, AnswerOption
+from app.models import Form, Question, AnswerConfig
 from app.logging_config import logger
 from config import Config
 

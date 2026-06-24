@@ -5,7 +5,6 @@ This module provides utilities for monitoring threads and their activity.
 """
 import threading
 import time
-import psutil
 from typing import Dict, Any, Optional, List
 from app.logging_config import logger
 

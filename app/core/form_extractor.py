@@ -536,41 +536,41 @@ class FormExtractor:
         for question in questions:
             time.sleep(0.2)
             if question.question_id == "q_email":
-                q_email_field = self.driver.find_element(By.XPATH, f"//input[@type='email']")
+                q_email_field = self.driver.find_element(By.XPATH, "//input[@type='email']")
                 q_email_field.send_keys("extract@gmail.com")
             else:
                 question_container = self.driver.find_element(
                     By.XPATH, f"//div[contains(@data-params, '{question.question_id}')]"
                 )
                 if question.type == "input_email":
-                    email_field = self.driver.find_elements(By.XPATH, f"//input[@type='email']")
+                    email_field = self.driver.find_elements(By.XPATH, "//input[@type='email']")
                     for field in email_field:
                         field.send_keys("extract@gmail.com")
                 elif question.type == "date":
-                    date_field = question_container.find_element(By.XPATH, f".//input[@type='date']")
+                    date_field = question_container.find_element(By.XPATH, ".//input[@type='date']")
                     date_field.send_keys("2025-01-01")
                 elif question.type in ["input_text", "time"]:
-                    text_field = question_container.find_elements(By.XPATH, f".//input[@type='text']")
+                    text_field = question_container.find_elements(By.XPATH, ".//input[@type='text']")
                     for field in text_field:
                         field.send_keys("01")
                 elif question.type == "textarea":
-                    textarea_field = question_container.find_element(By.XPATH, f".//textarea")
+                    textarea_field = question_container.find_element(By.XPATH, ".//textarea")
                     textarea_field.send_keys("text")
 
                 elif question.type == "dropdown":
-                    dropdown_button = question_container.find_elements(By.XPATH, f".//div[@role='option']")
+                    dropdown_button = question_container.find_elements(By.XPATH, ".//div[@role='option']")
                     self.driver.execute_script("arguments[0].click();", dropdown_button[0])
                     time.sleep(1)
-                    dropdown_option = question_container.find_elements(By.XPATH, f".//div[@role='option']")
+                    dropdown_option = question_container.find_elements(By.XPATH, ".//div[@role='option']")
                     self.driver.execute_script("arguments[0].click()", dropdown_option[1])
 
                 elif question.type in ["multiple_choice", "linear_scale", "rank"]:
-                    radio_group = self.driver.find_elements(By.XPATH, f"//div[@role='radio']//ancestor::div[@role='radiogroup']")
+                    radio_group = self.driver.find_elements(By.XPATH, "//div[@role='radio']//ancestor::div[@role='radiogroup']")
                     for group in radio_group:
-                        radio_button = group.find_element(By.XPATH, f".//div[@role='radio']")
+                        radio_button = group.find_element(By.XPATH, ".//div[@role='radio']")
                         self.driver.execute_script("arguments[0].click();", radio_button)
 
                 elif question.type == "checkbox":
-                    checkbox_button = question_container.find_elements(By.XPATH, f".//div[@role='checkbox']")
+                    checkbox_button = question_container.find_elements(By.XPATH, ".//div[@role='checkbox']")
                     for button in checkbox_button:
                         self.driver.execute_script("arguments[0].click();", button)

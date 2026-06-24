@@ -12,6 +12,7 @@ app/services/db.json
 # PyInstaller build artifacts
 /build/
 /dist/
+/release/
 *.zip
 
 # Internal dev / AI-assistant planning docs

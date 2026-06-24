@@ -6,7 +6,7 @@ This module provides utilities for monitoring CPU usage by the application.
 import psutil
 import time
 import threading
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from app.logging_config import logger
 
 class CPUMonitor:

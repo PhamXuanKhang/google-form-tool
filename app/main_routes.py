@@ -506,7 +506,7 @@ def load_data():
         return _json_error(str(e), 404)
     except ValueError as e:
         return _json_error(str(e), 400)
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error loading data")
         return _json_error("An unexpected error occurred", 500)
     finally:
@@ -562,7 +562,7 @@ def generate_response():
                 "responses": responses
             })
 
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error generating responses")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
@@ -745,7 +745,7 @@ def save_edit():
                 "message": "Form configuration saved successfully"
             })
     
-    except Exception as e:
+    except Exception:
         logger.exception("Error saving form configuration for form_id=%s", form_id)
         return jsonify({"error": "Error saving form configuration."}), 500
 
@@ -967,7 +967,7 @@ def start_submission():
 
             return jsonify(response_body)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error starting submission")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
@@ -1161,7 +1161,7 @@ def export_history(form_id):
                 response.headers['Content-Disposition'] = f'attachment; filename=submissions_{form_id}.csv'
                 return response
 
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error exporting history")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
@@ -1186,7 +1186,7 @@ def system_status():
         
         return jsonify(collector.get_system_status())
     
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error getting system status")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
@@ -1209,7 +1209,7 @@ def monitoring_history():
         history = collector.get_historical_metrics(duration)
         return jsonify(history)
     
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error getting monitoring history")
         return jsonify({"error": "An unexpected error occurred"}), 500
 

@@ -15,7 +15,6 @@ from selenium.common.exceptions import (
     NoSuchElementException,
     ElementNotInteractableException,
     StaleElementReferenceException,
-    WebDriverException,
 )
 
 from app.models import Form, Question, Submission
@@ -956,7 +955,7 @@ class FormSubmitter:
                 elif question.type == "multiple_choice":
                     # Find radio option matching our response
                     radio_options = question_container.find_elements(
-                        By.XPATH, f".//div[@role='radio']/parent::div/parent::div"
+                        By.XPATH, ".//div[@role='radio']/parent::div/parent::div"
                     )
                     
                     for option in radio_options:
@@ -976,7 +975,7 @@ class FormSubmitter:
                         response = [response]
                     
                     checkboxes = question_container.find_elements(
-                        By.XPATH, f".//div[@role='checkbox']/parent::div/parent::div"
+                        By.XPATH, ".//div[@role='checkbox']/parent::div/parent::div"
                     )
                     
                     for checkbox in checkboxes:
