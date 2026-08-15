@@ -8,7 +8,6 @@ from datetime import datetime
 
 import pytest
 
-import app.main_routes as main_routes
 from app.models import (
     AnswerConfig,
     Form,
@@ -86,8 +85,8 @@ def form():
 
 
 @pytest.fixture
-def patch_storage(monkeypatch, form):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage(form))
+def patch_storage(storage_stub, form):
+    storage_stub(FakeStorage(form))
     return form
 
 

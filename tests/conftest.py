@@ -30,7 +30,7 @@ import pytest
 from datetime import datetime
 from app import create_app, Form, Submission, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from app.core.form_extractor import FormExtractor
-from app.services import StorageService
+from app.services import StorageService, set_storage_provider
 from tempfile import NamedTemporaryFile
 from config import Config
 from app.logging_config import logger
@@ -43,6 +43,22 @@ def setup_logging(caplog):
     logger.handlers = [caplog.handler]
     # Đặt formatter đơn giản để khớp với assert
     caplog.handler.setFormatter(logging.Formatter("%(message)s"))
+
+
+@pytest.fixture(autouse=True)
+def _reset_storage_provider():
+    """Ngăn stub của một test rò sang test sau."""
+    yield
+    set_storage_provider(None)
+
+
+@pytest.fixture
+def storage_stub():
+    """Cài storage giả cho route code trong phạm vi một test."""
+    def install(storage):
+        set_storage_provider(lambda: storage)
+        return storage
+    return install
 
 
 ############### Storage Service ###############

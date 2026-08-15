@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import app.main_routes as main_routes
 from app.models import AnswerConfig, AnswerOption, Form, Page, Question, ResponseConfig
 
 
@@ -66,10 +65,9 @@ def make_manual_config_form():
     )
 
 
-def test_save_edit_applies_text_answers_and_fill_percentage(client, monkeypatch):
+def test_save_edit_applies_text_answers_and_fill_percentage(client, storage_stub):
     form = make_manual_config_form()
-    storage = FakeStorage(form)
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
+    storage = storage_stub(FakeStorage(form))
 
     response = client.post(
         "/save_edit",
@@ -91,10 +89,9 @@ def test_save_edit_applies_text_answers_and_fill_percentage(client, monkeypatch)
     assert saved_question.answer_config.answers == ["Alice", "Bob"]
 
 
-def test_save_edit_applies_option_percentages(client, monkeypatch):
+def test_save_edit_applies_option_percentages(client, storage_stub):
     form = make_manual_config_form()
-    storage = FakeStorage(form)
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
+    storage = storage_stub(FakeStorage(form))
 
     response = client.post(
         "/save_edit",
@@ -117,8 +114,8 @@ def test_save_edit_applies_option_percentages(client, monkeypatch):
     assert percentages == {"Red": 70, "Blue": 30}
 
 
-def test_save_edit_returns_404_for_missing_form(client, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage())
+def test_save_edit_returns_404_for_missing_form(client, storage_stub):
+    storage_stub(FakeStorage())
 
     response = client.post(
         "/save_edit",

@@ -1,6 +1,3 @@
-import app.main_routes as main_routes
-
-
 class DeleteStorage:
     def __init__(self, form=None):
         self.form = form
@@ -34,9 +31,8 @@ class DeleteStorage:
         self.deleted_ids.append(form_id)
 
 
-def test_get_home_with_form_url_query_does_not_delete(client, sample_form, monkeypatch):
-    storage = DeleteStorage(sample_form)
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
+def test_get_home_with_form_url_query_does_not_delete(client, sample_form, storage_stub):
+    storage = storage_stub(DeleteStorage(sample_form))
 
     response = client.get(f"/?form_url={sample_form.url}")
 
@@ -51,8 +47,8 @@ def test_delete_form_requires_form_url(client):
     assert "No form URL" in response.get_json()["error"]
 
 
-def test_delete_form_returns_404_for_unknown_form(client, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: DeleteStorage(None))
+def test_delete_form_returns_404_for_unknown_form(client, storage_stub):
+    storage_stub(DeleteStorage(None))
 
     response = client.post("/forms/delete", json={"form_url": "https://docs.google.com/forms/d/missing/viewform"})
 
@@ -60,9 +56,8 @@ def test_delete_form_returns_404_for_unknown_form(client, monkeypatch):
     assert "Form not found" in response.get_json()["error"]
 
 
-def test_delete_form_deletes_matching_form(client, sample_form, monkeypatch):
-    storage = DeleteStorage(sample_form)
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
+def test_delete_form_deletes_matching_form(client, sample_form, storage_stub):
+    storage = storage_stub(DeleteStorage(sample_form))
 
     response = client.post("/forms/delete", json={"form_url": str(sample_form.url)})
 

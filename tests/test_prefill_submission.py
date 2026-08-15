@@ -144,11 +144,9 @@ def _post_start(client, **overrides):
     return client.post("/start_submission", json=payload)
 
 
-def test_start_submission_default_mode_is_prefill(client, monkeypatch, patch_thread):
+def test_start_submission_default_mode_is_prefill(client, patch_thread, storage_stub):
     form = _build_prefill_form()
-    monkeypatch.setattr(
-        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
-    )
+    storage_stub(FakeStorageContext(form))
 
     response = _post_start(client)
 
@@ -159,11 +157,9 @@ def test_start_submission_default_mode_is_prefill(client, monkeypatch, patch_thr
     assert args[-1] is None
 
 
-def test_start_submission_uses_cached_upload_id(client, monkeypatch, patch_thread):
+def test_start_submission_uses_cached_upload_id(client, patch_thread, storage_stub):
     form = _build_prefill_form()
-    monkeypatch.setattr(
-        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
-    )
+    storage_stub(FakeStorageContext(form))
     main_routes._upload_cache["abc123"] = {
         "responses": [{"111": "Alice"}, {"111": "Bob"}],
         "created_at": main_routes.time.monotonic(),
@@ -177,11 +173,9 @@ def test_start_submission_uses_cached_upload_id(client, monkeypatch, patch_threa
     assert args[-1] == "abc123"
 
 
-def test_start_submission_rejects_missing_upload_id(client, monkeypatch, patch_thread):
+def test_start_submission_rejects_missing_upload_id(client, patch_thread, storage_stub):
     form = _build_prefill_form()
-    monkeypatch.setattr(
-        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
-    )
+    storage_stub(FakeStorageContext(form))
 
     response = _post_start(client, upload_id="missing")
 
@@ -189,11 +183,9 @@ def test_start_submission_rejects_missing_upload_id(client, monkeypatch, patch_t
     assert response.get_json()["error"] == "Upload expired or not found. Please re-upload."
 
 
-def test_start_submission_prefill_prepares_queue_before_thread(client, monkeypatch, patch_thread):
+def test_start_submission_prefill_prepares_queue_before_thread(client, monkeypatch, patch_thread, storage_stub):
     form = _build_prefill_form()
-    monkeypatch.setattr(
-        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
-    )
+    storage_stub(FakeStorageContext(form))
 
     captured = {}
 
@@ -248,11 +240,9 @@ def test_prepare_prefill_queue_keeps_rank_question():
     assert "entry.333=1" in submitter.urls_queue[0]
 
 
-def test_start_submission_accepts_dom_fill(client, monkeypatch, patch_thread):
+def test_start_submission_accepts_dom_fill(client, patch_thread, storage_stub):
     form = _build_prefill_form()
-    monkeypatch.setattr(
-        main_routes, "get_storage_service", lambda: FakeStorageContext(form)
-    )
+    storage_stub(FakeStorageContext(form))
 
     response = _post_start(client, submission_mode="dom_fill")
 
@@ -261,12 +251,13 @@ def test_start_submission_accepts_dom_fill(client, monkeypatch, patch_thread):
     assert patch_thread.instances[0].args[-1] is None
 
 
-def test_start_submission_rejects_unknown_mode(client, monkeypatch):
-    # Storage should never be opened for an invalid mode.
+def test_start_submission_rejects_unknown_mode(client):
+    from app.services import set_storage_provider
+
     def fail():
         raise AssertionError("storage opened for invalid mode")
 
-    monkeypatch.setattr(main_routes, "get_storage_service", fail)
+    set_storage_provider(fail)
 
     response = _post_start(client, submission_mode="floppy_disk")
 
@@ -277,10 +268,9 @@ def test_start_submission_rejects_unknown_mode(client, monkeypatch):
 # ------------------------------------------------------- _run_submission history
 
 
-def test_run_submission_passes_mode_and_records_history(monkeypatch):
+def test_run_submission_passes_mode_and_records_history(storage_stub):
     form = _build_prefill_form()
-    storage = FakeStorageContext(form)
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
+    storage = storage_stub(FakeStorageContext(form))
 
     captured_kwargs = {}
 

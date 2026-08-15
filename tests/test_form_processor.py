@@ -428,7 +428,7 @@ class TestLoadDataFromFile:
         finally:
             os.unlink(json_path)
 
-    def test_load_data_route_accepts_xlsx(self, client, sample_form, monkeypatch):
+    def test_load_data_route_accepts_xlsx(self, client, sample_form, monkeypatch, storage_stub):
         class Storage:
             def __enter__(self):
                 return self
@@ -444,7 +444,7 @@ class TestLoadDataFromFile:
             assert max_rows is not None
             return [{"q1": "Alice"}]
 
-        monkeypatch.setattr(main_routes, "get_storage_service", lambda: Storage())
+        storage_stub(Storage())
         monkeypatch.setattr(FormProcessor, "load_data_from_file", load_data_from_file)
 
         response = client.post(
@@ -460,7 +460,7 @@ class TestLoadDataFromFile:
         assert response.get_json()["rows_loaded"] == 1
 
 
-    def test_load_data_route_rejects_too_many_rows(self, client, sample_form, monkeypatch):
+    def test_load_data_route_rejects_too_many_rows(self, client, sample_form, monkeypatch, storage_stub):
         class Storage:
             def __enter__(self):
                 return self
@@ -471,7 +471,7 @@ class TestLoadDataFromFile:
             def get_form_by_id(self, form_id):
                 return sample_form
 
-        monkeypatch.setattr(main_routes, "get_storage_service", lambda: Storage())
+        storage_stub(Storage())
         monkeypatch.setattr(main_routes.Config, "MAX_UPLOAD_ROWS", 1)
 
         response = client.post(

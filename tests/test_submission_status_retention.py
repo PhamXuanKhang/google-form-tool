@@ -129,19 +129,19 @@ def test_running_submitter_not_cleaned_up(monkeypatch):
     assert "form_live" in submitters
 
 
-def test_run_submission_sets_finished_at(monkeypatch):
+def test_run_submission_sets_finished_at(storage_stub):
     """_run_submission must set _finished_at on the submitter after it ends."""
     from app.models import Submission
 
     class StubSubmitter:
         pass  # no _finished_at initially
 
-    storage_stub = type("S", (), {
+    fake_storage = type("S", (), {
         "__enter__": lambda s: s,
         "__exit__": lambda s, *a: None,
         "add_submission": lambda s, fid, sub: True,
     })()
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage_stub)
+    storage_stub(fake_storage)
 
     sub = StubSubmitter()
 
