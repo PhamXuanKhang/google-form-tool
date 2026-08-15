@@ -586,7 +586,7 @@ def validate_api_key():
         if not is_ai_available():
             return jsonify({
                 "valid": False,
-                "error": "AI dependency is not installed. Run pip install -r requirements.txt.",
+                "error": "AI dependency is not installed. Run uv sync (or uv pip install google-genai).",
                 "code": "ai_dependency_missing",
             }), 400
 

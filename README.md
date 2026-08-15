@@ -65,7 +65,6 @@
 - Copy Form là best-effort, không claim exact clone Google Form.
 - Một số tính năng Google Forms như grid native, file upload, quiz/theme/branching có thể unsupported hoặc partial.
 - Windows SmartScreen có thể cảnh báo khi app chưa code-sign.
-- Docker path chưa được kiểm tra đầy đủ trên tất cả cấu hình.
 
 ---
 
@@ -87,10 +86,7 @@ git clone https://github.com/PhamXuanKhang/google-form-tool.git
 cd google-form-tool
 
 uv sync
-# hoặc
-pip install -r requirements.txt
-
-python wsgi.py
+uv run python wsgi.py
 ```
 
 Mở `http://localhost:5000` khi chạy backend trực tiếp.
@@ -130,12 +126,6 @@ Output nằm trong `release/`, gồm installer artifacts và `SHA256SUMS.txt`.
 
 ```bash
 pytest tests/ -v
-```
-
-### Docker nâng cao
-
-```bash
-docker compose up --build
 ```
 
 </details>

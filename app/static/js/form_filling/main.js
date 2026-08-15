@@ -206,7 +206,7 @@ window.getOrAskGeminiKey = async function () {
         const code = result.code || "";
         let message = result.error || t("invalidApiKey", "API key validation failed.");
         if (code === "ai_dependency_missing") {
-            message = t("aiDependencyMissing", "AI dependency is not installed. Run pip install -r requirements.txt.");
+            message = t("aiDependencyMissing", "AI dependency is not installed. Run uv sync (or uv pip install google-genai).");
         } else if (code === "model_unavailable") {
             message = t("aiModelUnavailable", "Selected Gemini model is unavailable. Check GEMINI_MODEL or API access.");
         }
