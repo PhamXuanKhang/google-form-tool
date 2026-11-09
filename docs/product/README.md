@@ -1,6 +1,7 @@
 # Product Docs
 
-The current product contract lives primarily in `README.md`,
+User stories with acceptance criteria live in [user-stories.md](./user-stories.md).
+The rest of the product contract lives in `README.md`,
 `docs/ARCHITECTURE.md`, and `docs/TEST_MATRIX.md`.
 
 Add files here only when a product area becomes complex enough to need a
