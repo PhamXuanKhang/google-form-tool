@@ -23,7 +23,7 @@ def validate_api_key():
         return jsonify({"valid": False, "error": "No API key provided"}), 400
 
     try:
-        from app.core.ai_responder import AIResponder, is_ai_available, ModelResolutionError
+        from app.adapters.ai.ai_responder import AIResponder, is_ai_available, ModelResolutionError
         if not is_ai_available():
             return jsonify({
                 "valid": False,
@@ -113,7 +113,7 @@ def generate_ai_text_answers():
                     )
                 }), 400
 
-            from app.core.ai_responder import AIResponder, is_ai_available
+            from app.adapters.ai.ai_responder import AIResponder, is_ai_available
             if not is_ai_available():
                 return jsonify({
                     "error": "AI not available. Install google-generativeai."

@@ -18,8 +18,8 @@ from selenium.common.exceptions import (
 )
 
 from app.models import Form, Question, Submission
-from app.core.form_processor import FormProcessor
-from app.core.prefill_link_generator import PrefillLinkGenerator
+from app.domain.form_processor import FormProcessor
+from app.domain.prefill_link_generator import PrefillLinkGenerator
 from app.logging_config import logger
 
 SUBMISSION_MODE_PREFILL = "prefill_link"

@@ -3,7 +3,7 @@
 
 from flask import jsonify, request
 
-from app.core.driver_manager import get_chrome_binary, get_chromedriver_path
+from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
 from app.logging_config import logger
 from app.routes import bp, json_error
 from app.services import get_storage_service, submission_manager, upload_cache
@@ -20,7 +20,7 @@ def start_submission():
     - Supports concurrent submissions for different forms
     - Accepts optional responses_list for data-driven submission
     """
-    from app.core.form_submitter import (
+    from app.adapters.browser.form_submitter import (
         SUBMISSION_MODE_PREFILL,
         VALID_SUBMISSION_MODES,
     )
@@ -76,7 +76,7 @@ def start_submission():
             if not form:
                 return jsonify({"error": "Form not found"}), 404
 
-            from app.core.form_submitter import FormSubmitter
+            from app.adapters.browser.form_submitter import FormSubmitter
 
             submitter = FormSubmitter(
                 form=form,

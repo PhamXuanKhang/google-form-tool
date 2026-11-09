@@ -1,6 +1,6 @@
 import pytest
 from app.models import Form, Page, Question
-from app.core.form_extractor import DriverStartupError, FormExtractor
+from app.adapters.browser.form_extractor import DriverStartupError, FormExtractor
 
 
 @pytest.mark.integration

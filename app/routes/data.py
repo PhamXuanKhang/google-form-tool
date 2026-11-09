@@ -49,7 +49,7 @@ def load_data():
             if not form:
                 return json_error("Form not found", 404)
 
-            from app.core.form_processor import FormProcessor
+            from app.domain.form_processor import FormProcessor
             processor = FormProcessor(form)
 
             mapping = None
@@ -107,7 +107,7 @@ def save_edit():
             if not form:
                 return jsonify({"error": "Form not found"}), 404
             
-            from app.core.form_processor import FormProcessor
+            from app.domain.form_processor import FormProcessor
             processor = FormProcessor(form)
             processor.apply_user_edits(edits)
             

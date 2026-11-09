@@ -137,8 +137,8 @@ def _patch_first(monkeypatch, module_names, attr, value):
     raise AssertionError(f"none of {module_names} importable")
 
 
-SUBMITTER_MODULES = ("app.adapters.browser.form_submitter", "app.core.form_submitter")
-AI_MODULES = ("app.adapters.ai.ai_responder", "app.core.ai_responder")
+SUBMITTER_MODULES = ("app.adapters.browser.form_submitter",)
+AI_MODULES = ("app.adapters.ai.ai_responder",)
 
 
 class _FakeSubmitter:

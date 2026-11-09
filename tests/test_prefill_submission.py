@@ -15,8 +15,8 @@ import pytest
 
 import app.services.submission_manager as submission_manager
 from app.services import upload_cache
-from app.core import form_submitter as form_submitter_module
-from app.core.form_submitter import (
+from app.adapters.browser import form_submitter as form_submitter_module
+from app.adapters.browser.form_submitter import (
     FormSubmitter,
     SUBMISSION_MODE_DOM_FILL,
     SUBMISSION_MODE_PREFILL,

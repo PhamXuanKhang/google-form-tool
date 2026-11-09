@@ -1,4 +1,4 @@
-from app.core.form_copier import FormCopier, is_google_form_edit_url
+from app.adapters.browser.form_copier import FormCopier, is_google_form_edit_url
 from app.models import CopyOperation, CopyPlan
 
 

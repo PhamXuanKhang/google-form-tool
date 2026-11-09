@@ -29,7 +29,7 @@ atexit.register(_cleanup_test_data_dir)
 import pytest
 from datetime import datetime
 from app import create_app, Form, Submission, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
-from app.core.form_extractor import FormExtractor
+from app.adapters.browser.form_extractor import FormExtractor
 from app.services import StorageService, set_storage_provider
 from tempfile import NamedTemporaryFile
 from app.config import Config

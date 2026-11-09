@@ -1,4 +1,4 @@
-import app.core.ai_responder as ai_module
+import app.adapters.ai.ai_responder as ai_module
 
 
 class FakeModelInfo:

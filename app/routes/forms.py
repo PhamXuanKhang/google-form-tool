@@ -4,11 +4,11 @@ from urllib.parse import urlparse
 
 from flask import jsonify, request, session
 
-from app.core import FormExtractor
-from app.core.driver_manager import get_chrome_binary, get_chromedriver_path
-from app.core.form_copier import FormCopier, is_google_form_edit_url
-from app.core.form_copy_planner import FormCopyPlanner
-from app.core.form_extractor import DriverStartupError, FormExtractionError, FormLoadError
+from app.adapters.browser.form_extractor import FormExtractor
+from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
+from app.adapters.browser.form_copier import FormCopier, is_google_form_edit_url
+from app.domain.form_copy_planner import FormCopyPlanner
+from app.adapters.browser.form_extractor import DriverStartupError, FormExtractionError, FormLoadError
 from app.logging_config import logger
 from app.routes import bp
 from app.routes.health import _runtime_diagnostics

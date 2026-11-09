@@ -1,5 +1,5 @@
 import app.routes.forms as forms_routes
-from app.core.form_extractor import DriverStartupError, FormLoadError
+from app.adapters.browser.form_extractor import DriverStartupError, FormLoadError
 
 
 class EmptyStorage:

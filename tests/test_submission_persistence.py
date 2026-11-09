@@ -109,7 +109,7 @@ def test_start_submission_does_not_pass_route_storage_to_thread(client, sample_f
             self.form = kwargs["form"]
 
     monkeypatch.setattr(threading, "Thread", CapturingThread)
-    monkeypatch.setattr("app.core.form_submitter.FormSubmitter", RouteSubmitter)
+    monkeypatch.setattr("app.adapters.browser.form_submitter.FormSubmitter", RouteSubmitter)
 
     response = client.post(
         "/start_submission",
@@ -225,7 +225,7 @@ def test_start_submission_accepts_simple_string_values(client, sample_form, monk
             super().__init__()
 
     monkeypatch.setattr(threading, "Thread", CapturingThread)
-    monkeypatch.setattr("app.core.form_submitter.FormSubmitter", RouteSubmitter)
+    monkeypatch.setattr("app.adapters.browser.form_submitter.FormSubmitter", RouteSubmitter)
 
     response = client.post(
         "/start_submission",
