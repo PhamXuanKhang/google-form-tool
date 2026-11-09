@@ -16,7 +16,7 @@ This project is a local desktop app for extracting, configuring, and submitting 
 - Submit: `app/core/form_submitter.py` runs browser workers for direct submission or prefilled URL submission.
 - Prefill: `app/core/prefill_link_generator.py` builds Google Forms prefill URLs from configured answers.
 - Storage: `app/services/storage_service.py` persists forms and submission history for the local user.
-- Diagnostics: `app/monitoring/` and diagnostics routes expose runtime health for desktop support.
+- Diagnostics: the `/healthz` and diagnostics routes expose runtime health for desktop support.
 
 ## Boundaries
 

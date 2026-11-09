@@ -178,11 +178,11 @@ Create or identify controlled forms for manual/live verification:
 
 | Field | Plan |
 | --- | --- |
-| Objective | Verify health, diagnostics, driver paths, monitoring metrics, and support visibility. |
+| Objective | Verify health, diagnostics, driver paths, and support visibility. |
 | Use case | User/support opens diagnostics to troubleshoot local runtime. |
-| Expected behavior | `/healthz` returns ok; diagnostics expose actionable mode/path/driver information; monitoring routes return safe JSON. |
+| Expected behavior | `/healthz` returns ok; diagnostics expose actionable mode/path/driver information. |
 | Unit tests | `tests/test_healthz.py`, `tests/test_runtime_config.py`, `tests/test_logging_and_warnings.py` |
-| Integration tests | `tests/test_runtime_diagnostics_route.py`, `tests/test_monitoring_routes.py` |
+| Integration tests | `tests/test_runtime_diagnostics_route.py` |
 | E2E/manual | Start source backend and Electron/packaged backend; open diagnostics page; verify Chrome/ChromeDriver/log paths. |
 | Acceptance criteria | Health ok in source and packaged modes; diagnostics do not expose secrets; paths are actionable. |
 | Test criteria | Record port, mode (`dev`/`frozen`), health response, and diagnostics fields checked. |
