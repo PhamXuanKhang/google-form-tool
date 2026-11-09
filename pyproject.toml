@@ -40,6 +40,7 @@ packages = ["app"]
 addopts = "-m \"not integration\""
 markers = [
     "integration: tests that require a real browser, ChromeDriver, or external service",
+    "domain: fast tests for pure domain modules under app/domain",
 ]
 
 [tool.ruff]

@@ -12,11 +12,14 @@ import tempfile
 import os
 import random
 from io import BytesIO
-from app.core.form_processor import BRANCH_SUBMIT_SENTINEL, FormProcessor
+from app.domain.form_processor import BRANCH_SUBMIT_SENTINEL, FormProcessor
 from app.models import Form, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from datetime import datetime
 from app.config import Config
 from openpyxl import Workbook
+
+
+pytestmark = pytest.mark.domain
 
 
 @pytest.fixture
