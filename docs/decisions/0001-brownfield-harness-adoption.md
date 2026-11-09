@@ -4,7 +4,7 @@ Date: 2026-06-13
 
 ## Status
 
-Accepted
+Superseded by [0003-collapse-harness.md](./0003-collapse-harness.md)
 
 ## Context
 

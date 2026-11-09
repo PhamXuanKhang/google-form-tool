@@ -164,3 +164,13 @@ Tests: manual packaging smoke; `landing/package.json` build
 | `/form_copy`, `/form_copy/extract_source`, `/form_copy/preview_plan`, `/form_copy/apply_to_target` | US-007 |
 
 Retired routes (no story): `/generate_response`, `/ai_status`, `/monitoring_history`, `/system_status`.
+
+## Backlog
+
+Candidate work that is not yet a story.
+
+| Epic | Description | Status |
+| --- | --- | --- |
+| E01 form-filling reliability | Improve unsupported question handling, required-field diagnostics, and browser cleanup when specific failures recur | candidate |
+| E02 desktop packaging | Keep Windows packaging, install smoke, and runtime diagnostics aligned with releases | candidate |
+| E03 harness maturity | Add story packets and decisions only when repeated friction proves they are useful | dropped; the harness was collapsed into `docs/WORKFLOW.md` |

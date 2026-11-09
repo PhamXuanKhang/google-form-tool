@@ -4,12 +4,10 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-## Harness
+## Workflow
 
-Claude Code loads this file into every session. Keep Harness context focused and agent-native:
+Claude Code loads this file into every session:
 
 @AGENTS.md
 
-@docs/FEATURE_INTAKE.md
-
-Before normal or high-risk work, also read `docs/CONTEXT_RULES.md` and run `scripts/bin/harness-cli.exe query matrix` when the local CLI exists.
+Before normal or high-risk work, read `docs/WORKFLOW.md` for the lanes and checks.

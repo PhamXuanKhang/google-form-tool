@@ -11,8 +11,8 @@ Use this file as the short operational map before making changes.
 ## Validate
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest
-.\.venv\Scripts\python.exe -m ruff check .
+uv run python -m pytest -q
+uv run ruff check app/ tests/ wsgi.py
 ```
 
 Tests may need unsandboxed permission because logging writes under the app data directory.
@@ -22,6 +22,7 @@ Tests may need unsandboxed permission because logging writes under the app data 
 - `README.md` for user/developer onboarding.
 - `AGENTS.md` for agent instructions.
 - `docs/ARCHITECTURE.md` for runtime map.
+- `docs/WORKFLOW.md` for lanes, checks, and packaging smoke.
 - `docs/TESTING.md` for validation and release smoke checks.
 - `docs/AGENT_CONTEXT.md` for concise agent handoff.
 
