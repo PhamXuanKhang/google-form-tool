@@ -514,59 +514,6 @@ def load_data():
             os.remove(file_path)
 
 
-@bp.route('/generate_response', methods=['POST'])
-def generate_response():
-    """
-    Generate Responses
-
-    POST /generate_response
-    - Generates random or AI-driven responses for a form
-    - Set use_ai=true and provide api_key for AI mode
-    """
-    data = request.get_json()
-    form_id = data.get('form_id')
-    fill_percentage = data.get('fill_percentage', 100)
-    use_ai = data.get('use_ai', False)
-    api_key = data.get('api_key')
-
-    if not form_id:
-        return jsonify({"error": "No form_id provided"}), 400
-
-    try:
-        with get_storage_service() as storage:
-            form = storage.get_form_by_id(form_id)
-            if not form:
-                return jsonify({"error": "Form not found"}), 404
-
-            if use_ai and api_key:
-                from app.core.ai_responder import AIResponder, is_ai_available
-                if not is_ai_available():
-                    return jsonify({"error": "AI not available. Install google-generativeai package."}), 400
-
-                responder = AIResponder(api_key)
-                questions = []
-                for page in (form.response_config.pages or []):
-                    questions.extend(page.questions or [])
-                responses = responder.generate_responses_batch(questions, context=form.title)
-                mode = "ai"
-            else:
-                from app.core.form_processor import FormProcessor
-                processor = FormProcessor(form)
-                responses = processor.generate_random_responses(fill_percentage)
-                mode = "random"
-
-            return jsonify({
-                "success": True,
-                "form_id": form_id,
-                "mode": mode,
-                "responses": responses
-            })
-
-    except Exception:
-        logger.exception("Unexpected error generating responses")
-        return jsonify({"error": "An unexpected error occurred"}), 500
-
-
 @bp.route('/validate_api_key', methods=['POST'])
 def validate_api_key():
     """
@@ -692,21 +639,6 @@ def generate_ai_text_answers():
         # Never echo api_key into logs/response.
         logger.error("Error generating AI text answers for question %s: %s", question_id, type(e).__name__)
         return jsonify({"error": "Failed to generate AI answers"}), 500
-
-
-@bp.route('/ai_status', methods=['GET'])
-def ai_status():
-    """
-    Check AI Availability
-
-    GET /ai_status
-    - Returns whether AI functionality is available
-    """
-    from app.core.ai_responder import is_ai_available
-    return jsonify({
-        "available": is_ai_available(),
-        "message": "AI available" if is_ai_available() else "Install google-generativeai package"
-    })
 
 
 @bp.route('/save_edit', methods=['POST'])

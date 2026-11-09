@@ -6,7 +6,7 @@ API key is provided by user via UI (not from env) for flexibility.
 """
 import concurrent.futures
 import json
-from typing import Optional, Dict, Any, List
+from typing import Optional, Any, List
 from app.models import Question
 from config import Config
 from app.logging_config import logger
@@ -41,7 +41,6 @@ class AIResponder:
         self.api_key = api_key
         self.client = genai.Client(api_key=api_key)
         self.model_name = self._resolve_model_name(self.client, Config.GEMINI_MODEL)
-        self._cache: Dict[str, str] = {}
         self.timeout_seconds = Config.AI_REQUEST_TIMEOUT_SECONDS
 
     def _generate_content(self, prompt: str):
@@ -58,51 +57,6 @@ class AIResponder:
             except concurrent.futures.TimeoutError as exc:
                 raise TimeoutError("AI request timed out") from exc
 
-    def generate_response(self, question: Question, context: Optional[str] = None) -> str:
-        """
-        Generate a contextual response for a single question.
-
-        Args:
-            question (Question): The question to generate a response for
-            context (str, optional): Additional context about the form
-
-        Returns:
-            str: Generated response appropriate for the question type
-        """
-        cache_key = f"{question.question_id}:{question.text}"
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
-        prompt = self._build_prompt(question, context)
-
-        try:
-            response = self._generate_content(prompt)
-            answer = self._extract_answer(response.text, question)
-            self._cache[cache_key] = answer
-            logger.info(f"AI generated response for question: {question.question_id}")
-            return answer
-        except Exception as e:
-            logger.error(f"AI generation failed for {question.question_id}: {e}")
-            return self._fallback_response(question)
-
-    def generate_responses_batch(
-        self, questions: List[Question], context: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Generate responses for multiple questions.
-
-        Args:
-            questions (List[Question]): List of questions
-            context (str, optional): Form context
-
-        Returns:
-            Dict[str, Any]: Map of question_id to generated response
-        """
-        responses = {}
-        for question in questions:
-            responses[question.question_id] = self.generate_response(question, context)
-        return responses
-
     def generate_text_variations(
         self,
         question: Question,
@@ -113,8 +67,8 @@ class AIResponder:
         Generate ``count`` distinct text answers for one text-like question.
 
         Used by the inline AI option on each text/textarea question card
-        (TIP-006). Bypasses ``self._cache`` so repeated clicks return fresh
-        variations rather than the previously cached single answer.
+        (TIP-006). Every call asks the model afresh, so repeated clicks return
+        new variations.
 
         Falls back to ``count`` copies of ``_fallback_response`` if Gemini
         returns malformed output.
@@ -227,28 +181,6 @@ Question Type: {q_type}
         base_prompt += "\n\nYour response:"
 
         return base_prompt
-
-    def _extract_answer(self, raw_response: str, question: Question) -> Any:
-        """Extract and format the answer from AI response."""
-        answer = raw_response.strip()
-
-        if question.type == "checkbox":
-            try:
-                parsed = json.loads(answer)
-                if isinstance(parsed, list):
-                    return parsed
-            except json.JSONDecodeError:
-                pass
-            return [answer]
-
-        elif question.type == "linear_scale":
-            try:
-                num = int(''.join(filter(str.isdigit, answer[:5])))
-                return max(1, min(5, num))
-            except (ValueError, IndexError):
-                return 3
-
-        return answer
 
     def _fallback_response(self, question: Question) -> Any:
         """Provide fallback response when AI fails."""
