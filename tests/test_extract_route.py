@@ -1,4 +1,4 @@
-import app.main_routes as main_routes
+import app.routes.forms as forms_routes
 from app.core.form_extractor import DriverStartupError, FormLoadError
 
 
@@ -49,9 +49,9 @@ def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch, 
             raise DriverStartupError("bad driver path")
 
     storage_stub(EmptyStorage())
-    monkeypatch.setattr(main_routes, "FormExtractor", FailingExtractor)
+    monkeypatch.setattr(forms_routes, "FormExtractor", FailingExtractor)
     monkeypatch.setattr(
-        main_routes,
+        forms_routes,
         "_runtime_diagnostics",
         lambda: {
             "app_data_path": r"C:\Data",
@@ -85,7 +85,7 @@ def test_extract_route_reports_form_load_error(client, monkeypatch, storage_stub
             raise FormLoadError("parse failed")
 
     storage_stub(EmptyStorage())
-    monkeypatch.setattr(main_routes, "FormExtractor", FailingExtractor)
+    monkeypatch.setattr(forms_routes, "FormExtractor", FailingExtractor)
 
     response = client.post(
         "/form_filling/extract",

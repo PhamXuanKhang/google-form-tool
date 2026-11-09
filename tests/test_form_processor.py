@@ -15,7 +15,7 @@ from io import BytesIO
 from app.core.form_processor import BRANCH_SUBMIT_SENTINEL, FormProcessor
 from app.models import Form, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from datetime import datetime
-import app.main_routes as main_routes
+from config import Config
 from openpyxl import Workbook
 
 
@@ -472,7 +472,7 @@ class TestLoadDataFromFile:
                 return sample_form
 
         storage_stub(Storage())
-        monkeypatch.setattr(main_routes.Config, "MAX_UPLOAD_ROWS", 1)
+        monkeypatch.setattr(Config, "MAX_UPLOAD_ROWS", 1)
 
         response = client.post(
             "/load_data",

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-import app.main_routes as main_routes
+import app.routes.forms as forms_routes
 from app.models import AnswerConfig, Form, Page, Question, ResponseConfig, CopyResult
 
 
@@ -126,7 +126,7 @@ def test_apply_to_target_returns_copier_result(client, monkeypatch, storage_stub
         def apply_plan(self, plan, target_url):
             return CopyResult(status="success", operations_total=len(plan.operations), operations_succeeded=len(plan.operations))
 
-    monkeypatch.setattr(main_routes, "FormCopier", FakeCopier)
+    monkeypatch.setattr(forms_routes, "FormCopier", FakeCopier)
 
     response = client.post(
         "/form_copy/apply_to_target",

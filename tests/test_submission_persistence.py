@@ -2,15 +2,15 @@ import threading
 
 import pytest
 
-import app.main_routes as main_routes
+import app.services.submission_manager as submission_manager
 from app.models import Submission
 
 
 @pytest.fixture(autouse=True)
 def clear_active_submitters():
-    main_routes.active_submitters.clear()
+    submission_manager.active_submitters.clear()
     yield
-    main_routes.active_submitters.clear()
+    submission_manager.active_submitters.clear()
 
 
 class FakeStorageContext:
@@ -61,7 +61,7 @@ def test_run_submission_opens_fresh_storage_for_history(storage_stub):
     storage = storage_stub(FakeStorageContext())
     submitter = FakeSubmitter()
 
-    main_routes._run_submission(
+    submission_manager.run_submission(
         submitter,
         "form_001",
         num_submissions=1,
@@ -78,7 +78,7 @@ def test_run_submission_logs_warning_when_history_save_fails(storage_stub, caplo
     storage_stub(FakeStorageContext(save_result=False))
     submitter = FakeSubmitter()
 
-    main_routes._run_submission(
+    submission_manager.run_submission(
         submitter,
         "missing_form",
         num_submissions=1,
@@ -124,7 +124,7 @@ def test_start_submission_does_not_pass_route_storage_to_thread(client, sample_f
 
     assert response.status_code == 200
     assert response.get_json()["success"] is True
-    assert captured["target"] is main_routes._run_submission
+    assert captured["target"] is submission_manager.run_submission
     assert captured["started"] is True
     assert route_storage not in captured["args"]
     assert captured["args"][1] == sample_form.id

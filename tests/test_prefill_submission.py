@@ -13,7 +13,8 @@ import threading
 
 import pytest
 
-import app.main_routes as main_routes
+import app.services.submission_manager as submission_manager
+from app.services import upload_cache
 from app.core import form_submitter as form_submitter_module
 from app.core.form_submitter import (
     FormSubmitter,
@@ -81,11 +82,11 @@ def _build_prefill_form() -> Form:
 
 @pytest.fixture(autouse=True)
 def _clear_active():
-    main_routes.active_submitters.clear()
-    main_routes._upload_cache.clear()
+    submission_manager.active_submitters.clear()
+    upload_cache._upload_cache.clear()
     yield
-    main_routes.active_submitters.clear()
-    main_routes._upload_cache.clear()
+    submission_manager.active_submitters.clear()
+    upload_cache._upload_cache.clear()
 
 
 class FakeStorageContext:
@@ -160,9 +161,9 @@ def test_start_submission_default_mode_is_prefill(client, patch_thread, storage_
 def test_start_submission_uses_cached_upload_id(client, patch_thread, storage_stub):
     form = _build_prefill_form()
     storage_stub(FakeStorageContext(form))
-    main_routes._upload_cache["abc123"] = {
+    upload_cache._upload_cache["abc123"] = {
         "responses": [{"111": "Alice"}, {"111": "Bob"}],
-        "created_at": main_routes.time.monotonic(),
+        "created_at": upload_cache.time.monotonic(),
     }
 
     response = _post_start(client, upload_id="abc123", num_submissions=2)
@@ -285,7 +286,7 @@ def test_run_submission_passes_mode_and_records_history(storage_stub):
                 network_status="Completed",
             )
 
-    main_routes._run_submission(
+    submission_manager.run_submission(
         StubSubmitter(),
         "form_pf",
         num_submissions=2,

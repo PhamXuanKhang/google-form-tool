@@ -11,8 +11,8 @@ import time
 
 import pytest
 
-import app.main_routes as main_routes
-from app.main_routes import FINISHED_STATUS_TTL
+import app.services.submission_manager as submission_manager
+from app.services.submission_manager import FINISHED_STATUS_TTL
 
 
 # ------------------------------------------------------------------ helpers
@@ -40,9 +40,9 @@ def _make_mock_submitter(running: bool, finished_at: float | None = None):
 
 @pytest.fixture(autouse=True)
 def _clear_submitters():
-    main_routes.active_submitters.clear()
+    submission_manager.active_submitters.clear()
     yield
-    main_routes.active_submitters.clear()
+    submission_manager.active_submitters.clear()
 
 
 # ------------------------------------------------------------------ A-3 tests
@@ -50,7 +50,7 @@ def _clear_submitters():
 def test_duplicate_start_returns_409(client, monkeypatch):
     """Second /start_submission for the same form while running → 409."""
     running_sub = _make_mock_submitter(running=True)
-    monkeypatch.setattr(main_routes, "active_submitters", {"form_dup": running_sub})
+    monkeypatch.setattr(submission_manager, "active_submitters", {"form_dup": running_sub})
 
     resp = client.post(
         "/start_submission",
@@ -77,7 +77,7 @@ def test_duplicate_start_does_not_stop_existing(client, monkeypatch):
         def stop(self):
             stop_called["flag"] = True
 
-    monkeypatch.setattr(main_routes, "active_submitters", {"form_x": RunningSubmitter()})
+    monkeypatch.setattr(submission_manager, "active_submitters", {"form_x": RunningSubmitter()})
 
     client.post(
         "/start_submission",
@@ -92,7 +92,7 @@ def test_duplicate_start_does_not_stop_existing(client, monkeypatch):
 def test_status_retained_immediately_after_finish(client, monkeypatch):
     """Poll right after finish → final status still present."""
     finished_sub = _make_mock_submitter(running=False, finished_at=time.monotonic())
-    monkeypatch.setattr(main_routes, "active_submitters", {"form_ret": finished_sub})
+    monkeypatch.setattr(submission_manager, "active_submitters", {"form_ret": finished_sub})
 
     resp = client.get("/submission_status?form_id=form_ret")
     assert resp.status_code == 200
@@ -107,9 +107,9 @@ def test_status_cleared_after_ttl(client, monkeypatch):
     old_time = time.monotonic() - (FINISHED_STATUS_TTL + 1)
     stale_sub = _make_mock_submitter(running=False, finished_at=old_time)
     submitters = {"form_stale": stale_sub}
-    monkeypatch.setattr(main_routes, "active_submitters", submitters)
+    monkeypatch.setattr(submission_manager, "active_submitters", submitters)
 
-    main_routes._cleanup_finished_submitters()
+    submission_manager.cleanup_finished_submitters()
 
     resp = client.get("/submission_status?form_id=form_stale")
     assert resp.status_code == 200
@@ -122,9 +122,9 @@ def test_running_submitter_not_cleaned_up(monkeypatch):
     """A still-running submitter must never be removed by cleanup."""
     running_sub = _make_mock_submitter(running=True)
     submitters = {"form_live": running_sub}
-    monkeypatch.setattr(main_routes, "active_submitters", submitters)
+    monkeypatch.setattr(submission_manager, "active_submitters", submitters)
 
-    main_routes._cleanup_finished_submitters()
+    submission_manager.cleanup_finished_submitters()
 
     assert "form_live" in submitters
 
@@ -153,7 +153,7 @@ def test_run_submission_sets_finished_at(storage_stub):
 
     assert not hasattr(sub, "_finished_at")
 
-    main_routes._run_submission(
+    submission_manager.run_submission(
         sub, "form_fa", num_submissions=1, concurrent_threads=1,
         min_delay=0, max_delay=0,
     )

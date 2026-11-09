@@ -28,7 +28,7 @@ from app.models import (
     ResponseConfig as ResponseConfig,
     Submission as Submission,
 )
-from app.main_routes import bp
+from app.routes import bp
 from config import Config
 from app.logging_config import init_app_logging
 
