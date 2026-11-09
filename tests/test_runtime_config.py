@@ -8,7 +8,7 @@ def test_app_data_path_uses_appdata(monkeypatch):
     monkeypatch.setenv("LOG_DIR", "")
     monkeypatch.setenv("DRIVERS_DIR", "")
 
-    import config
+    import app.config as config
 
     reloaded = importlib.reload(config)
 
@@ -26,7 +26,7 @@ def test_app_data_path_falls_back_to_home(monkeypatch, tmp_path):
     monkeypatch.setenv("DRIVERS_DIR", "")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    import config
+    import app.config as config
 
     reloaded = importlib.reload(config)
 

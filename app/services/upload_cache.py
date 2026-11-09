@@ -4,7 +4,7 @@ import threading
 import time
 import uuid
 
-from config import Config
+from app.config import Config
 
 
 _upload_cache = {}

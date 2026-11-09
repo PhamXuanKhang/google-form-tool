@@ -6,7 +6,7 @@ from flask import current_app, jsonify, request
 from app.logging_config import logger
 from app.routes import bp, json_error
 from app.services import get_storage_service, upload_cache
-from config import Config
+from app.config import Config
 
 
 @bp.route('/load_data', methods=['POST'])

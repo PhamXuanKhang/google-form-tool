@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional
 
 from app.models import Form, Question, AnswerConfig
 from app.logging_config import logger
-from config import Config
+from app.config import Config
 
 
 BRANCH_SUBMIT_SENTINEL = "__submit__"

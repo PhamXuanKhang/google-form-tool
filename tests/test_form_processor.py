@@ -15,7 +15,7 @@ from io import BytesIO
 from app.core.form_processor import BRANCH_SUBMIT_SENTINEL, FormProcessor
 from app.models import Form, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from datetime import datetime
-from config import Config
+from app.config import Config
 from openpyxl import Workbook
 
 
@@ -489,7 +489,7 @@ class TestLoadDataFromFile:
     # ------------------------------------------------------------------ A-6 caps
 
     def test_xlsx_too_many_columns_raises(self, processor, monkeypatch):
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 3)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_COLUMNS", 3)
         workbook = Workbook()
         ws = workbook.active
         ws.append(["c1", "c2", "c3", "c4"])  # 4 columns > limit of 3
@@ -505,7 +505,7 @@ class TestLoadDataFromFile:
             os.unlink(path)
 
     def test_xlsx_cell_too_long_raises(self, processor, monkeypatch):
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 5)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_CELL_LENGTH", 5)
         workbook = Workbook()
         ws = workbook.active
         ws.append(["q1"])
@@ -521,8 +521,8 @@ class TestLoadDataFromFile:
             os.unlink(path)
 
     def test_xlsx_valid_file_passes(self, processor, monkeypatch):
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 100)
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 10000)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_COLUMNS", 100)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_CELL_LENGTH", 10000)
         workbook = Workbook()
         ws = workbook.active
         ws.append(["q1", "q2"])
@@ -539,7 +539,7 @@ class TestLoadDataFromFile:
             os.unlink(path)
 
     def test_csv_too_many_columns_raises(self, processor, monkeypatch):
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 2)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_COLUMNS", 2)
         csv_content = "c1,c2,c3\nv1,v2,v3"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
             f.write(csv_content)
@@ -551,7 +551,7 @@ class TestLoadDataFromFile:
             os.unlink(path)
 
     def test_csv_cell_too_long_raises(self, processor, monkeypatch):
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 3)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_CELL_LENGTH", 3)
         csv_content = "q1\ntoolong"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
             f.write(csv_content)
@@ -563,7 +563,7 @@ class TestLoadDataFromFile:
             os.unlink(path)
 
     def test_json_too_many_columns_raises(self, processor, monkeypatch):
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_COLUMNS", 2)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_COLUMNS", 2)
         data = [{"c1": "v1", "c2": "v2", "c3": "v3"}]
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
             json.dump(data, f)
@@ -575,7 +575,7 @@ class TestLoadDataFromFile:
             os.unlink(path)
 
     def test_json_cell_too_long_raises(self, processor, monkeypatch):
-        monkeypatch.setattr("config.Config.MAX_UPLOAD_CELL_LENGTH", 3)
+        monkeypatch.setattr("app.config.Config.MAX_UPLOAD_CELL_LENGTH", 3)
         data = [{"q1": "toolong"}]
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
             json.dump(data, f)

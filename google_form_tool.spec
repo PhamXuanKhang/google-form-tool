@@ -86,6 +86,7 @@ a = Analysis(
         "app.core.driver_manager",
         "app.models",
         "app.utils",
+        "app.config",
         "app.logging_config",
         "app.core",
         "app.core.form_extractor",

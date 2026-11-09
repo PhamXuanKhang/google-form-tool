@@ -32,7 +32,7 @@ from app import create_app, Form, Submission, ResponseConfig, Page, Question, An
 from app.core.form_extractor import FormExtractor
 from app.services import StorageService, set_storage_provider
 from tempfile import NamedTemporaryFile
-from config import Config
+from app.config import Config
 from app.logging_config import logger
 
 @pytest.fixture(autouse=True)

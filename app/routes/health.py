@@ -7,7 +7,7 @@ from flask import jsonify
 
 from app.core.driver_manager import get_chrome_binary, get_chromedriver_path, get_driver_diagnostics
 from app.routes import bp
-from config import Config
+from app.config import Config
 
 
 @bp.route('/healthz', methods=['GET'])

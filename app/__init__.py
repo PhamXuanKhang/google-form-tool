@@ -29,7 +29,7 @@ from app.models import (
     Submission as Submission,
 )
 from app.routes import bp
-from config import Config
+from app.config import Config
 from app.logging_config import init_app_logging
 
 try:

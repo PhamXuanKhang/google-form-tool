@@ -1,6 +1,6 @@
 import app.routes.health as health_routes
 import app.routes.pages as pages_routes
-from config import Config
+from app.config import Config
 
 
 def test_runtime_diagnostics_route_returns_paths_and_dev_mode(client, monkeypatch):

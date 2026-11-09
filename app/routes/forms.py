@@ -13,7 +13,7 @@ from app.logging_config import logger
 from app.routes import bp
 from app.routes.health import _runtime_diagnostics
 from app.services import get_storage_service
-from config import Config
+from app.config import Config
 
 
 def _is_valid_google_forms_url(url: str) -> bool:

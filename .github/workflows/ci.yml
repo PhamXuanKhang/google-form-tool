@@ -76,7 +76,7 @@ jobs:
         # Conservative rule set (E9/F) defined in pyproject.toml — catches real
         # defects (syntax errors, unused imports, undefined names) without
         # reformatting existing style.
-        run: uvx ruff check app/ tests/ config.py wsgi.py
+        run: uvx ruff check app/ tests/ wsgi.py
 
   security-scan:
     name: Secret & dependency scan

@@ -8,7 +8,7 @@ import concurrent.futures
 import json
 from typing import Optional, Any, List
 from app.models import Question
-from config import Config
+from app.config import Config
 from app.logging_config import logger
 
 try:

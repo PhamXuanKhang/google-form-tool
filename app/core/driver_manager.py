@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 from app.logging_config import logger
-from config import Config
+from app.config import Config
 
 # Per-process cache so the (potentially slow) download only happens once.
 _cache: dict[str, str | None] = {}

@@ -7,7 +7,7 @@ from app.core.driver_manager import get_chrome_binary, get_chromedriver_path
 from app.logging_config import logger
 from app.routes import bp, json_error
 from app.services import get_storage_service, submission_manager, upload_cache
-from config import Config
+from app.config import Config
 
 
 @bp.route('/start_submission', methods=['POST'])

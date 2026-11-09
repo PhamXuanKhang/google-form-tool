@@ -1,5 +1,5 @@
 from pathlib import Path
-from config import Config
+from app.config import Config
 from app.services.storage_service import StorageService
 
 # Overridable factory. Tests install a stub so route code can be exercised
