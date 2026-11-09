@@ -301,39 +301,6 @@ function initializeCharts() {
             }
         });
     }
-    
-    // Create resource usage chart
-    const resourceCtx = document.getElementById('resource-chart')?.getContext('2d');
-    if (resourceCtx) {
-        window.resourceChart = new Chart(resourceCtx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'CPU Usage',
-                    data: [],
-                    borderColor: '#007bff',
-                    tension: 0.1
-                }, {
-                    label: 'Memory Usage',
-                    data: [],
-                    borderColor: '#20c997',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        min: 0,
-                        max: 100
-                    }
-                }
-            }
-        });
-    }
 }
 
 

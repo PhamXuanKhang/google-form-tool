@@ -187,9 +187,6 @@ msgstr "Elapsed Time"
 msgid "Submission Status"
 msgstr "Submission Status"
 
-msgid "System Resources"
-msgstr "System Resources"
-
 msgid "Failed to extract form data."
 msgstr "Failed to extract form data."
 
