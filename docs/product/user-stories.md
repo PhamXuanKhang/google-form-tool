@@ -18,7 +18,7 @@ Acceptance criteria:
 4. `GET /form_filling/preview` returns the stored form for the current session, or 400/404 when none exists.
 
 Routes: `/form_filling` (GET, POST), `/form_filling/extract`, `/form_filling/preview`
-Modules: `app/core/form_extractor.py`, `app/core/driver_manager.py`
+Modules: `app/adapters/browser/form_extractor.py`, `app/adapters/browser/driver_manager.py`
 Tests: `tests/test_form_extractor.py`, `tests/test_extract_route.py`, `tests/test_driver_manager.py`
 
 ## US-002 Configure answers
@@ -36,7 +36,7 @@ Acceptance criteria:
 4. The browser-side validator rejects invalid probability input before it is sent.
 
 Routes: `/save_edit`, `/load_data`
-Modules: `app/core/form_processor.py`, `app/static/js/form_filling/`
+Modules: `app/domain/form_processor.py`, `app/static/js/form_filling/`
 Tests: `tests/test_form_processor.py`, `tests/test_save_edit_route.py`, `tests/test_js_prefill_validator.py`, `tests/test_question_entry_id.py`
 
 ## US-003 Submit configured responses
@@ -56,7 +56,7 @@ Acceptance criteria:
 6. Each submission result is saved to the form's history.
 
 Routes: `/start_submission`, `/stop_submission`, `/submission_status`
-Modules: `app/core/form_submitter.py`, `app/core/prefill_link_generator.py`, `app/core/form_processor.py`
+Modules: `app/adapters/browser/form_submitter.py`, `app/domain/prefill_link_generator.py`, `app/domain/form_processor.py`
 Tests: `tests/test_form_submitter.py`, `tests/test_submission_status_retention.py`, `tests/test_prefill_link_generator.py`, `tests/test_prefill_submission.py`, `tests/test_submission_persistence.py`
 
 ## US-004 Generate AI text answers
@@ -75,7 +75,7 @@ Acceptance criteria:
 5. Timeouts return 504 and other provider failures return 500 with a generic message.
 
 Routes: `/validate_api_key`, `/generate_ai_text_answers`
-Modules: `app/core/ai_responder.py`
+Modules: `app/adapters/ai/ai_responder.py`
 Tests: `tests/test_ai_text_route.py`, `tests/test_ai_model_resolution.py`, `tests/test_ai_generator_gating.py`, `tests/test_validate_api_key_route.py`
 
 ## US-005 Review forms, history, and exports
@@ -113,7 +113,7 @@ Acceptance criteria:
 4. The about page renders.
 
 Routes: `/healthz`, `/diagnostics/runtime`, `/settings/diagnostics`, `/about`
-Modules: `config.py`, `app/core/driver_manager.py`
+Modules: `app/config.py`, `app/adapters/browser/driver_manager.py`
 Tests: `tests/test_healthz.py`, `tests/test_runtime_diagnostics_route.py`, `tests/test_runtime_config.py`, `tests/test_i18n_render.py`
 
 ## US-007 Copy a form (best effort)
@@ -131,7 +131,7 @@ Acceptance criteria:
 4. The result status is `success` or `partial` (HTTP 200); any other result returns 500.
 
 Routes: `/form_copy`, `/form_copy/extract_source`, `/form_copy/preview_plan`, `/form_copy/apply_to_target`
-Modules: `app/core/form_copy_planner.py`, `app/core/form_copier.py`
+Modules: `app/domain/form_copy_planner.py`, `app/adapters/browser/form_copier.py`
 Tests: `tests/test_form_copier.py`, `tests/test_form_copy_planner.py`, `tests/test_form_copy_routes.py`, `tests/test_form_copy_ui.py`
 
 ## US-008 Distribute the Windows app
