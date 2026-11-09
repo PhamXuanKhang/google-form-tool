@@ -49,8 +49,6 @@ a = Analysis(
         "waitress.task",
         "waitress.server",
         "waitress.runner",
-        # psutil
-        "psutil",
         # openpyxl
         "openpyxl",
         "openpyxl.styles",
@@ -90,11 +88,6 @@ a = Analysis(
         "app.core.prefill_link_generator",
         "app.services",
         "app.services.storage_service",
-        "app.monitoring",
-        "app.monitoring.metrics_collector",
-        "app.monitoring.cpu_monitor",
-        "app.monitoring.network_monitor",
-        "app.monitoring.thread_monitor",
         # Misc runtime deps
         "email.mime.multipart",
         "email.mime.text",

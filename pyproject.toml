@@ -16,7 +16,6 @@ dependencies = [
     "python-dotenv==1.1.0",
     "tinydb==4.8.2",
     "pydantic==2.11.5",
-    "psutil==5.9.5",
     "google-genai>=1.0.0,<2.0.0",
     "waitress>=2.1.0",
     "Flask-Babel>=4.0.0",
