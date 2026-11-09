@@ -17,6 +17,7 @@ This project is a local desktop app for extracting, configuring, and submitting 
 - Prefill: `app/domain/prefill_link_generator.py` builds Google Forms prefill URLs from configured answers.
 - Storage: `app/services/storage_service.py` persists forms and submission history for the local user.
 - Diagnostics: the `/healthz` and diagnostics routes expose runtime health for desktop support.
+- Landing: `landing/` is a separate static site deployed on its own (for example to Vercel). It is not part of the packaged app; its release link points to GitHub Releases latest.
 
 ## Boundaries
 

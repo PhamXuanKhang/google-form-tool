@@ -43,7 +43,7 @@
 | Question Types | **12 loại câu hỏi** | Text, Multiple Choice, Checkbox, Scale, Grid, Date, Time... |
 | Custom Probabilities | **Tuỳ chỉnh xác suất** | Cấu hình xác suất chọn từng đáp án và câu trả lời tuỳ biến |
 | Bulk Submit | **Submit hàng loạt** | Multithreading với delay ngẫu nhiên, success/fail realtime |
-| Live Monitoring | **Giám sát realtime** | CPU, network và thread metrics trong quá trình submit |
+| Live Progress | **Theo dõi tiến độ** | Số submission thành công/thất bại theo thời gian thực trong lúc submit |
 | Copy Form MVP | **Copy best-effort** | Preview/copy form sang target editable link, kèm warnings cho unsupported features |
 | i18n | **Tiếng Anh / Tiếng Việt** | Chuyển ngôn ngữ trong UI |
 | History | **Lịch sử submission** | Lưu lịch sử submission và export CSV |
@@ -99,6 +99,8 @@ npm run electron:dev
 ```
 
 ### Landing page dev
+
+`landing/` là một site tĩnh deploy riêng (ví dụ lên Vercel), không nằm trong installer của app. Khi deploy, thay URL placeholder `https://<your-vercel-app>.vercel.app` bằng URL thật.
 
 ```bash
 cd landing
