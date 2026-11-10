@@ -40,7 +40,7 @@ except ImportError:
 
 SUPPORTED_LANGUAGES = ["en", "vi"]
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 
 def _warn_production_guardrails() -> None:
