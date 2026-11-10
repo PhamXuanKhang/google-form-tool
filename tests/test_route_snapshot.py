@@ -281,15 +281,7 @@ def test_runtime_diagnostics_keys(client):
         ("get", "/"),
         ("get", "/form_filling"),
         ("post", "/form_filling"),
-        pytest.param(
-            "get",
-            "/about",
-            marks=pytest.mark.xfail(
-                strict=True,
-                raises=ValueError,
-                reason="about.html passes a literal '%' through gettext; the page raises today",
-            ),
-        ),
+        ("get", "/about"),
         ("get", "/settings/diagnostics"),
         ("get", "/form_copy"),
     ],
@@ -299,6 +291,12 @@ def test_page_routes_render_html(client, seeded, method, url):
 
     assert response.status_code == 200
     assert response.mimetype == "text/html"
+
+
+def test_about_page_renders_literal_percent(client):
+    body = client.get("/about").get_data(as_text=True)
+
+    assert "70% Option A, 30% Option B" in body
 
 
 def test_export_history_formats(client, seeded):
