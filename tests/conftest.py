@@ -1,16 +1,39 @@
 """
 Create fixtures for unit testing
 """
-import pytest
+# Test paths must be redirected before app/config import: Config reads env at
+# class-definition time and logging opens its file handler at import time.
+import atexit
+import logging
 import os
+import shutil
+import tempfile
+
+_TEST_DATA_DIR = tempfile.mkdtemp(prefix="gft-tests-")
+os.environ["LOG_DIR"] = os.path.join(_TEST_DATA_DIR, "logs")
+os.environ["DB_PATH"] = os.path.join(_TEST_DATA_DIR, "db.json")
+os.environ["DRIVERS_DIR"] = os.path.join(_TEST_DATA_DIR, "drivers")
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
+
+
+def _cleanup_test_data_dir():
+    # logging's own atexit handler (registered at import) closes file
+    # handlers after ours (LIFO), so rmtree here would hit a locked
+    # app.log on Windows unless we close handlers first.
+    logging.shutdown()
+    shutil.rmtree(_TEST_DATA_DIR, ignore_errors=True)
+
+
+atexit.register(_cleanup_test_data_dir)
+
+import pytest
 from datetime import datetime
 from app import create_app, Form, Submission, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
-from app.core.form_extractor import FormExtractor
-from app.services import StorageService
+from app.adapters.browser.form_extractor import FormExtractor
+from app.services import StorageService, set_storage_provider
 from tempfile import NamedTemporaryFile
-from config import Config
+from app.config import Config
 from app.logging_config import logger
-import logging
 
 @pytest.fixture(autouse=True)
 def setup_logging(caplog):
@@ -20,6 +43,22 @@ def setup_logging(caplog):
     logger.handlers = [caplog.handler]
     # Đặt formatter đơn giản để khớp với assert
     caplog.handler.setFormatter(logging.Formatter("%(message)s"))
+
+
+@pytest.fixture(autouse=True)
+def _reset_storage_provider():
+    """Ngăn stub của một test rò sang test sau."""
+    yield
+    set_storage_provider(None)
+
+
+@pytest.fixture
+def storage_stub():
+    """Cài storage giả cho route code trong phạm vi một test."""
+    def install(storage):
+        set_storage_provider(lambda: storage)
+        return storage
+    return install
 
 
 ############### Storage Service ###############

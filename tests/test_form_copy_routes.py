@@ -1,6 +1,6 @@
 from datetime import datetime
 
-import app.main_routes as main_routes
+import app.routes.forms as forms_routes
 from app.models import AnswerConfig, Form, Page, Question, ResponseConfig, CopyResult
 
 
@@ -58,10 +58,9 @@ def test_extract_source_rejects_invalid_url(client):
     assert "valid Google Form URL" in response.get_json()["error"]
 
 
-def test_extract_source_uses_cached_form(client, monkeypatch):
+def test_extract_source_uses_cached_form(client, storage_stub):
     form = make_copy_form()
-    storage = FakeStorage(form)
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
+    storage_stub(FakeStorage(form))
 
     response = client.post("/form_copy/extract_source", json={"form_url": str(form.url)})
 
@@ -71,9 +70,9 @@ def test_extract_source_uses_cached_form(client, monkeypatch):
     assert data["form"]["title"] == "Copy Source"
 
 
-def test_preview_plan_returns_plan(client, monkeypatch):
+def test_preview_plan_returns_plan(client, storage_stub):
     form = make_copy_form()
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage(form))
+    storage_stub(FakeStorage(form))
 
     response = client.post("/form_copy/preview_plan", json={"form_id": form.id})
 
@@ -83,17 +82,17 @@ def test_preview_plan_returns_plan(client, monkeypatch):
     assert data["plan"]["operations"][0]["kind"] == "set_title_description"
 
 
-def test_preview_plan_rejects_missing_form(client, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage())
+def test_preview_plan_rejects_missing_form(client, storage_stub):
+    storage_stub(FakeStorage())
 
     response = client.post("/form_copy/preview_plan", json={"form_id": "missing"})
 
     assert response.status_code == 404
 
 
-def test_apply_to_target_requires_ownership_confirmation(client, monkeypatch):
+def test_apply_to_target_requires_ownership_confirmation(client, storage_stub):
     form = make_copy_form()
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage(form))
+    storage_stub(FakeStorage(form))
 
     response = client.post(
         "/form_copy/apply_to_target",
@@ -104,9 +103,9 @@ def test_apply_to_target_requires_ownership_confirmation(client, monkeypatch):
     assert "confirm" in response.get_json()["error"]
 
 
-def test_apply_to_target_rejects_invalid_edit_url(client, monkeypatch):
+def test_apply_to_target_rejects_invalid_edit_url(client, storage_stub):
     form = make_copy_form()
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage(form))
+    storage_stub(FakeStorage(form))
 
     response = client.post(
         "/form_copy/apply_to_target",
@@ -116,9 +115,9 @@ def test_apply_to_target_rejects_invalid_edit_url(client, monkeypatch):
     assert response.status_code == 400
 
 
-def test_apply_to_target_returns_copier_result(client, monkeypatch):
+def test_apply_to_target_returns_copier_result(client, monkeypatch, storage_stub):
     form = make_copy_form()
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage(form))
+    storage_stub(FakeStorage(form))
 
     class FakeCopier:
         def __init__(self, **kwargs):
@@ -127,7 +126,7 @@ def test_apply_to_target_returns_copier_result(client, monkeypatch):
         def apply_plan(self, plan, target_url):
             return CopyResult(status="success", operations_total=len(plan.operations), operations_succeeded=len(plan.operations))
 
-    monkeypatch.setattr(main_routes, "FormCopier", FakeCopier)
+    monkeypatch.setattr(forms_routes, "FormCopier", FakeCopier)
 
     response = client.post(
         "/form_copy/apply_to_target",

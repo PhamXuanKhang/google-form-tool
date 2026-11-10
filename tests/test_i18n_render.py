@@ -1,6 +1,3 @@
-import app.main_routes as main_routes
-
-
 class EmptyStorage:
     def __enter__(self):
         return self
@@ -12,8 +9,8 @@ class EmptyStorage:
         return []
 
 
-def test_home_renders_in_english(client, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: EmptyStorage())
+def test_home_renders_in_english(client, storage_stub):
+    storage_stub(EmptyStorage())
 
     response = client.get("/?lang=en")
 
@@ -22,8 +19,8 @@ def test_home_renders_in_english(client, monkeypatch):
     assert b"New Form" in response.data
 
 
-def test_home_renders_in_vietnamese(client, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: EmptyStorage())
+def test_home_renders_in_vietnamese(client, storage_stub):
+    storage_stub(EmptyStorage())
 
     response = client.get("/?lang=vi")
     text = response.get_data(as_text=True)

@@ -47,8 +47,7 @@ Run these before feature-specific testing.
 | Check | Command | Expected result | Notes |
 | --- | --- | --- | --- |
 | Branch guard | `git status --short --branch` | On `goal-project-refactor-audit`; no unrelated changes | Stop if on `master`/`main`. |
-| Harness matrix | `scripts\bin\harness-cli.exe query matrix` | 10 implemented stories | Confirms durable feature inventory. |
-| Full pytest | `.\.venv\Scripts\python.exe -m pytest -q` | `215 passed, 1 deselected` or updated expected count | Record exact duration/result. |
+| Full pytest | `uv run python -m pytest -q` | `270 passed, 1 deselected, 1 xfailed` or updated expected count | Record exact duration/result. |
 | GitNexus CLI status | `npx gitnexus status` | Indexed/current commit match | Run `npx gitnexus analyze` if stale. |
 | npm audit | `npm audit --audit-level=high` | `found 0 vulnerabilities` | Run after npm deps are installed. |
 | Electron syntax | `node --check electron\main.js`; `node --check electron\backendProcess.js`; `node --check electron\preload.js` | All parse successfully | Static proof only, not UI proof. |
@@ -174,15 +173,15 @@ Create or identify controlled forms for manual/live verification:
 | Risks | User data pollution, platform path differences, stale records from earlier tests. |
 | Current status | Automated PASS; full desktop restart/export smoke PENDING. |
 
-### 6.7 Runtime Diagnostics and Monitoring
+### 6.7 Runtime Diagnostics
 
 | Field | Plan |
 | --- | --- |
-| Objective | Verify health, diagnostics, driver paths, monitoring metrics, and support visibility. |
+| Objective | Verify health, diagnostics, driver paths, and support visibility. |
 | Use case | User/support opens diagnostics to troubleshoot local runtime. |
-| Expected behavior | `/healthz` returns ok; diagnostics expose actionable mode/path/driver information; monitoring routes return safe JSON. |
+| Expected behavior | `/healthz` returns ok; diagnostics expose actionable mode/path/driver information. |
 | Unit tests | `tests/test_healthz.py`, `tests/test_runtime_config.py`, `tests/test_logging_and_warnings.py` |
-| Integration tests | `tests/test_runtime_diagnostics_route.py`, `tests/test_monitoring_routes.py` |
+| Integration tests | `tests/test_runtime_diagnostics_route.py` |
 | E2E/manual | Start source backend and Electron/packaged backend; open diagnostics page; verify Chrome/ChromeDriver/log paths. |
 | Acceptance criteria | Health ok in source and packaged modes; diagnostics do not expose secrets; paths are actionable. |
 | Test criteria | Record port, mode (`dev`/`frozen`), health response, and diagnostics fields checked. |
@@ -287,7 +286,7 @@ Create or identify controlled forms for manual/live verification:
 | Electron -> backend sidecar | Backend lifecycle and port | Static/module smoke | Interactive launch/close process cleanup. |
 | Packaging -> Electron/backend resources | Sidecar inclusion and installer generation | Packaging smoke | Clean profile install/uninstall. |
 | Landing -> releases | Static assets and CTA | Static build/assertions | Deployed browser CTA check. |
-| Harness/GitNexus -> repo state | Matrix and index health | Harness query, CLI status | Resolve MCP FTS warning outside current session. |
+| GitNexus -> repo state | Index health | CLI status | Resolve MCP FTS warning outside current session. |
 
 ## 8. E2E Scenario Matrix
 
@@ -312,9 +311,8 @@ Create or identify controlled forms for manual/live verification:
 
 1. Confirm branch: `git status --short --branch`.
 2. Confirm no unrelated local changes.
-3. Run Harness matrix query.
-4. Run full pytest.
-5. Run GitNexus CLI status and analyze if stale.
+3. Run full pytest.
+4. Run GitNexus CLI status and analyze if stale.
 
 Exit criteria: all local baseline checks pass or any failure is recorded with root cause and status.
 
@@ -420,4 +418,4 @@ The detailed test campaign can be considered complete only when:
 4. Run `.\scripts\package-windows.ps1`, then perform clean profile/VM installer smoke.
 5. Provide a non-production AI key for E2E-011.
 6. Re-check GitNexus MCP FTS in a repaired or fresh MCP environment.
-7. Update `docs/PROJECT_REFACTOR_AUDIT.md` only when new evidence is collected.
+7. Update `plans/reports/PROJECT_REFACTOR_AUDIT.md` only when new evidence is collected.

@@ -1,5 +1,5 @@
-import app.main_routes as main_routes
-from app.core.form_extractor import DriverStartupError, FormLoadError
+import app.routes.forms as forms_routes
+from app.adapters.browser.form_extractor import DriverStartupError, FormLoadError
 
 
 class EmptyStorage:
@@ -40,7 +40,7 @@ def test_extract_route_rejects_spoofed_google_form_urls(client):
         assert response.status_code == 400
         assert "valid Google Form URL" in response.get_json()["error"]
 
-def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch):
+def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch, storage_stub):
     class FailingExtractor:
         def __init__(self, **kwargs):
             pass
@@ -48,10 +48,10 @@ def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch):
         def extract_form_data(self, form_url):
             raise DriverStartupError("bad driver path")
 
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: EmptyStorage())
-    monkeypatch.setattr(main_routes, "FormExtractor", FailingExtractor)
+    storage_stub(EmptyStorage())
+    monkeypatch.setattr(forms_routes, "FormExtractor", FailingExtractor)
     monkeypatch.setattr(
-        main_routes,
+        forms_routes,
         "_runtime_diagnostics",
         lambda: {
             "app_data_path": r"C:\Data",
@@ -76,7 +76,7 @@ def test_extract_route_reports_chrome_driver_startup_error(client, monkeypatch):
     assert data["diagnostics"]["mode"] == "dev"
 
 
-def test_extract_route_reports_form_load_error(client, monkeypatch):
+def test_extract_route_reports_form_load_error(client, monkeypatch, storage_stub):
     class FailingExtractor:
         def __init__(self, **kwargs):
             pass
@@ -84,8 +84,8 @@ def test_extract_route_reports_form_load_error(client, monkeypatch):
         def extract_form_data(self, form_url):
             raise FormLoadError("parse failed")
 
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: EmptyStorage())
-    monkeypatch.setattr(main_routes, "FormExtractor", FailingExtractor)
+    storage_stub(EmptyStorage())
+    monkeypatch.setattr(forms_routes, "FormExtractor", FailingExtractor)
 
     response = client.post(
         "/form_filling/extract",

@@ -4,7 +4,7 @@ from urllib.parse import parse_qsl, urlsplit
 
 import pytest
 
-from app.core.prefill_link_generator import PrefillLinkGenerator
+from app.domain.prefill_link_generator import PrefillLinkGenerator
 from app.models import (
     AnswerConfig,
     AnswerOption,
@@ -13,6 +13,9 @@ from app.models import (
     Question,
     ResponseConfig,
 )
+
+
+pytestmark = pytest.mark.domain
 
 
 def _make_form(*questions: Question, url: str = None) -> Form:

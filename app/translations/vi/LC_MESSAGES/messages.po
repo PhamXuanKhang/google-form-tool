@@ -187,9 +187,6 @@ msgstr "Thời gian đã chạy"
 msgid "Submission Status"
 msgstr "Trạng thái gửi"
 
-msgid "System Resources"
-msgstr "Tài nguyên hệ thống"
-
 msgid "Failed to extract form data."
 msgstr "Không thể trích xuất dữ liệu biểu mẫu."
 

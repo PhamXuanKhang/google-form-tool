@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from app.core import form_submitter as form_submitter_module
-from app.core.form_submitter import FormSubmitter
-from app.models import Form, ResponseConfig, Submission
+from app.adapters.browser import form_submitter as form_submitter_module
+from app.adapters.browser.form_submitter import FormSubmitter
+from app.models import Form, ResponseConfig
 
 
 class FakeDriver:

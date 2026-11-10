@@ -8,7 +8,7 @@ def test_validate_api_key_rejects_invalid_without_leaking_key(client, monkeypatc
         def validate_api_key(self):
             return False
 
-    import app.core.ai_responder as ai_module
+    import app.adapters.ai.ai_responder as ai_module
 
     monkeypatch.setattr(ai_module, "AIResponder", FakeResponder)
     monkeypatch.setattr(ai_module, "is_ai_available", lambda: True)
@@ -23,7 +23,7 @@ def test_validate_api_key_rejects_invalid_without_leaking_key(client, monkeypatc
 
 
 def test_validate_api_key_returns_model_unavailable(client, monkeypatch):
-    import app.core.ai_responder as ai_module
+    import app.adapters.ai.ai_responder as ai_module
 
     class FakeResponder:
         def __init__(self, _api_key):

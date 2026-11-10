@@ -46,23 +46,11 @@ if exist "%VENV_PYBABEL%" (
 )
 echo.
 
-:: [2/4] Install PyInstaller via uv (preferred) or python -m pip
+:: [2/4] Check PyInstaller (installed via uv sync in step 3)
 echo [2/4] Checking PyInstaller...
 "%VENV_PYTHON%" -c "import PyInstaller" >nul 2>&1
 if errorlevel 1 (
-    echo       Not found - installing via uv...
-    where uv >nul 2>&1
-    if errorlevel 1 (
-        echo       uv not found, trying python -m pip...
-        "%VENV_PYTHON%" -m pip install --timeout 120 --retries 5 pyinstaller
-    ) else (
-        uv pip install --python "%VENV_PYTHON%" pyinstaller
-    )
-    if errorlevel 1 (
-        echo [ERROR] Failed to install PyInstaller. Check internet connection.
-        if /I "%CI_MODE%"=="true" exit /b 1
-        pause & exit /b 1
-    )
+    echo       Not found - will be installed by uv sync.
 ) else (
     echo       PyInstaller already installed - OK.
 )
@@ -70,44 +58,19 @@ echo.
 
 :: [3/4] Sync dependencies
 echo [3/4] Syncing dependencies...
-if exist "%SCRIPT_DIR%pyproject.toml" (
-    where uv >nul 2>&1
-    if not errorlevel 1 (
-        uv sync --quiet
-        if errorlevel 1 (
-            echo [ERROR] uv sync failed.
-            if /I "%CI_MODE%"=="true" exit /b 1
-            pause & exit /b 1
-        )
-        echo       Dependencies synced via uv.
-    ) else (
-        where uv >nul 2>&1
-        if not errorlevel 1 (
-            uv pip install --python "%VENV_PYTHON%" -r "%SCRIPT_DIR%requirements.txt" --quiet
-        ) else (
-            "%VENV_PYTHON%" -m pip install --timeout 120 --retries 5 -r "%SCRIPT_DIR%requirements.txt" --quiet
-        )
-        if errorlevel 1 (
-            echo [ERROR] dependency install failed.
-            if /I "%CI_MODE%"=="true" exit /b 1
-            pause & exit /b 1
-        )
-        echo       Dependencies installed.
-    )
-) else (
-    where uv >nul 2>&1
-    if not errorlevel 1 (
-        uv pip install --python "%VENV_PYTHON%" -r "%SCRIPT_DIR%requirements.txt" --quiet
-    ) else (
-        "%VENV_PYTHON%" -m pip install --timeout 120 --retries 5 -r "%SCRIPT_DIR%requirements.txt" --quiet
-    )
-    if errorlevel 1 (
-        echo [ERROR] dependency install failed.
-        if /I "%CI_MODE%"=="true" exit /b 1
-        pause & exit /b 1
-    )
-    echo       Dependencies installed.
+where uv >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] uv not found. Install uv first: python -m pip install uv
+    if /I "%CI_MODE%"=="true" exit /b 1
+    pause & exit /b 1
 )
+uv sync --quiet
+if errorlevel 1 (
+    echo [ERROR] uv sync failed.
+    if /I "%CI_MODE%"=="true" exit /b 1
+    pause & exit /b 1
+)
+echo       Dependencies synced via uv.
 echo.
 
 :: [4/4] Build

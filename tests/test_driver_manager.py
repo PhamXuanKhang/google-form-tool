@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import app.core.driver_manager as driver_manager
+import app.adapters.browser.driver_manager as driver_manager
 
 
 def test_chrome_and_driver_explicit_overrides_win(monkeypatch):

@@ -2,15 +2,15 @@ import threading
 
 import pytest
 
-import app.main_routes as main_routes
+import app.services.submission_manager as submission_manager
 from app.models import Submission
 
 
 @pytest.fixture(autouse=True)
 def clear_active_submitters():
-    main_routes.active_submitters.clear()
+    submission_manager.active_submitters.clear()
     yield
-    main_routes.active_submitters.clear()
+    submission_manager.active_submitters.clear()
 
 
 class FakeStorageContext:
@@ -57,13 +57,11 @@ class FakeSubmitter:
         return num_submissions, {}, None
 
 
-def test_run_submission_opens_fresh_storage_for_history(monkeypatch):
-    storage = FakeStorageContext()
+def test_run_submission_opens_fresh_storage_for_history(storage_stub):
+    storage = storage_stub(FakeStorageContext())
     submitter = FakeSubmitter()
 
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
-
-    main_routes._run_submission(
+    submission_manager.run_submission(
         submitter,
         "form_001",
         num_submissions=1,
@@ -76,13 +74,11 @@ def test_run_submission_opens_fresh_storage_for_history(monkeypatch):
     assert storage.closed is True
 
 
-def test_run_submission_logs_warning_when_history_save_fails(monkeypatch, caplog):
-    storage = FakeStorageContext(save_result=False)
+def test_run_submission_logs_warning_when_history_save_fails(storage_stub, caplog):
+    storage_stub(FakeStorageContext(save_result=False))
     submitter = FakeSubmitter()
 
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: storage)
-
-    main_routes._run_submission(
+    submission_manager.run_submission(
         submitter,
         "missing_form",
         num_submissions=1,
@@ -94,8 +90,8 @@ def test_run_submission_logs_warning_when_history_save_fails(monkeypatch, caplog
     assert "Submission history was not saved because form missing_form was not found" in caplog.text
 
 
-def test_start_submission_does_not_pass_route_storage_to_thread(client, sample_form, monkeypatch):
-    route_storage = FakeStorageContext(form=sample_form)
+def test_start_submission_does_not_pass_route_storage_to_thread(client, sample_form, monkeypatch, storage_stub):
+    route_storage = storage_stub(FakeStorageContext(form=sample_form))
     captured = {}
 
     class CapturingThread:
@@ -112,9 +108,8 @@ def test_start_submission_does_not_pass_route_storage_to_thread(client, sample_f
             super().__init__()
             self.form = kwargs["form"]
 
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: route_storage)
     monkeypatch.setattr(threading, "Thread", CapturingThread)
-    monkeypatch.setattr("app.core.form_submitter.FormSubmitter", RouteSubmitter)
+    monkeypatch.setattr("app.adapters.browser.form_submitter.FormSubmitter", RouteSubmitter)
 
     response = client.post(
         "/start_submission",
@@ -129,7 +124,7 @@ def test_start_submission_does_not_pass_route_storage_to_thread(client, sample_f
 
     assert response.status_code == 200
     assert response.get_json()["success"] is True
-    assert captured["target"] is main_routes._run_submission
+    assert captured["target"] is submission_manager.run_submission
     assert captured["started"] is True
     assert route_storage not in captured["args"]
     assert captured["args"][1] == sample_form.id
@@ -146,11 +141,13 @@ def test_stop_submission_accepts_empty_json_body(client):
     assert response.get_json()["success"] is True
 
 
-def post_invalid_submission_request(client, monkeypatch, sample_form, payload):
+def post_invalid_submission_request(client, sample_form, payload):
+    from app.services import set_storage_provider
+
     def fail_if_storage_opens():
         raise AssertionError("storage should not be opened for invalid submission settings")
 
-    monkeypatch.setattr(main_routes, "get_storage_service", fail_if_storage_opens)
+    set_storage_provider(fail_if_storage_opens)
 
     response = client.post(
         "/start_submission",
@@ -161,10 +158,9 @@ def post_invalid_submission_request(client, monkeypatch, sample_form, payload):
     return response.get_json()["error"]
 
 
-def test_start_submission_rejects_too_many_submissions(client, sample_form, monkeypatch):
+def test_start_submission_rejects_too_many_submissions(client, sample_form):
     error = post_invalid_submission_request(
         client,
-        monkeypatch,
         sample_form,
         {"num_submissions": 501, "concurrent_threads": 1},
     )
@@ -172,10 +168,9 @@ def test_start_submission_rejects_too_many_submissions(client, sample_form, monk
     assert "Number of submissions must be between 1 and 500" in error
 
 
-def test_start_submission_rejects_too_many_threads(client, sample_form, monkeypatch):
+def test_start_submission_rejects_too_many_threads(client, sample_form):
     error = post_invalid_submission_request(
         client,
-        monkeypatch,
         sample_form,
         {"num_submissions": 20, "concurrent_threads": 11},
     )
@@ -183,10 +178,9 @@ def test_start_submission_rejects_too_many_threads(client, sample_form, monkeypa
     assert "Concurrent threads must be between 1 and 10" in error
 
 
-def test_start_submission_rejects_threads_greater_than_submissions(client, sample_form, monkeypatch):
+def test_start_submission_rejects_threads_greater_than_submissions(client, sample_form):
     error = post_invalid_submission_request(
         client,
-        monkeypatch,
         sample_form,
         {"num_submissions": 2, "concurrent_threads": 3},
     )
@@ -194,10 +188,9 @@ def test_start_submission_rejects_threads_greater_than_submissions(client, sampl
     assert "Concurrent threads cannot be greater than the number of submissions" in error
 
 
-def test_start_submission_rejects_invalid_delay_range(client, sample_form, monkeypatch):
+def test_start_submission_rejects_invalid_delay_range(client, sample_form):
     error = post_invalid_submission_request(
         client,
-        monkeypatch,
         sample_form,
         {"num_submissions": 2, "concurrent_threads": 1, "min_delay": 5, "max_delay": 1},
     )
@@ -205,10 +198,9 @@ def test_start_submission_rejects_invalid_delay_range(client, sample_form, monke
     assert "Maximum delay must be greater than or equal to minimum delay" in error
 
 
-def test_start_submission_rejects_float_count_fields(client, sample_form, monkeypatch):
+def test_start_submission_rejects_float_count_fields(client, sample_form):
     error = post_invalid_submission_request(
         client,
-        monkeypatch,
         sample_form,
         {"num_submissions": 1.5, "concurrent_threads": 1},
     )
@@ -216,8 +208,8 @@ def test_start_submission_rejects_float_count_fields(client, sample_form, monkey
     assert "Number of submissions must be an integer" in error
 
 
-def test_start_submission_accepts_simple_string_values(client, sample_form, monkeypatch):
-    route_storage = FakeStorageContext(form=sample_form)
+def test_start_submission_accepts_simple_string_values(client, sample_form, monkeypatch, storage_stub):
+    storage_stub(FakeStorageContext(form=sample_form))
     captured = {}
 
     class CapturingThread:
@@ -232,9 +224,8 @@ def test_start_submission_accepts_simple_string_values(client, sample_form, monk
         def __init__(self, **kwargs):
             super().__init__()
 
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: route_storage)
     monkeypatch.setattr(threading, "Thread", CapturingThread)
-    monkeypatch.setattr("app.core.form_submitter.FormSubmitter", RouteSubmitter)
+    monkeypatch.setattr("app.adapters.browser.form_submitter.FormSubmitter", RouteSubmitter)
 
     response = client.post(
         "/start_submission",

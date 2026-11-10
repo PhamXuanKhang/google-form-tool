@@ -1,7 +1,7 @@
 import logging
 
 from app import create_app
-from app.core.form_submitter import FormSubmitter, HIGH_FAILURE_WARNING_MESSAGE
+from app.adapters.browser.form_submitter import FormSubmitter, HIGH_FAILURE_WARNING_MESSAGE
 from app.logging_config import (
     CONSOLE_HANDLER_NAME,
     FILE_HANDLER_NAME,

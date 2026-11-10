@@ -1,7 +1,11 @@
 from datetime import datetime
 
-from app.core.form_copy_planner import CAPABILITY_MATRIX, FormCopyPlanner, get_capability, normalize_question_type
+from app.domain.form_copy_planner import CAPABILITY_MATRIX, FormCopyPlanner, get_capability, normalize_question_type
 from app.models import AnswerConfig, AnswerOption, Form, Page, Question, ResponseConfig
+
+import pytest
+
+pytestmark = pytest.mark.domain
 
 
 def make_form(questions):

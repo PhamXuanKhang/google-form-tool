@@ -206,7 +206,7 @@ window.getOrAskGeminiKey = async function () {
         const code = result.code || "";
         let message = result.error || t("invalidApiKey", "API key validation failed.");
         if (code === "ai_dependency_missing") {
-            message = t("aiDependencyMissing", "AI dependency is not installed. Run pip install -r requirements.txt.");
+            message = t("aiDependencyMissing", "AI dependency is not installed. Run uv sync (or uv pip install google-genai).");
         } else if (code === "model_unavailable") {
             message = t("aiModelUnavailable", "Selected Gemini model is unavailable. Check GEMINI_MODEL or API access.");
         }
@@ -298,39 +298,6 @@ function initializeCharts() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false
-            }
-        });
-    }
-    
-    // Create resource usage chart
-    const resourceCtx = document.getElementById('resource-chart')?.getContext('2d');
-    if (resourceCtx) {
-        window.resourceChart = new Chart(resourceCtx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'CPU Usage',
-                    data: [],
-                    borderColor: '#007bff',
-                    tension: 0.1
-                }, {
-                    label: 'Memory Usage',
-                    data: [],
-                    borderColor: '#20c997',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        min: 0,
-                        max: 100
-                    }
-                }
             }
         });
     }

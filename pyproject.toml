@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "google-form-automation-tool"
+description = "Automate Google Form submissions via desktop app"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dynamic = ["version"]
+dependencies = [
+    "Flask==3.1.0",
+    "selenium==4.32.0",
+    "webdriver-manager==4.0.2",
+    "python-dotenv==1.1.0",
+    "tinydb==4.8.2",
+    "pydantic==2.11.5",
+    "google-genai>=1.0.0,<2.0.0",
+    "waitress>=2.1.0",
+    "Flask-Babel>=4.0.0",
+    "openpyxl>=3.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==8.4.0",
+    "ruff",
+    "pyinstaller",
+    "pip-audit",
+]
+
+[tool.hatch.version]
+path = "app/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+addopts = "-m \"not integration\""
+markers = [
+    "integration: tests that require a real browser, ChromeDriver, or external service",
+    "domain: fast tests for pure domain modules under app/domain",
+]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [
+    "build",
+    "dist",
+    "release",
+    "node_modules",
+    ".venv",
+    "landing",
+]
+
+[tool.ruff.lint]
+select = ["E9", "F"]

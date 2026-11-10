@@ -33,9 +33,6 @@ Describe the behavior this story must make true.
 
 ## Validation
 
-When updating durable proof status, use numeric booleans:
-`scripts/bin/harness-cli story update --id <id> --unit 1 --integration 1 --e2e 0 --platform 0`.
-
 | Layer | Expected proof |
 | --- | --- |
 | Unit | |
@@ -43,11 +40,3 @@ When updating durable proof status, use numeric booleans:
 | E2E | |
 | Platform | |
 | Release | |
-
-## Harness Delta
-
-Document any harness updates made or proposed because of this story.
-
-## Evidence
-
-Add commands, reports, screenshots, or links after validation exists.

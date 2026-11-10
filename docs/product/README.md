@@ -1,6 +1,7 @@
 # Product Docs
 
-The current product contract lives primarily in `README.md`,
+User stories with acceptance criteria live in [user-stories.md](./user-stories.md).
+The rest of the product contract lives in `README.md`,
 `docs/ARCHITECTURE.md`, and `docs/TEST_MATRIX.md`.
 
 Add files here only when a product area becomes complex enough to need a
@@ -14,9 +15,6 @@ surface is healthier than fake product truth.
 
 When behavior changes:
 
-1. Update the affected product doc.
-2. Update or create the story packet for normal/high-risk work.
-3. Update durable proof status with `scripts/bin/harness-cli story add` or
-   `scripts/bin/harness-cli story update`.
-4. Record a decision if the change affects architecture, scope, risk, or a
-   previously settled product rule.
+1. Update the affected story in `user-stories.md`.
+2. Update `docs/TEST_MATRIX.md`.
+3. Record a decision in `docs/decisions/` if the change affects architecture, scope, risk, or a previously settled product rule.

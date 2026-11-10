@@ -43,7 +43,7 @@
 | Question Types | **12 loại câu hỏi** | Text, Multiple Choice, Checkbox, Scale, Grid, Date, Time... |
 | Custom Probabilities | **Tuỳ chỉnh xác suất** | Cấu hình xác suất chọn từng đáp án và câu trả lời tuỳ biến |
 | Bulk Submit | **Submit hàng loạt** | Multithreading với delay ngẫu nhiên, success/fail realtime |
-| Live Monitoring | **Giám sát realtime** | CPU, network và thread metrics trong quá trình submit |
+| Live Progress | **Theo dõi tiến độ** | Số submission thành công/thất bại theo thời gian thực trong lúc submit |
 | Copy Form MVP | **Copy best-effort** | Preview/copy form sang target editable link, kèm warnings cho unsupported features |
 | i18n | **Tiếng Anh / Tiếng Việt** | Chuyển ngôn ngữ trong UI |
 | History | **Lịch sử submission** | Lưu lịch sử submission và export CSV |
@@ -65,7 +65,6 @@
 - Copy Form là best-effort, không claim exact clone Google Form.
 - Một số tính năng Google Forms như grid native, file upload, quiz/theme/branching có thể unsupported hoặc partial.
 - Windows SmartScreen có thể cảnh báo khi app chưa code-sign.
-- Docker path chưa được kiểm tra đầy đủ trên tất cả cấu hình.
 
 ---
 
@@ -87,10 +86,7 @@ git clone https://github.com/PhamXuanKhang/google-form-tool.git
 cd google-form-tool
 
 uv sync
-# hoặc
-pip install -r requirements.txt
-
-python wsgi.py
+uv run python wsgi.py
 ```
 
 Mở `http://localhost:5000` khi chạy backend trực tiếp.
@@ -103,6 +99,8 @@ npm run electron:dev
 ```
 
 ### Landing page dev
+
+`landing/` là một site tĩnh deploy riêng (ví dụ lên Vercel), không nằm trong installer của app. Khi deploy, thay URL placeholder `https://<your-vercel-app>.vercel.app` bằng URL thật.
 
 ```bash
 cd landing
@@ -130,12 +128,6 @@ Output nằm trong `release/`, gồm installer artifacts và `SHA256SUMS.txt`.
 
 ```bash
 pytest tests/ -v
-```
-
-### Docker nâng cao
-
-```bash
-docker compose up --build
 ```
 
 </details>
@@ -167,5 +159,5 @@ docker compose up --build
 ---
 
 <div align="center">
-  <sub>Made by <a href="https://github.com/PhamXuanKhang">KhangPham</a> · v1.1.0</sub>
+  <sub>Made by <a href="https://github.com/PhamXuanKhang">KhangPham</a> · v1.2.0</sub>
 </div>

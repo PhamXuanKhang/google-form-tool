@@ -8,7 +8,6 @@ from datetime import datetime
 
 import pytest
 
-import app.main_routes as main_routes
 from app.models import (
     AnswerConfig,
     Form,
@@ -86,8 +85,8 @@ def form():
 
 
 @pytest.fixture
-def patch_storage(monkeypatch, form):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: FakeStorage(form))
+def patch_storage(storage_stub, form):
+    storage_stub(FakeStorage(form))
     return form
 
 
@@ -114,7 +113,7 @@ class FakeAIResponder:
 @pytest.fixture
 def patch_ai(monkeypatch):
     FakeAIResponder.instances = []
-    import app.core.ai_responder as ai_module
+    import app.adapters.ai.ai_responder as ai_module
 
     monkeypatch.setattr(ai_module, "AIResponder", FakeAIResponder)
     monkeypatch.setattr(ai_module, "is_ai_available", lambda: True)
@@ -256,7 +255,7 @@ def test_400_when_count_not_integer(client, patch_storage, patch_ai):
 
 def test_500_handler_does_not_echo_api_key(client, patch_storage, monkeypatch, caplog):
     """Belt-and-suspenders: verify the error path never returns or logs the api_key."""
-    import app.core.ai_responder as ai_module
+    import app.adapters.ai.ai_responder as ai_module
 
     class BoomResponder:
         def __init__(self, api_key):

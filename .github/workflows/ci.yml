@@ -1,0 +1,129 @@
+name: CI
+
+# Quality gate: test, lint, and security scan on every pull request into a
+# protected branch and on direct pushes to those branches. Failures here
+# block merging and surface issues before they reach a tagged release.
+on:
+  pull_request:
+    branches: [master, review]
+  push:
+    branches: [master, review]
+
+# Cancel any in-flight run for the same ref when a new push lands, so we
+# don't burn Action minutes on superseded commits.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Set up Node.js
+        # Node is required for tests/test_js_prefill_validator.py, which shells
+        # out to `node`. Without it the test is skipped (coverage silently
+        # shrinks), so we install it explicitly.
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Run pytest
+        # pyproject.toml deselects the @pytest.mark.integration test that
+        # needs a real browser; the remaining suite is fully mocked.
+        run: uv run python -m pytest --junitxml=pytest-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: pytest-results.xml
+          if-no-files-found: ignore
+
+  lint:
+    name: Ruff lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Run Ruff
+        # Conservative rule set (E9/F) defined in pyproject.toml — catches real
+        # defects (syntax errors, unused imports, undefined names) without
+        # reformatting existing style.
+        run: uvx ruff check app/ tests/ wsgi.py
+
+  security-scan:
+    name: Secret & dependency scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # gitleaks posts findings to code-scanning
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Full history so gitleaks can scan every commit, not just the
+          # shallow clone default.
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Scan for leaked secrets (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # Posts findings to the repo's Code Scanning alerts tab so they are
+          # visible in the GitHub Security view. No SARIF upload on pass.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Audit Python dependencies (pip-audit)
+        run: |
+          # Export runtime deps to temp file, then audit. --strict fails on any CVE.
+          uv export --format requirements-txt --no-emit-project -o requirements.audit.txt
+          uvx pip-audit -r requirements.audit.txt --strict
+          rm requirements.audit.txt
+
+      - name: Install Node dependencies for audit
+        run: npm ci
+
+      - name: Audit Node dependencies
+        # --audit-level=high keeps the gate focused on high/critical CVEs so
+        # moderate findings don't block PRs. Use `--omit=dev`? No — devDeps
+        # (electron, electron-builder) ship in the release toolchain, so we
+        # audit them too.
+        run: npm audit --audit-level=high

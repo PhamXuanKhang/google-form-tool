@@ -1,6 +1,3 @@
-import app.main_routes as main_routes
-
-
 class HistoryStorage:
     def __init__(self, form):
         self.form = form
@@ -17,8 +14,8 @@ class HistoryStorage:
         return None
 
 
-def test_submission_history_returns_submissions(client, sample_form, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: HistoryStorage(sample_form))
+def test_submission_history_returns_submissions(client, sample_form, storage_stub):
+    storage_stub(HistoryStorage(sample_form))
 
     response = client.get(f"/submission_history/{sample_form.id}")
 
@@ -39,10 +36,10 @@ def test_submission_history_returns_submissions(client, sample_form, monkeypatch
     ]
 
 
-def test_submission_history_returns_empty_list(client, sample_form, monkeypatch):
+def test_submission_history_returns_empty_list(client, sample_form, storage_stub):
     form_without_submissions = sample_form.model_copy(deep=True)
     form_without_submissions.submissions = None
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: HistoryStorage(form_without_submissions))
+    storage_stub(HistoryStorage(form_without_submissions))
 
     response = client.get(f"/submission_history/{sample_form.id}")
 
@@ -52,8 +49,8 @@ def test_submission_history_returns_empty_list(client, sample_form, monkeypatch)
     assert data["submissions"] == []
 
 
-def test_submission_history_returns_404_for_missing_form(client, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: HistoryStorage(None))
+def test_submission_history_returns_404_for_missing_form(client, storage_stub):
+    storage_stub(HistoryStorage(None))
 
     response = client.get("/submission_history/missing_form")
 
@@ -61,8 +58,8 @@ def test_submission_history_returns_404_for_missing_form(client, monkeypatch):
     assert "Form not found" in response.get_json()["error"]
 
 
-def test_export_history_csv_still_works(client, sample_form, monkeypatch):
-    monkeypatch.setattr(main_routes, "get_storage_service", lambda: HistoryStorage(sample_form))
+def test_export_history_csv_still_works(client, sample_form, storage_stub):
+    storage_stub(HistoryStorage(sample_form))
 
     response = client.get(f"/export_history/{sample_form.id}")
 

@@ -1,18 +1,107 @@
 name: Build Windows Release
 
+# Production release pipeline.
+#
+# - On tag push `v*`: builds the Windows installer, uploads it as an artifact,
+#   and creates a **Draft** GitHub Release (auto-generated changelog) for the
+#   maintainer to review and publish manually.
+# - On workflow_dispatch: same build + artifact upload, but the GitHub Release
+#   step is skipped unless triggered from a tag. Use `dry_run: true` to build
+#   and inspect artifacts without any release side effects.
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build the installer but do NOT publish a GitHub Release'
+        type: boolean
+        default: false
   push:
     tags:
       - 'v*'
+
+# Never run two releases for the same ref at once — the later run wins and
+# cancels the in-flight one. Prevents duplicate/draft collisions.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
-  windows-release:
-    runs-on: windows-latest
+  pre-check:
+    name: Verify version consistency
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.versions.outputs.package_version }}
+      is_prerelease: ${{ steps.versions.outputs.is_prerelease }}
+      should_publish: ${{ steps.versions.outputs.should_publish }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
+      - name: Read versions and validate consistency
+        id: versions
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          # package.json is the single source of truth for the installer
+          # version (electron-builder reads it).
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+          # app/__init__.py __version__ is surfaced in the desktop UI and
+          # /healthz-style diagnostics. It MUST match the installer version.
+          INIT_VERSION=$(grep -oE '^__version__ = "[^"]+"' app/__init__.py \
+                        | grep -oE '"[^"]+"' | tr -d '"')
+
+          echo "package.json version : $PACKAGE_VERSION"
+          echo "app/__init__.py version: $INIT_VERSION"
+
+          if [ "$PACKAGE_VERSION" != "$INIT_VERSION" ]; then
+            echo "::error::Version mismatch: package.json=$PACKAGE_VERSION, app/__init__.py=$INIT_VERSION. Update both before tagging."
+            exit 1
+          fi
+
+          # A release is "published" only on a tag push that isn't a dry run.
+          # workflow_dispatch runs are build-only (artifact upload) unless
+          # they happen to carry a tag, which they don't by definition.
+          SHOULD_PUBLISH="false"
+          if [ "$EVENT" = "push" ] && [ "$DRY_RUN" != "true" ]; then
+            SHOULD_PUBLISH="true"
+          fi
+
+          # Pre-release if version contains a hyphen (e.g. 1.2.0-beta.1,
+          # 1.0.0-rc.2). Drives the GitHub Release "prerelease" flag.
+          IS_PRERELEASE="false"
+          if [[ "$PACKAGE_VERSION" == *-* ]]; then
+            IS_PRERELEASE="true"
+          fi
+
+          # When triggered by a tag, the tag (minus the leading v) MUST equal
+          # the package version. Catches the classic "tagged v1.3.0 but forgot
+          # to bump package.json from 1.2.0" mistake before we spend Windows
+          # minutes on a doomed build.
+          if [ "$EVENT" = "push" ] && [ -n "$REF_NAME" ]; then
+            TAG_VERSION="${REF_NAME#v}"
+            if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+              echo "::error::Tag $REF_NAME does not match package.json version $PACKAGE_VERSION."
+              exit 1
+            fi
+          fi
+
+          echo "should_publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "package_version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+
+  build-and-publish:
+    name: Build installer and publish release
+    needs: pre-check
+    runs-on: windows-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -28,14 +117,17 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Install uv
-        run: python -m pip install --upgrade pip uv
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Create Python virtual environment
         run: uv venv --python 3.11
 
       - name: Sync Python dependencies
-        run: uv pip install --python .venv\Scripts\python.exe -r requirements.txt pyinstaller
+        run: uv sync
 
       - name: Install Node dependencies
         run: npm ci
@@ -45,6 +137,8 @@ jobs:
         run: .\scripts\package-windows.ps1
 
       - name: Upload installer artifacts
+        # Always upload, even on dry runs, so the maintainer can download and
+        # smoke-test the build from the Actions run before deciding to tag.
         uses: actions/upload-artifact@v4
         with:
           name: windows-installers
@@ -55,16 +149,23 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: needs.pre-check.outputs.should_publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          # Draft so the maintainer reviews the auto-generated changelog and
+          # smoke-tests the installer before the release goes public.
           draft: true
+          prerelease: ${{ needs.pre-check.outputs.is_prerelease }}
+          generate_release_notes: true
           files: |
             release/*.exe
             release/*.msi
             release/SHA256SUMS.txt
           body: |
-            ## Google Form Automation Tool
+            ## Google Form Automation Tool v${{ needs.pre-check.outputs.version }}
+
+            > ⚠️ **Draft release** — verify the installer and the auto-generated
+            > changelog below, then publish from the GitHub Releases page.
 
             Windows installer artifacts are attached below.
 

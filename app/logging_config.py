@@ -12,7 +12,7 @@ Usage:
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from config import Config
+from app.config import Config
 
 CONSOLE_HANDLER_NAME = "google_form_console"
 FILE_HANDLER_NAME = "google_form_file"

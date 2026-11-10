@@ -11,9 +11,25 @@ from flask import Flask, request, session
 
 from app.logging_config import logger
 
-from app.models import *
-from app.main_routes import bp
-from config import Config
+# Re-export models so callers can do `from app import Form, Submission, ...`
+# (e.g. tests/test_storage_service.py). Explicit list replaces a previous
+# `from app.models import *` which hid undefined names from static analysis.
+from app.models import (
+    AnswerConfig as AnswerConfig,
+    AnswerOption as AnswerOption,
+    CopyOperation as CopyOperation,
+    CopyPlan as CopyPlan,
+    CopyResult as CopyResult,
+    CopyWarning as CopyWarning,
+    FormData as FormData,
+    Form as Form,
+    Page as Page,
+    Question as Question,
+    ResponseConfig as ResponseConfig,
+    Submission as Submission,
+)
+from app.routes import bp
+from app.config import Config
 from app.logging_config import init_app_logging
 
 try:
@@ -24,7 +40,7 @@ except ImportError:
 
 SUPPORTED_LANGUAGES = ["en", "vi"]
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 
 def _warn_production_guardrails() -> None:
@@ -70,7 +86,10 @@ def create_app(testing: bool = False):
     if BABEL_AVAILABLE:
         app.config["BABEL_DEFAULT_LOCALE"] = "en"
         app.config["BABEL_SUPPORTED_LOCALES"] = SUPPORTED_LANGUAGES
-        babel = Babel(app, locale_selector=get_locale)
+        # Instantiate Babel for its registration side effect. The instance is
+        # held alive by the Flask app via its extension registration, so we
+        # intentionally don't assign it to a local name.
+        Babel(app, locale_selector=get_locale)
 
     @app.context_processor
     def inject_globals():
