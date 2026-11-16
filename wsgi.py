@@ -38,6 +38,15 @@ if __name__ == "__main__":
     no_browser = os.getenv("GOOGLE_FORM_TOOL_NO_BROWSER", "0").lower() in ("1", "true", "yes")
     frozen = getattr(sys, "frozen", False)
 
+    # Let local clients (the MCP server) find this backend. In debug mode only
+    # the reloader's child process serves requests, so only it records itself.
+    if not debug or os.getenv("WERKZEUG_RUN_MAIN") == "true":
+        try:
+            from app.services.runtime_info import write_runtime_info
+            write_runtime_info(port, app.config.get("APP_VERSION", ""))
+        except OSError as exc:
+            print(f"Could not write runtime info: {exc}", file=sys.stderr)
+
     # Auto-open browser (skip in Flask debug mode — the reloader starts two processes)
     if not debug and not no_browser:
         threading.Thread(target=_open_browser, args=(port,), daemon=True).start()

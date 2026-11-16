@@ -106,6 +106,7 @@ a = Analysis(
         "app.services.submission_manager",
         "app.services.history_export",
         "app.services.run_store",
+        "app.services.runtime_info",
         # Misc runtime deps
         "email.mime.multipart",
         "email.mime.text",
