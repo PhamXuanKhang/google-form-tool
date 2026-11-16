@@ -7,6 +7,7 @@ Both processes use a temporary APPDATA so the user's data and runtime file
 are never touched. Exits non-zero on any failure.
 
 Usage: uv run python scripts/smoke-mcp.py [--port 5056] [--dist dist/GoogleFormTool]
+       uv run python scripts/smoke-mcp.py --from-source   (wsgi.py + python -m app.mcp_server)
 """
 import argparse
 import json
@@ -69,25 +70,31 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=5056)
     parser.add_argument("--dist", default="dist/GoogleFormTool")
+    parser.add_argument("--from-source", action="store_true", help="run wsgi.py and python -m app.mcp_server")
     args = parser.parse_args()
 
-    dist = Path(args.dist).resolve()
-    backend_exe = dist / "GoogleFormTool.exe"
-    mcp_exe = dist / "GoogleFormToolMcp.exe"
-    for exe in (backend_exe, mcp_exe):
-        if not exe.exists():
-            raise SystemExit(f"missing {exe}")
+    repo_root = Path(__file__).resolve().parents[1]
+    if args.from_source:
+        backend_cmd = [sys.executable, str(repo_root / "wsgi.py")]
+        mcp_cmd = [sys.executable, "-m", "app.mcp_server"]
+    else:
+        dist = Path(args.dist).resolve()
+        backend_cmd = [str(dist / "GoogleFormTool.exe")]
+        mcp_cmd = [str(dist / "GoogleFormToolMcp.exe")]
+        for exe in (backend_cmd[0], mcp_cmd[0]):
+            if not Path(exe).exists():
+                raise SystemExit(f"missing {exe}")
     if port_in_use(args.port):
         raise SystemExit(f"port {args.port} is already in use")
 
     with tempfile.TemporaryDirectory(prefix="gft-smoke-") as app_data:
         env = dict(os.environ, APPDATA=app_data, PORT=str(args.port), GOOGLE_FORM_TOOL_NO_BROWSER="1")
-        backend = subprocess.Popen([str(backend_exe)], env=env,
+        backend = subprocess.Popen(backend_cmd, env=env, cwd=repo_root,
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         mcp = None
         try:
             print("healthz:", wait_for_health(args.port))
-            mcp = subprocess.Popen([str(mcp_exe)], env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            mcp = subprocess.Popen(mcp_cmd, env=env, cwd=repo_root, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE, text=True, encoding="utf-8")
             lines = []
             send(mcp, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
