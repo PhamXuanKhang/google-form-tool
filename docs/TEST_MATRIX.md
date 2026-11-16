@@ -35,6 +35,7 @@ Story codes refer to `docs/product/user-stories.md`.
 | US-012 Agent control (MCP) | Stdio MCP proxy to the running app; tools map to routes; errors become tool errors; stdout is JSON-RPC only | yes | yes | smoke | Windows/stdio | implemented | `tests/test_mcp_server.py`, `scripts/smoke-mcp.py` |
 | US-013 Presets and templates | Presets total 100 with correct shape; template export/import round trip, preview before apply, invalid files rejected | yes | yes | manual | backend/browser | implemented | `tests/test_presets_and_templates.py`, `tests/test_mcp_server.py` |
 | US-014 Personas and AI Autopilot | Persona quotas and consistent rows; validated persona lists; AI proposals checked, never saved, key never exposed; edits validated before saving | yes | yes | manual | backend/browser | implemented | `tests/test_personas.py`, `tests/test_ai_autopilot.py`, `tests/test_edit_validation.py` |
+| US-015 Scheduled runs | Send times inside the window, capped per tick; pause/resume; restart recovery without resending; stop keeps waiting rows | yes | yes | manual | backend/desktop | implemented | `tests/test_drip.py`, `tests/test_mcp_server.py` |
 
 ## Evidence Rules
 

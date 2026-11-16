@@ -303,6 +303,37 @@ Routes: `/forms/<form_id>/personas`, `/ai/propose_config`
 Modules: `app/domain/personas.py`, `app/domain/response_plan.py`, `app/domain/autopilot_proposal.py`, `app/domain/edit_validation.py`, `app/adapters/ai/ai_responder.py`, `app/routes/personas.py`, `app/routes/ai.py`, `app/static/js/form_filling/personas_autopilot.js`
 Tests: `tests/test_personas.py`, `tests/test_ai_autopilot.py`, `tests/test_edit_validation.py`, `tests/test_mcp_server.py`
 
+## US-015 Spread a run over time
+
+As a form tester, I want a batch sent gradually over a time window that I can pause and resume,
+also after closing the app, so that long runs do not arrive all at once.
+
+Status: keep
+
+Acceptance criteria:
+
+1. `/start_submission` accepts `schedule: {window_minutes}` from 1 minute to 7 days; other values
+   return 400. Without it, runs behave as before.
+2. Every response gets its own send time inside the window, spread evenly with jitter. Only due
+   responses are sent, at most one per thread per tick; a backlog (for example after the computer
+   slept) is spread again, never sent in a burst.
+3. `POST /runs/<run_id>/pause` stops taking new responses; `POST /runs/<run_id>/resume` continues a
+   paused or interrupted scheduled run over what is left of the window, keeping at least the
+   minimum delay between sends when the window has passed. A running submission on the form
+   returns 409.
+4. When the app starts, unfinished runs become `interrupted` and responses that were being sent
+   become `unknown`. Nothing is sent until the user resumes, no response is sent twice, and
+   `unknown` responses are never resent automatically.
+5. Stopping a scheduled run leaves waiting responses unsent and marks the run `stopped`.
+6. The UI previews the pace, shows the next send time with pause and resume, offers resume on the
+   report, shows a Home banner for interrupted runs, and states that runs only send while the
+   app is open. The desktop app asks before closing while a run is in progress.
+7. MCP `start_run` accepts `window_minutes`; `pause_run` and `resume_run` are available.
+
+Routes: `/runs/<run_id>/pause`, `/runs/<run_id>/resume` (plus `schedule` on `/start_submission`, `status` on `/runs`)
+Modules: `app/domain/drip_schedule.py`, `app/services/drip_runner.py`, `app/services/run_store.py`, `app/routes/runs.py`, `app/factory.py`, `electron/main.js`
+Tests: `tests/test_drip.py`, `tests/test_mcp_server.py`
+
 ## Route to story map
 
 | Route | Story |
@@ -318,6 +349,7 @@ Tests: `tests/test_personas.py`, `tests/test_ai_autopilot.py`, `tests/test_edit_
 | `/forms`, `/forms/<form_id>` | US-012 |
 | `/presets`, `/forms/<form_id>/config/export`, `/forms/<form_id>/config/import`, `/templates`, `/templates/<template_id>/delete` | US-013 |
 | `/forms/<form_id>/personas`, `/ai/propose_config` | US-014 |
+| `/runs/<run_id>/pause`, `/runs/<run_id>/resume` | US-015 |
 | `/runs`, `/runs/<run_id>`, `/runs/<run_id>/rows`, `/runs/<run_id>/export`, `/runs/<run_id>/retry`, `/runs/<run_id>/view` | US-011 |
 
 Retired routes (no story): `/generate_response`, `/ai_status`, `/monitoring_history`, `/system_status`.
