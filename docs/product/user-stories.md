@@ -241,6 +241,35 @@ Routes: `/forms`, `/forms/<form_id>` (plus the routes the tools call)
 Modules: `app/mcp_server.py`, `mcp_server_entry.py`, `app/runtime_info.py`, `app/routes/forms.py`, `app/routes/pages.py`, `skills/google-form-automation/SKILL.md`
 Tests: `tests/test_mcp_server.py`, `tests/test_route_snapshot.py`; `scripts/smoke-mcp.py` (packaged or `--from-source`)
 
+## US-013 Reuse answer setups with presets and templates
+
+As a form tester, I want ready-made distributions and reusable answer setups, so that I can
+configure long or repeated forms quickly.
+
+Status: keep
+
+Acceptance criteria:
+
+1. Choice questions offer presets: even and first-heavy for any choice question; lean high, lean
+   low and bell for scale questions. Percentages total exactly 100 with two decimals and stay
+   editable; a preset can be applied to every question of the same type.
+2. A template holds a form's answer settings apart from the form (schema version, name,
+   structure fingerprint, per-question settings) and never an API key or a file path.
+3. `GET /forms/<form_id>/config/export` downloads a template; `POST /forms/<form_id>/config/import`
+   takes a file, a template object or a saved `template_id` and returns a preview of matched,
+   unmatched and missing questions. It changes the form only with `apply: true`, and only for
+   matched questions; a question whose options differ is not applied.
+4. Exporting and importing into the same form restores its configuration exactly.
+5. Invalid templates, unknown schema versions, unknown fields and non-JSON files return 400;
+   files over the upload limit return 413; the form is unchanged in every case.
+6. Named templates can be saved, listed and deleted (`/templates`).
+7. The MCP server offers `apply_preset`, `export_config`, `import_config` (preview by default)
+   and `list_templates`.
+
+Routes: `/presets`, `/forms/<form_id>/config/export`, `/forms/<form_id>/config/import`, `/templates`, `/templates/<template_id>/delete`
+Modules: `app/domain/distribution_presets.py`, `app/domain/config_template.py`, `app/services/template_store.py`, `app/routes/templates.py`, `app/static/js/form_filling/config_tools.js`
+Tests: `tests/test_presets_and_templates.py`, `tests/test_mcp_server.py`
+
 ## Route to story map
 
 | Route | Story |
@@ -254,6 +283,7 @@ Tests: `tests/test_mcp_server.py`, `tests/test_route_snapshot.py`; `scripts/smok
 | `/form_copy`, `/form_copy/extract_source`, `/form_copy/preview_plan`, `/form_copy/apply_to_target` | US-007 |
 | `/simulate` | US-010 |
 | `/forms`, `/forms/<form_id>` | US-012 |
+| `/presets`, `/forms/<form_id>/config/export`, `/forms/<form_id>/config/import`, `/templates`, `/templates/<template_id>/delete` | US-013 |
 | `/runs`, `/runs/<run_id>`, `/runs/<run_id>/rows`, `/runs/<run_id>/export`, `/runs/<run_id>/retry`, `/runs/<run_id>/view` | US-011 |
 
 Retired routes (no story): `/generate_response`, `/ai_status`, `/monitoring_history`, `/system_status`.
