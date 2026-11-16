@@ -4,7 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ _('Google Form Automation Tool') }}{% endblock %}</title>
+    <script>
+        (function () {
+            var theme = null;
+            try {
+                theme = localStorage.getItem('theme');
+                if (theme !== 'light' && theme !== 'dark') {
+                    var legacy = localStorage.getItem('darkMode');
+                    theme = legacy === 'true' ? 'dark' : legacy === 'false' ? 'light' : null;
+                }
+            } catch (e) {}
+            if (!theme) {
+                theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.6/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fontawesome-6.7.2/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">

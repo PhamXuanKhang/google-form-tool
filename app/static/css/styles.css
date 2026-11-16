@@ -1,6 +1,8 @@
 /* default setting */
 body {
-    font-family: Arial, sans-serif;
+    font-family: var(--gf-font-sans);
+    background-color: var(--gf-bg);
+    color: var(--gf-text);
 }
 
 /* css for header banner */
