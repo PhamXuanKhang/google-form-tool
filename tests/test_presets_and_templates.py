@@ -195,6 +195,16 @@ def test_uploaded_template_file_is_previewed(client, storage):
     assert response.get_json()["applied"] is False
 
 
+def test_template_menu_script_never_writes_html():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "static" / "js" / "form_filling" / "config_tools.js").read_text(
+        encoding="utf-8")
+
+    assert "innerHTML" not in source
+    assert "textContent" in source
+
+
 def test_saved_templates_can_be_listed_applied_and_deleted(client, storage):
     saved = client.post("/templates", json={"form_id": "f_tpl", "name": "Baseline"}).get_json()
     listed = client.get("/templates").get_json()["templates"]

@@ -639,3 +639,84 @@ msgstr "Xem skill"
 
 msgid "Copied."
 msgstr "Đã sao chép."
+
+msgid "Template"
+msgstr "Template"
+
+msgid "Save current as template"
+msgstr "Lưu cấu hình hiện tại thành template"
+
+msgid "Export to file"
+msgstr "Xuất ra file"
+
+msgid "Import from file"
+msgstr "Nhập từ file"
+
+msgid "Saved templates"
+msgstr "Template đã lưu"
+
+msgid "No saved templates yet."
+msgstr "Chưa có template nào."
+
+msgid "Apply template"
+msgstr "Áp dụng template"
+
+msgid "Cancel"
+msgstr "Huỷ"
+
+msgid "Apply matching questions"
+msgstr "Áp dụng cho các câu khớp"
+
+msgid "Presets"
+msgstr "Mẫu phân phối"
+
+msgid "Apply to every question of this type"
+msgstr "Áp dụng cho mọi câu cùng loại"
+
+msgid "Even"
+msgstr "Đều"
+
+msgid "Lean high"
+msgstr "Nghiêng cao"
+
+msgid "Lean low"
+msgstr "Nghiêng thấp"
+
+msgid "Bell"
+msgstr "Hình chuông"
+
+msgid "First option heavy"
+msgstr "Dồn lựa chọn đầu"
+
+msgid "Template action failed."
+msgstr "Thao tác template thất bại."
+
+msgid "Template name:"
+msgstr "Tên template:"
+
+msgid "Template saved."
+msgstr "Đã lưu template."
+
+msgid "Template applied."
+msgstr "Đã áp dụng template."
+
+msgid "The template was made from a form with the same structure."
+msgstr "Template được tạo từ form có cùng cấu trúc."
+
+msgid "The template comes from a form with a different structure. Only matching questions will change."
+msgstr "Template đến từ form có cấu trúc khác. Chỉ các câu khớp được thay đổi."
+
+msgid "no matching question"
+msgstr "không có câu khớp"
+
+msgid "options differ"
+msgstr "lựa chọn khác nhau"
+
+msgid "Will be updated"
+msgstr "Sẽ được cập nhật"
+
+msgid "Not applied"
+msgstr "Không áp dụng"
+
+msgid "Not in the template (unchanged)"
+msgstr "Không có trong template (giữ nguyên)"

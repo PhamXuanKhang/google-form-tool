@@ -127,6 +127,7 @@ function renderQuestionsStep2(formData) {
                         <div class="text-muted small mb-2">Adjust % per option, total = 100%</div>
                         <button class="btn btn-sm btn-outline-secondary" onclick="randomizeDistribution(this)">🎲 Randomize</button>
                     </div>
+                    ${presetRowHTML(type, opts.length)}
                     ${optionsHTML}
                     <div class="text-end text-muted small mt-1">Total: <span class="percent-total">100%</span></div>
                     <!-- Optional: pie chart -->
@@ -244,6 +245,103 @@ async function runInlineAIGenerate(card, button, textarea) {
     }
 }
 
+
+const SCALE_TYPES = ["linear_scale", "rating"];
+const PRESET_TYPES = ["multiple_choice", "dropdown", "linear_scale", "rating"];
+
+/** Preset buttons for one choice question; directional presets only on scales. */
+function presetRowHTML(type, optionCount) {
+    if (!PRESET_TYPES.includes(type) || optionCount < 2) return "";
+    const labels = window.i18n?.presetLabels || {};
+    const presets = SCALE_TYPES.includes(type)
+        ? ["uniform", "positive_skew", "negative_skew", "bell", "first_heavy"]
+        : ["uniform", "first_heavy"];
+    const buttons = presets.map((preset) =>
+        `<button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="${preset}">${escapeHtml(labels[preset] || preset)}</button>`
+    ).join("");
+    return `
+        <div class="preset-row d-flex flex-wrap align-items-center gap-1 mb-2">
+            <span class="small text-muted me-1">${escapeHtml(window.i18n?.presetsLabel || "Presets")}:</span>
+            ${buttons}
+            <div class="form-check form-check-inline ms-2 mb-0">
+                <input class="form-check-input preset-all" type="checkbox">
+                <label class="form-check-label small">${escapeHtml(window.i18n?.applyToAllOfType || "Apply to every question of this type")}</label>
+            </div>
+        </div>
+    `;
+}
+
+function setPercentages(card, values) {
+    const inputs = card.querySelectorAll(".option-percent");
+    inputs.forEach((input, index) => { input.value = values[index] ?? 0; });
+    const total = Array.from(inputs).reduce((sum, input) => sum + parseFloat(input.value || 0), 0);
+    const totalDisplay = card.querySelector(".percent-total");
+    if (totalDisplay) totalDisplay.textContent = `${Math.round(total)}%`;
+}
+
+async function applyPresetFromButton(button) {
+    const card = button.closest(".card[data-question-id]");
+    const type = card.dataset.questionType;
+    const preset = button.dataset.preset;
+    const cards = card.querySelector(".preset-all")?.checked
+        ? Array.from(document.querySelectorAll(`#step-2-questions .card[data-question-type="${type}"]`))
+        : [card];
+    const cache = {};
+    try {
+        for (const target of cards) {
+            const count = target.querySelectorAll(".option-percent").length;
+            if (count < 2) continue;
+            if (!cache[count]) {
+                const response = await fetch(`/presets?type=${encodeURIComponent(type)}&options=${count}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || "Preset failed");
+                cache[count] = data.presets;
+            }
+            if (cache[count][preset]) setPercentages(target, cache[count][preset]);
+        }
+    } catch (error) {
+        window.showPopup?.(error.message, "error");
+    }
+}
+
+document.getElementById("step-2-questions")?.addEventListener("click", (event) => {
+    const button = event.target.closest(".preset-btn");
+    if (button) applyPresetFromButton(button);
+});
+
+/**
+ * Fill the rendered question cards from a saved configuration, e.g. after a
+ * template was applied. Cards are matched by question id and options by text.
+ */
+function applyConfigToCards(form) {
+    const pages = form?.response_config?.pages || [];
+    pages.forEach((page) => (page.questions || []).forEach((question) => {
+        const card = document.querySelector(`#step-2-questions .card[data-question-id="${CSS.escape(question.question_id || "")}"]`);
+        const config = question.answer_config;
+        if (!card || !config) return;
+        const fill = card.querySelector(".fill-percent");
+        if (fill && config.fill_percentage !== null && config.fill_percentage !== undefined) fill.value = config.fill_percentage;
+        const textarea = card.querySelector(".answer-textarea");
+        if (textarea && Array.isArray(config.answers)) textarea.value = config.answers.join("\n");
+        if (Array.isArray(config.options)) {
+            const byText = Object.fromEntries(config.options.map((option) => [option.text, option]));
+            card.querySelectorAll(".option-row").forEach((row) => {
+                const option = byText[row.dataset.optionText];
+                if (!option) return;
+                const percent = row.querySelector(".option-percent");
+                if (percent) percent.value = option.percentage ?? 0;
+                const branch = row.querySelector(".option-submit-branch");
+                if (branch) branch.checked = option.next_page_id === "__submit__";
+            });
+            const total = Array.from(card.querySelectorAll(".option-percent"))
+                .reduce((sum, input) => sum + parseFloat(input.value || 0), 0);
+            const totalDisplay = card.querySelector(".percent-total");
+            if (totalDisplay) totalDisplay.textContent = `${Math.round(total)}%`;
+        }
+    }));
+}
+
+window.applyConfigToCards = applyConfigToCards;
 
 function adjustPercentDistribution(changedInput) {
     const container = changedInput.closest('.card');

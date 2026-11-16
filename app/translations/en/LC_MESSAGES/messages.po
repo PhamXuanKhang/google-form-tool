@@ -639,3 +639,84 @@ msgstr "Show skill"
 
 msgid "Copied."
 msgstr "Copied."
+
+msgid "Template"
+msgstr "Template"
+
+msgid "Save current as template"
+msgstr "Save current as template"
+
+msgid "Export to file"
+msgstr "Export to file"
+
+msgid "Import from file"
+msgstr "Import from file"
+
+msgid "Saved templates"
+msgstr "Saved templates"
+
+msgid "No saved templates yet."
+msgstr "No saved templates yet."
+
+msgid "Apply template"
+msgstr "Apply template"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Apply matching questions"
+msgstr "Apply matching questions"
+
+msgid "Presets"
+msgstr "Presets"
+
+msgid "Apply to every question of this type"
+msgstr "Apply to every question of this type"
+
+msgid "Even"
+msgstr "Even"
+
+msgid "Lean high"
+msgstr "Lean high"
+
+msgid "Lean low"
+msgstr "Lean low"
+
+msgid "Bell"
+msgstr "Bell"
+
+msgid "First option heavy"
+msgstr "First option heavy"
+
+msgid "Template action failed."
+msgstr "Template action failed."
+
+msgid "Template name:"
+msgstr "Template name:"
+
+msgid "Template saved."
+msgstr "Template saved."
+
+msgid "Template applied."
+msgstr "Template applied."
+
+msgid "The template was made from a form with the same structure."
+msgstr "The template was made from a form with the same structure."
+
+msgid "The template comes from a form with a different structure. Only matching questions will change."
+msgstr "The template comes from a form with a different structure. Only matching questions will change."
+
+msgid "no matching question"
+msgstr "no matching question"
+
+msgid "options differ"
+msgstr "options differ"
+
+msgid "Will be updated"
+msgstr "Will be updated"
+
+msgid "Not applied"
+msgstr "Not applied"
+
+msgid "Not in the template (unchanged)"
+msgstr "Not in the template (unchanged)"
