@@ -270,6 +270,39 @@ Routes: `/presets`, `/forms/<form_id>/config/export`, `/forms/<form_id>/config/i
 Modules: `app/domain/distribution_presets.py`, `app/domain/config_template.py`, `app/services/template_store.py`, `app/routes/templates.py`, `app/static/js/form_filling/config_tools.js`
 Tests: `tests/test_presets_and_templates.py`, `tests/test_mcp_server.py`
 
+## US-014 Model respondent groups and let AI propose a setup
+
+As a form tester, I want responses to come from distinct groups whose answers hang together, and
+I want an AI to propose a configuration from a plain description, so that test data looks like
+real respondents with little manual work.
+
+Status: keep
+
+Acceptance criteria:
+
+1. A form can have up to 8 personas with weights totalling 100; each persona overrides the
+   shared settings only for the questions where it differs. Branching stays shared.
+2. A plan splits responses across personas with exact quotas, builds each persona's rows from
+   its own settings, tags them with the persona, and shuffles them with the seed. Every answer in
+   a response comes from the same persona. Without personas, plans are unchanged.
+3. `GET`/`POST /forms/<form_id>/personas` read and replace the list; weights not totalling 100,
+   more than 8 personas, unknown questions or options, and invalid percentages return 400 and
+   save nothing. Forms saved before personas still load.
+4. Simulation and run reports break results down per persona against each persona's own
+   targets; overall targets blend the personas by weight. Templates carry personas.
+5. `POST /ai/propose_config` (form, Gemini key, audience description, optional personas) returns
+   a checked proposal with current and proposed settings and warnings, and saves nothing. Invalid
+   or malformed answers return a coded 422; unknown questions and options are dropped with a
+   warning; a timeout returns 504. The key is never logged, stored or returned.
+6. The UI applies only the questions and personas the user selects. MCP offers `get_personas` and
+   `set_personas`, and no AI tool, since MCP never takes an API key.
+7. `/save_edit` rejects invalid settings (percentages outside 0-100, missing option percentages,
+   non-text answers) with 400 instead of saving a form that can no longer load.
+
+Routes: `/forms/<form_id>/personas`, `/ai/propose_config`
+Modules: `app/domain/personas.py`, `app/domain/response_plan.py`, `app/domain/autopilot_proposal.py`, `app/domain/edit_validation.py`, `app/adapters/ai/ai_responder.py`, `app/routes/personas.py`, `app/routes/ai.py`, `app/static/js/form_filling/personas_autopilot.js`
+Tests: `tests/test_personas.py`, `tests/test_ai_autopilot.py`, `tests/test_edit_validation.py`, `tests/test_mcp_server.py`
+
 ## Route to story map
 
 | Route | Story |
@@ -284,6 +317,7 @@ Tests: `tests/test_presets_and_templates.py`, `tests/test_mcp_server.py`
 | `/simulate` | US-010 |
 | `/forms`, `/forms/<form_id>` | US-012 |
 | `/presets`, `/forms/<form_id>/config/export`, `/forms/<form_id>/config/import`, `/templates`, `/templates/<template_id>/delete` | US-013 |
+| `/forms/<form_id>/personas`, `/ai/propose_config` | US-014 |
 | `/runs`, `/runs/<run_id>`, `/runs/<run_id>/rows`, `/runs/<run_id>/export`, `/runs/<run_id>/retry`, `/runs/<run_id>/view` | US-011 |
 
 Retired routes (no story): `/generate_response`, `/ai_status`, `/monitoring_history`, `/system_status`.

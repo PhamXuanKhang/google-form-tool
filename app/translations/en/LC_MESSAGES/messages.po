@@ -720,3 +720,99 @@ msgstr "Not applied"
 
 msgid "Not in the template (unchanged)"
 msgstr "Not in the template (unchanged)"
+
+msgid "AI Autopilot"
+msgstr "AI Autopilot"
+
+msgid "Personas"
+msgstr "Personas"
+
+msgid "Describe who answers this form. Gemini proposes answer settings for every question, using your own API key. Nothing changes until you choose what to apply."
+msgstr "Describe who answers this form. Gemini proposes answer settings for every question, using your own API key. Nothing changes until you choose what to apply."
+
+msgid "Who answers this form?"
+msgstr "Who answers this form?"
+
+msgid "For example: university students in Hanoi, mostly 18-22, who drink coffee daily"
+msgstr "For example: university students in Hanoi, mostly 18-22, who drink coffee daily"
+
+msgid "Also propose personas"
+msgstr "Also propose personas"
+
+msgid "Propose settings"
+msgstr "Propose settings"
+
+msgid "Select all"
+msgstr "Select all"
+
+msgid "Question"
+msgstr "Question"
+
+msgid "Now"
+msgstr "Now"
+
+msgid "Proposed"
+msgstr "Proposed"
+
+msgid "Replace personas with the proposed ones:"
+msgstr "Replace personas with the proposed ones:"
+
+msgid "Apply selected"
+msgstr "Apply selected"
+
+msgid "Split responses between groups of respondents. Each persona gets a share of the batch and can answer some questions differently; other questions use the shared settings."
+msgstr "Split responses between groups of respondents. Each persona gets a share of the batch and can answer some questions differently; other questions use the shared settings."
+
+msgid "Add persona"
+msgstr "Add persona"
+
+msgid "Save personas"
+msgstr "Save personas"
+
+msgid "Save persona answers"
+msgstr "Save persona answers"
+
+msgid "Request failed."
+msgstr "Request failed."
+
+msgid "Persona name"
+msgstr "Persona name"
+
+msgid "Share of responses, in percent"
+msgstr "Share of responses, in percent"
+
+msgid "questions differ"
+msgstr "questions differ"
+
+msgid "Edit answers"
+msgstr "Edit answers"
+
+msgid "Remove"
+msgstr "Remove"
+
+msgid "No personas: every response uses the shared settings."
+msgstr "No personas: every response uses the shared settings."
+
+msgid "Personas saved."
+msgstr "Personas saved."
+
+msgid "Differs for this persona"
+msgstr "Differs for this persona"
+
+msgid "Use shared settings"
+msgstr "Use shared settings"
+
+msgid "Editing answers for"
+msgstr "Editing answers for"
+
+msgid "Persona"
+msgstr "Persona"
+
+msgid "Save or cancel the persona answers first."
+msgstr "Save or cancel the persona answers first."
+
+msgid "Describe who answers the form first."
+msgstr "Describe who answers the form first."
+
+msgid "Proposal applied. Simulate the batch to check it."
+msgstr "Proposal applied. Simulate the batch to check it."

@@ -188,6 +188,16 @@ def test_too_large_prompt_is_refused_not_truncated(client, storage, monkeypatch)
     assert response.get_json()["code"] == "prompt_too_large"
 
 
+def test_persona_and_autopilot_script_never_writes_html():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "static" / "js" / "form_filling"
+              / "personas_autopilot.js").read_text(encoding="utf-8")
+
+    assert "innerHTML" not in source
+    assert "textContent" in source
+
+
 def test_api_key_never_reaches_the_logs_on_unexpected_errors(client, storage, monkeypatch, caplog):
     class Exploding:
         def __init__(self, api_key):

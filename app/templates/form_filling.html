@@ -79,6 +79,13 @@
             <div class="card shadow-sm p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
                     <h3 class="card-title">{{ _('Step 2: Configure Form Answers') }}</h3>
+                    <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="autopilot-toggle" aria-expanded="false" aria-controls="autopilot-panel">
+                        <i class="fas fa-wand-magic-sparkles me-1" aria-hidden="true"></i>{{ _('AI Autopilot') }}
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="personas-toggle" aria-expanded="false" aria-controls="personas-panel">
+                        <i class="fas fa-users me-1" aria-hidden="true"></i>{{ _('Personas') }}
+                    </button>
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="template-menu" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-layer-group me-1" aria-hidden="true"></i>{{ _('Template') }}
@@ -92,6 +99,70 @@
                             <li id="template-saved-placeholder"><span class="dropdown-item-text small text-muted">{{ _('No saved templates yet.') }}</span></li>
                         </ul>
                         <input type="file" id="template-file" accept=".json,application/json" class="d-none">
+                    </div>
+                    </div>
+                </div>
+
+                <!-- AI Autopilot -->
+                <section id="autopilot-panel" class="tool-panel d-none" aria-labelledby="autopilot-title">
+                    <h4 class="section-title" id="autopilot-title">{{ _('AI Autopilot') }}</h4>
+                    <p class="small text-muted">{{ _('Describe who answers this form. Gemini proposes answer settings for every question, using your own API key. Nothing changes until you choose what to apply.') }}</p>
+                    <label for="autopilot-audience" class="form-label small fw-semibold">{{ _('Who answers this form?') }}</label>
+                    <textarea id="autopilot-audience" class="form-control mb-2" rows="3" maxlength="2000"
+                              placeholder="{{ _('For example: university students in Hanoi, mostly 18-22, who drink coffee daily') }}"></textarea>
+                    <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="autopilot-personas">
+                            <label class="form-check-label small" for="autopilot-personas">{{ _('Also propose personas') }}</label>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" id="autopilot-generate">
+                            <i class="fas fa-wand-magic-sparkles me-1" aria-hidden="true"></i>{{ _('Propose settings') }}
+                        </button>
+                    </div>
+                    <div id="autopilot-error" class="state-error d-none" role="alert"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i><span></span></div>
+                    <div id="autopilot-result" class="d-none">
+                        <ul id="autopilot-warnings" class="small text-warning mb-2"></ul>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead><tr>
+                                    <th scope="col"><input class="form-check-input" type="checkbox" id="autopilot-all" checked aria-label="{{ _('Select all') }}"></th>
+                                    <th scope="col">{{ _('Question') }}</th>
+                                    <th scope="col">{{ _('Now') }}</th>
+                                    <th scope="col">{{ _('Proposed') }}</th>
+                                </tr></thead>
+                                <tbody id="autopilot-rows"></tbody>
+                            </table>
+                        </div>
+                        <div id="autopilot-personas-box" class="d-none mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="autopilot-apply-personas" checked>
+                                <label class="form-check-label small" for="autopilot-apply-personas">{{ _('Replace personas with the proposed ones:') }}</label>
+                            </div>
+                            <ul id="autopilot-persona-list" class="small mb-0"></ul>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" id="autopilot-apply">{{ _('Apply selected') }}</button>
+                    </div>
+                </section>
+
+                <!-- Personas -->
+                <section id="personas-panel" class="tool-panel d-none" aria-labelledby="personas-title">
+                    <h4 class="section-title" id="personas-title">{{ _('Personas') }}</h4>
+                    <p class="small text-muted">{{ _('Split responses between groups of respondents. Each persona gets a share of the batch and can answer some questions differently; other questions use the shared settings.') }}</p>
+                    <div id="persona-list" class="mb-2"></div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="persona-add">
+                            <i class="fas fa-plus me-1" aria-hidden="true"></i>{{ _('Add persona') }}
+                        </button>
+                        <span class="small" id="persona-total"></span>
+                        <button type="button" class="btn btn-primary btn-sm ms-auto" id="persona-save">{{ _('Save personas') }}</button>
+                    </div>
+                </section>
+
+                <div id="persona-editing-banner" class="persona-banner d-none" role="status">
+                    <span><i class="fas fa-user-pen me-1" aria-hidden="true"></i><span id="persona-editing-name"></span></span>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="persona-edit-cancel">{{ _('Cancel') }}</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="persona-edit-done">{{ _('Save persona answers') }}</button>
                     </div>
                 </div>
 
@@ -418,7 +489,23 @@ window.i18n = {
     templateReasonOptions: {{ _('options differ') | tojson }},
     templateMatched: {{ _('Will be updated') | tojson }},
     templateUnmatched: {{ _('Not applied') | tojson }},
-    templateMissing: {{ _('Not in the template (unchanged)') | tojson }}
+    templateMissing: {{ _('Not in the template (unchanged)') | tojson }},
+    requestFailed: {{ _('Request failed.') | tojson }},
+    personaName: {{ _('Persona name') | tojson }},
+    personaWeight: {{ _('Share of responses, in percent') | tojson }},
+    overriddenQuestions: {{ _('questions differ') | tojson }},
+    editAnswers: {{ _('Edit answers') | tojson }},
+    remove: {{ _('Remove') | tojson }},
+    noPersonas: {{ _('No personas: every response uses the shared settings.') | tojson }},
+    total: {{ _('Total') | tojson }},
+    personasSaved: {{ _('Personas saved.') | tojson }},
+    overridden: {{ _('Differs for this persona') | tojson }},
+    resetToShared: {{ _('Use shared settings') | tojson }},
+    editingPersona: {{ _('Editing answers for') | tojson }},
+    persona: {{ _('Persona') | tojson }},
+    finishPersonaFirst: {{ _('Save or cancel the persona answers first.') | tojson }},
+    describeAudience: {{ _('Describe who answers the form first.') | tojson }},
+    proposalApplied: {{ _('Proposal applied. Simulate the batch to check it.') | tojson }}
 };
 </script>
 <script src="{{ url_for('static', filename='vendor/chart.js-4.5.1/chart.umd.min.js') }}"></script>
@@ -430,6 +517,7 @@ window.i18n = {
 <script type="module" src="{{ url_for('static', filename='js/form_filling/submission.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/simulation.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/config_tools.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form_filling/personas_autopilot.js') }}"></script>
 
 <!-- Driver.js Product Tour -->
 <script src="{{ url_for('static', filename='vendor/driver.js-1.3.1/driver.js.iife.js') }}"></script>

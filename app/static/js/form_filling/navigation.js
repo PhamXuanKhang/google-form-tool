@@ -98,6 +98,12 @@ function syncSettingsFromExistingFormCount() {
 }
 
 async function saveManualConfiguration() {
+    // The cards show a persona's answers while it is being edited; saving
+    // them now would overwrite the shared settings.
+    if (window.isEditingPersona?.()) {
+        showPopup(t("finishPersonaFirst", "Save or cancel the persona answers first."), "warning");
+        return false;
+    }
     if (!window.currentFormId) {
         showPopup(t("pleaseExtractFormFirst", "Please extract a form first."));
         return false;

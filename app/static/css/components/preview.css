@@ -149,6 +149,58 @@
     }
 }
 
+/* Step 2 tool panels: AI Autopilot and personas */
+.tool-panel {
+    margin: var(--gf-space-3) 0 var(--gf-space-4);
+    padding: var(--gf-space-4);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-surface-2);
+    animation: gf-fade-in var(--gf-duration) var(--gf-ease);
+}
+
+.persona-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--gf-space-2);
+    padding: var(--gf-space-2) 0;
+    border-bottom: 1px solid var(--gf-border);
+}
+
+.persona-row input:first-child {
+    flex: 1 1 180px;
+}
+
+.persona-weight {
+    width: 80px;
+}
+
+.persona-banner {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gf-space-2);
+    margin-bottom: var(--gf-space-3);
+    padding: var(--gf-space-3) var(--gf-space-4);
+    border: 1px solid var(--gf-accent);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-accent-soft);
+    color: var(--gf-accent-text);
+    font-weight: 600;
+}
+
+.override-tools {
+    display: flex;
+    align-items: center;
+    gap: var(--gf-space-2);
+    margin-bottom: var(--gf-space-2);
+}
+
 /* Form Filling: extracted form preview */
 .page-block {
     background-color: var(--gf-surface);

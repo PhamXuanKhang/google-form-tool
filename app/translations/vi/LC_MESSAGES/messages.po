@@ -720,3 +720,99 @@ msgstr "Không áp dụng"
 
 msgid "Not in the template (unchanged)"
 msgstr "Không có trong template (giữ nguyên)"
+
+msgid "AI Autopilot"
+msgstr "AI Autopilot"
+
+msgid "Personas"
+msgstr "Persona"
+
+msgid "Describe who answers this form. Gemini proposes answer settings for every question, using your own API key. Nothing changes until you choose what to apply."
+msgstr "Mô tả nhóm người trả lời form. Gemini đề xuất cấu hình cho mọi câu hỏi bằng API key của bạn. Không có gì thay đổi cho đến khi bạn chọn áp dụng."
+
+msgid "Who answers this form?"
+msgstr "Ai trả lời form này?"
+
+msgid "For example: university students in Hanoi, mostly 18-22, who drink coffee daily"
+msgstr "Ví dụ: sinh viên đại học ở Hà Nội, chủ yếu 18-22 tuổi, uống cà phê hằng ngày"
+
+msgid "Also propose personas"
+msgstr "Đề xuất cả persona"
+
+msgid "Propose settings"
+msgstr "Đề xuất cấu hình"
+
+msgid "Select all"
+msgstr "Chọn tất cả"
+
+msgid "Question"
+msgstr "Câu hỏi"
+
+msgid "Now"
+msgstr "Hiện tại"
+
+msgid "Proposed"
+msgstr "Đề xuất"
+
+msgid "Replace personas with the proposed ones:"
+msgstr "Thay persona bằng các persona được đề xuất:"
+
+msgid "Apply selected"
+msgstr "Áp dụng mục đã chọn"
+
+msgid "Split responses between groups of respondents. Each persona gets a share of the batch and can answer some questions differently; other questions use the shared settings."
+msgstr "Chia lượt gửi cho các nhóm người trả lời. Mỗi persona nhận một phần đợt gửi và có thể trả lời một số câu khác đi; các câu còn lại dùng cấu hình chung."
+
+msgid "Add persona"
+msgstr "Thêm persona"
+
+msgid "Save personas"
+msgstr "Lưu persona"
+
+msgid "Save persona answers"
+msgstr "Lưu câu trả lời của persona"
+
+msgid "Request failed."
+msgstr "Yêu cầu thất bại."
+
+msgid "Persona name"
+msgstr "Tên persona"
+
+msgid "Share of responses, in percent"
+msgstr "Tỉ lệ lượt gửi, tính theo phần trăm"
+
+msgid "questions differ"
+msgstr "câu khác cấu hình chung"
+
+msgid "Edit answers"
+msgstr "Sửa câu trả lời"
+
+msgid "Remove"
+msgstr "Xoá"
+
+msgid "No personas: every response uses the shared settings."
+msgstr "Chưa có persona: mọi lượt dùng cấu hình chung."
+
+msgid "Personas saved."
+msgstr "Đã lưu persona."
+
+msgid "Differs for this persona"
+msgstr "Khác với cấu hình chung"
+
+msgid "Use shared settings"
+msgstr "Về cấu hình chung"
+
+msgid "Editing answers for"
+msgstr "Đang sửa câu trả lời cho"
+
+msgid "Persona"
+msgstr "Persona"
+
+msgid "Save or cancel the persona answers first."
+msgstr "Hãy lưu hoặc huỷ câu trả lời của persona trước."
+
+msgid "Describe who answers the form first."
+msgstr "Hãy mô tả nhóm người trả lời trước."
+
+msgid "Proposal applied. Simulate the batch to check it."
+msgstr "Đã áp dụng đề xuất. Hãy mô phỏng đợt gửi để kiểm tra."
