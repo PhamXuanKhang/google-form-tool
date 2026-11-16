@@ -239,6 +239,41 @@ def test_form_saved_by_version_one_runs(started, run_store, monkeypatch):
     assert run_store.get_run(data["run_id"])["status"] == "completed"
 
 
+def test_unprefillable_form_fails_without_leaving_a_run(started, run_store):
+    question = started.storage.form.response_config.pages[0].questions[0]
+    question.question_id = "name_without_entry"
+    question.entry_id = None
+
+    response = started(num_submissions=2, concurrent_threads=1)
+
+    assert response.status_code == 500
+    assert run_store.list_runs() == []
+    assert "form_run" not in submission_manager.active_submitters
+
+
+def test_exception_during_a_row_records_unknown_not_failed(started, run_store, monkeypatch):
+    def explode(self, driver, url):
+        raise RuntimeError("browser crashed mid-submit")
+
+    monkeypatch.setattr(FormSubmitter, "_submit_prefilled_url", explode)
+
+    data = started(num_submissions=2, concurrent_threads=1, seed=1).get_json()
+    rows = run_store.load_rows(data["run_id"])
+
+    assert [row["status"] for row in rows] == ["unknown", "unknown"]
+    assert rows[0]["error"] == "RuntimeError"
+
+
+def test_status_includes_run_id(started, client, monkeypatch):
+    monkeypatch.setattr(FormSubmitter, "_submit_prefilled_url", lambda self, driver, url: True)
+
+    run_id = started(num_submissions=2, concurrent_threads=1).get_json()["run_id"]
+
+    assert client.get("/submission_status?form_id=form_run").get_json()["run_id"] == run_id
+    all_status = client.get("/submission_status").get_json()["active_submissions"]
+    assert all_status["form_run"]["run_id"] == run_id
+
+
 def test_submitter_module_constants_match_plan_modes():
     assert form_submitter_module.SUBMISSION_MODE_PREFILL == "prefill_link"
     assert form_submitter_module.SUBMISSION_MODE_DOM_FILL == "dom_fill"

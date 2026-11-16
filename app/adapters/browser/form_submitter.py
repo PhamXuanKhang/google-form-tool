@@ -382,15 +382,17 @@ class FormSubmitter:
                         success = self._submit_single_form(driver)
                     if not success:
                         error = "submit_failed"
+                    outcome = "success" if success else "failed"
                 except Exception as e:
+                    # The form may already have been submitted when this
+                    # raised, so the outcome is unknown rather than failed.
                     success = False
+                    outcome = "unknown"
                     error = type(e).__name__
                 finished_at = datetime.now().isoformat(timespec="milliseconds")
 
                 self._increment_status("success" if success else "failed")
-                self._report_row(
-                    on_row_result, index, "success" if success else "failed", error, started_at, finished_at
-                )
+                self._report_row(on_row_result, index, outcome, error, started_at, finished_at)
 
                 if self._row_queue and not self.stop_flag.is_set():
                     time.sleep(random.uniform(min_delay, max_delay))

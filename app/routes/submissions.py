@@ -88,17 +88,6 @@ def start_submission():
                 responses_list=responses_list,
                 responses=responses,
             )
-            run = get_run_store().create_run(
-                form_id=form_id,
-                mode=submission_mode,
-                seed=plan.seed,
-                threads=concurrent_threads,
-                min_delay=min_delay,
-                max_delay=max_delay,
-                rows=[row.to_dict() for row in plan.rows],
-                target_snapshot=target_snapshot(form),
-            )
-
             submitter = FormSubmitter(
                 form=form,
                 chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
@@ -106,10 +95,9 @@ def start_submission():
                 headless=True
             )
             submitter.plan = plan
-            submitter.run_id = run["run_id"]
-            with submission_manager.active_submitters_lock:
-                submission_manager.active_submitters[form_id] = submitter
 
+            # Build prefill links before recording the run, so a form that
+            # cannot be prefilled fails here without leaving a pending run.
             prepared_count = num_submissions
             skipped_summary = {}
             debug_prefill_sample = None
@@ -120,6 +108,20 @@ def start_submission():
                     responses_list=responses_list,
                     include_debug_sample=Config.PREFILL_DEBUG_SAMPLE,
                 )
+
+            run = get_run_store().create_run(
+                form_id=form_id,
+                mode=submission_mode,
+                seed=plan.seed,
+                threads=concurrent_threads,
+                min_delay=min_delay,
+                max_delay=max_delay,
+                rows=[row.to_dict() for row in plan.rows],
+                target_snapshot=target_snapshot(form),
+            )
+            submitter.run_id = run["run_id"]
+            with submission_manager.active_submitters_lock:
+                submission_manager.active_submitters[form_id] = submitter
 
             warnings = submission_manager.format_skipped_type_warning(skipped_summary)
 
@@ -198,6 +200,14 @@ def stop_submission():
         return jsonify({"success": True, "message": f"Stopped {stopped} active submission(s)"})
 
 
+def _status_with_run(submitter):
+    status = submitter.get_status()
+    run_id = getattr(submitter, "run_id", None)
+    if run_id:
+        status["run_id"] = run_id
+    return status
+
+
 @bp.route('/submission_status', methods=['GET'])
 def submission_status():
     """
@@ -214,10 +224,10 @@ def submission_status():
             submitter = submission_manager.active_submitters.get(form_id)
         if not submitter:
             return jsonify({"running": False, "message": f"No submission for form {form_id}"})
-        return jsonify(submitter.get_status())
+        return jsonify(_status_with_run(submitter))
     else:
         submission_manager.cleanup_finished_submitters()
         with submission_manager.active_submitters_lock:
             submitters = dict(submission_manager.active_submitters)
-        all_status = {fid: sub.get_status() for fid, sub in submitters.items()}
+        all_status = {fid: _status_with_run(sub) for fid, sub in submitters.items()}
         return jsonify({"active_submissions": all_status, "count": len(all_status)})
