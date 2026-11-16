@@ -54,10 +54,11 @@ Acceptance criteria:
 4. Status can be polled per form or for all active submissions; a finished submission's final status is kept for 60 seconds.
 5. A running submission can be stopped by form id, or all at once when no id is given.
 6. Each submission result is saved to the form's history.
+7. Every batch is planned before it starts and saved as a run: the response includes `run_id` and `seed`, sending the same `seed` again plans the same answers, and each response's answers and outcome are recorded. Direct mode draws each response independently; prefill mode keeps exact per-question quotas.
 
 Routes: `/start_submission`, `/stop_submission`, `/submission_status`
-Modules: `app/adapters/browser/form_submitter.py`, `app/domain/prefill_link_generator.py`, `app/domain/form_processor.py`
-Tests: `tests/test_form_submitter.py`, `tests/test_submission_status_retention.py`, `tests/test_prefill_link_generator.py`, `tests/test_prefill_submission.py`, `tests/test_submission_persistence.py`
+Modules: `app/adapters/browser/form_submitter.py`, `app/domain/prefill_link_generator.py`, `app/domain/form_processor.py`, `app/domain/response_plan.py`, `app/services/run_store.py`
+Tests: `tests/test_form_submitter.py`, `tests/test_submission_status_retention.py`, `tests/test_prefill_link_generator.py`, `tests/test_prefill_submission.py`, `tests/test_submission_persistence.py`, `tests/test_response_plan.py`, `tests/test_run_store.py`, `tests/test_planned_submission.py`
 
 ## US-004 Generate AI text answers
 

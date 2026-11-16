@@ -13,9 +13,10 @@ This project is a local desktop app for extracting, configuring, and submitting 
 
 - Extract: `app/routes/forms.py` receives a Google Form URL and delegates browser extraction to `app/adapters/browser/form_extractor.py`.
 - Configure: templates and JS under `app/templates/` and `app/static/js/form_filling/` render question configs and validate client-side input.
-- Submit: `app/routes/submissions.py` validates requests and starts `app/services/submission_manager.py`, which tracks active submitters and runs `app/adapters/browser/form_submitter.py` workers for direct or prefilled URL submission.
+- Submit: `app/routes/submissions.py` validates requests, builds a seeded plan with `app/domain/response_plan.py` (the exact answer rows to send), records it as a run, and starts `app/services/submission_manager.py`. The manager tracks active submitters and runs `app/adapters/browser/form_submitter.py` workers, which take plan rows for direct or prefilled URL submission and report each row's result.
 - Prefill: `app/domain/prefill_link_generator.py` builds Google Forms prefill URLs from configured answers.
-- Storage: `app/services/storage_service.py` persists forms and submission history for the local user.
+- Storage: `app/services/storage_service.py` persists forms and submission history in TinyDB (`db.json`). `app/services/run_store.py` keeps one header per run in the `runs` table and every row in an append-only `<APP_DATA>/runs/<run_id>.jsonl`, so row updates never rewrite `db.json`. See `docs/decisions/0004-run-store.md`.
+- Runtime: on startup the backend writes `<APP_DATA>/runtime.json` (port, pid) for local clients (`app/services/runtime_info.py`).
 - Diagnostics: the `/healthz` and diagnostics routes expose runtime health for desktop support.
 - Landing: `landing/` is a separate static site deployed on its own (for example to Vercel). It is not part of the packaged app; its release link points to GitHub Releases latest.
 
