@@ -3,7 +3,7 @@
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/preview.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/spinner.css') }}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/driver.js-1.3.1/driver.css') }}">
 {% endblock %}
 {% block content %}
 <div id="spinner" style="display: none;" class="spinner-overlay">
@@ -330,8 +330,7 @@ window.i18n = {
     aiOnlyForText: {{ _('AI Generate only supports text-like questions in this beta.') | tojson }}
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='vendor/chart.js-4.5.1/chart.umd.min.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/main.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/navigation.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/question_config.js') }}"></script>
@@ -339,7 +338,7 @@ window.i18n = {
 <script type="module" src="{{ url_for('static', filename='js/form_filling/submission.js') }}"></script>
 
 <!-- Driver.js Product Tour -->
-<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+<script src="{{ url_for('static', filename='vendor/driver.js-1.3.1/driver.js.iife.js') }}"></script>
 <script>
 (function () {
   const TOUR_KEY = 'gfat_tour_v1';
