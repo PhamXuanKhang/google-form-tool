@@ -67,6 +67,8 @@ EXPECTED_ROUTES = {
     ("/forms/<form_id>/personas", ("GET",), "main.get_personas"),
     ("/forms/<form_id>/personas", ("POST",), "main.set_personas"),
     ("/ai/propose_config", ("POST",), "main.ai_propose_config"),
+    ("/runs/<run_id>/pause", ("POST",), "main.pause_run"),
+    ("/runs/<run_id>/resume", ("POST",), "main.resume_run"),
 }
 
 
@@ -347,4 +349,4 @@ def test_main_blueprint_routes_match_expected_table(client):
         actual.add((rule.rule, methods, rule.endpoint))
 
     assert actual == EXPECTED_ROUTES
-    assert len(actual) == 40
+    assert len(actual) == 42

@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_TOOLS = {
     "app_status", "list_forms", "extract_form", "get_form", "set_answer_config", "simulate",
     "start_run", "run_status", "stop_run", "list_runs", "get_report", "retry_failed",
-    "apply_preset", "export_config", "import_config", "list_templates", "get_personas", "set_personas",
+    "apply_preset", "export_config", "import_config", "list_templates", "get_personas", "set_personas", "pause_run", "resume_run",
 }
 
 FORM_JSON = {
@@ -114,6 +114,11 @@ def test_stop_run_without_form_id_is_rejected_before_the_backend():
     ("retry_failed", {"run_id": "abc"}, "POST", "/runs/abc/retry", {"include_unknown": False}),
     ("get_personas", {"form_id": "f1"}, "GET", "/forms/f1/personas", None),
     ("set_personas", {"form_id": "f1", "personas": []}, "POST", "/forms/f1/personas", {"personas": []}),
+    ("pause_run", {"run_id": "abc"}, "POST", "/runs/abc/pause", None),
+    ("resume_run", {"run_id": "abc"}, "POST", "/runs/abc/resume", None),
+    ("start_run", {"form_id": "f1", "num_submissions": 5, "window_minutes": 90}, "POST", "/start_submission",
+     {"form_id": "f1", "num_submissions": 5, "concurrent_threads": 1, "min_delay": 1, "max_delay": 5,
+      "submission_mode": "prefill_link", "schedule": {"window_minutes": 90}}),
 ])
 def test_each_tool_calls_its_route(name, arguments, method, path, body):
     backend = FakeBackend({("GET", "/forms/"): (200, {"form": FORM_JSON})})

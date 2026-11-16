@@ -39,8 +39,12 @@ goes through the running app, so the app's own limits and checks apply.
    from the simulation, so the run sends exactly what was previewed. Default to 1 thread and
    a few seconds of delay unless the user asks otherwise. `prefill_link` is the default mode;
    `dom_fill` fills the form in the browser and is slower.
+   To send over a period instead of all at once, pass `window_minutes`; the app must stay open
+   for the whole window.
 6. Follow progress with `run_status` (do not poll more than every few seconds). Use `stop_run`
-   with the form id if the user wants to stop.
+   with the form id if the user wants to stop. A scheduled run can be paused with `pause_run`
+   and continued with `resume_run`, also after the app was closed and reopened (it then shows as
+   interrupted); responses whose outcome is unknown are never sent again automatically.
 7. When it finishes, `get_report` with the `run_id` (use `list_runs` to find earlier runs of a
    form): share success and failure counts, failure
    reasons, and actual against target. If responses failed, offer `retry_failed`. Only pass

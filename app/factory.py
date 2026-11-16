@@ -81,4 +81,19 @@ def create_app(testing: bool = False):
 
     app.register_blueprint(bp)
 
+    if not testing:
+        _recover_unfinished_runs()
+
     return app
+
+
+def _recover_unfinished_runs() -> None:
+    """The desktop shell stops the backend with a hard kill, so runs left
+    unfinished are expected. Mark them interrupted; never resend anything."""
+    try:
+        from app.services import get_run_store, submission_manager
+        from app.services.drip_runner import recover_interrupted_runs
+
+        recover_interrupted_runs(get_run_store(), submission_manager.live_run_ids())
+    except Exception:
+        logger.exception("Could not check for interrupted runs at startup")

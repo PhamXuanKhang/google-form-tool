@@ -11,6 +11,9 @@ from app.domain.run_report import retry_candidates, summarize_plan, summarize_ru
 from app.logging_config import logger
 from app.routes import bp, json_error
 from app.services import get_run_store, get_storage_service, history_export, submission_manager, upload_cache
+import random
+
+from app.services.drip_runner import DripRunner, schedule_times, utc_now
 from app.services.run_store import ROW_IN_FLIGHT, ROW_RESULT_STATUSES, ROW_PLANNED, ROW_UNKNOWN, is_valid_run_id
 
 SIMULATION_SAMPLE_ROWS = 20
@@ -84,13 +87,77 @@ def _load_run(run_id):
     if not header:
         return None, None, json_error("Run not found", 404)
     rows = store.load_rows(run_id)
-    if run_id not in submission_manager.live_run_ids():
+    if run_id not in submission_manager.live_run_ids() and header.get("status") != "paused":
         for row in rows:
             if row["status"] == ROW_IN_FLIGHT:
                 row["status"] = ROW_UNKNOWN
         if header.get("status") in ("pending", "running"):
             header["status"] = "interrupted"
     return header, rows, None
+
+
+def _live_runner(run_id):
+    with submission_manager.active_submitters_lock:
+        for submitter in submission_manager.active_submitters.values():
+            if getattr(submitter, "run_id", None) == run_id and isinstance(submitter, DripRunner):
+                return submitter
+    return None
+
+
+@bp.route('/runs/<run_id>/pause', methods=['POST'])
+def pause_run(run_id):
+    """Stop taking new responses of a scheduled run; responses being sent finish."""
+    if not is_valid_run_id(run_id):
+        return json_error("Invalid run id")
+    runner = _live_runner(run_id)
+    if runner is None:
+        if get_run_store().get_run(run_id) is None:
+            return json_error("Run not found", 404)
+        return json_error("Only a scheduled run that is running can be paused.", 409)
+    runner.pause()
+    return jsonify({"success": True, "run_id": run_id, "status": "paused"})
+
+
+@bp.route('/runs/<run_id>/resume', methods=['POST'])
+def resume_run(run_id):
+    """Continue a paused or interrupted scheduled run over what is left of its window.
+
+    Responses whose outcome is unknown are never sent again here.
+    """
+    header, rows, error = _load_run(run_id)
+    if error:
+        return error
+    if not header.get("schedule"):
+        return json_error("Only scheduled runs can be resumed; use retry for other runs.")
+    if header.get("status") not in ("paused", "interrupted"):
+        return json_error("Only a paused or interrupted run can be resumed.", 409)
+    with get_storage_service() as storage:
+        form = storage.get_form_by_id(header["form_id"])
+    if not form:
+        return json_error("Form not found", 404)
+
+    store = get_run_store()
+    runner = DripRunner(store=store, header=header,
+                        send_batch=submission_manager.send_batch_factory(form, header))
+    try:
+        submission_manager.register_run(form.id, runner, lambda: header)
+    except submission_manager.RunAlreadyActive:
+        return json_error("A submission is already running for this form.", 409)
+    try:
+        rows = store.load_rows(run_id)  # stored states, not the display view
+        for row in rows:
+            if row["status"] == ROW_IN_FLIGHT:
+                store.record_result(run_id, row["index"], ROW_UNKNOWN, "interrupted", row.get("started_at"), None)
+        new_times = schedule_times(header, rows, utc_now(), random.Random(f"{run_id}:resume:{utc_now().isoformat()}"))
+        store.record_schedule(run_id, new_times)
+        store.update_run(run_id, status="running")
+        runner.load()
+    except Exception:
+        runner._run_live = False
+        logger.exception("Could not resume run %s", run_id)
+        return json_error("Could not resume the run.", 500)
+    submission_manager.start_drip_thread(form, runner)
+    return jsonify({"success": True, "run_id": run_id, "status": "running", "pending": len(new_times)})
 
 
 def _header_summary(header):
@@ -100,13 +167,16 @@ def _header_summary(header):
 @bp.route('/runs', methods=['GET'])
 def list_runs():
     form_id = request.args.get('form_id')
-    if not form_id:
+    status = request.args.get('status')
+    if not form_id and not status:
         return json_error("No form_id provided")
     live = submission_manager.live_run_ids()
     runs = []
     for header in get_run_store().list_runs(form_id):
         if header["run_id"] not in live and header.get("status") in ("pending", "running"):
             header["status"] = "interrupted"
+        if status and header.get("status") != status:
+            continue
         runs.append(_header_summary(header))
     return jsonify({"success": True, "form_id": form_id, "runs": runs})
 

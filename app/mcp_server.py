@@ -234,6 +234,10 @@ def create_server(request: Optional[RequestFn] = None) -> FastMCP:
         max_delay: float = Field(default=5, ge=0),
         submission_mode: SubmissionMode = "prefill_link",
         seed: Optional[int] = Field(default=None, ge=0, description="Seed from simulate to send exactly that plan"),
+        window_minutes: Optional[float] = Field(
+            default=None, ge=1, le=10080,
+            description="Spread the responses over this many minutes instead of sending them now (1 to 10080). The app must stay open.",
+        ),
     ) -> Dict[str, Any]:
         """Start submitting a batch to the real Google Form. Only call after the user has agreed."""
         body: Dict[str, Any] = {
@@ -243,8 +247,11 @@ def create_server(request: Optional[RequestFn] = None) -> FastMCP:
         }
         if seed is not None:
             body["seed"] = seed
+        if window_minutes is not None:
+            body["schedule"] = {"window_minutes": window_minutes}
         data = await call("POST", "/start_submission", body)
-        return {key: data.get(key) for key in ("run_id", "seed", "prepared_count", "submission_mode", "warnings", "message")}
+        keys = ("run_id", "seed", "prepared_count", "submission_mode", "warnings", "message", "schedule")
+        return {key: data.get(key) for key in keys if key in data}
 
     @server.tool()
     async def run_status(form_id: str = Field(min_length=1)) -> Dict[str, Any]:
@@ -255,6 +262,21 @@ def create_server(request: Optional[RequestFn] = None) -> FastMCP:
     async def stop_run(form_id: str = Field(min_length=1, description="Form whose run should stop")) -> Dict[str, Any]:
         """Stop the running batch of one form."""
         return await call("POST", "/stop_submission", {"form_id": form_id})
+
+    @server.tool()
+    async def pause_run(run_id: str = Field(min_length=1)) -> Dict[str, Any]:
+        """Pause a scheduled run: no new responses are sent until it is resumed."""
+        data = await call("POST", f"/runs/{quoted(run_id)}/pause")
+        data.pop("success", None)
+        return data
+
+    @server.tool()
+    async def resume_run(run_id: str = Field(min_length=1)) -> Dict[str, Any]:
+        """Resume a paused or interrupted scheduled run over what is left of its window.
+        Responses whose outcome is unknown are not sent again."""
+        data = await call("POST", f"/runs/{quoted(run_id)}/resume")
+        data.pop("success", None)
+        return data
 
     @server.tool()
     async def list_runs(form_id: str = Field(min_length=1)) -> Dict[str, Any]:

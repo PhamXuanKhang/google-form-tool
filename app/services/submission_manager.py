@@ -236,6 +236,84 @@ def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, ret
     return run
 
 
+MIN_WINDOW_MINUTES = 1
+MAX_WINDOW_MINUTES = 7 * 24 * 60
+
+
+def parse_schedule(value):
+    """None for a normal run, else the window in seconds; raises ValueError."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("schedule must be an object like {\"window_minutes\": 60}.")
+    minutes = value.get("window_minutes")
+    if isinstance(minutes, bool) or not isinstance(minutes, (int, float)) \
+            or not MIN_WINDOW_MINUTES <= minutes <= MAX_WINDOW_MINUTES:
+        raise ValueError(f"window_minutes must be a number from {MIN_WINDOW_MINUTES} to {MAX_WINDOW_MINUTES}.")
+    return float(minutes) * 60
+
+
+def make_send_batch(form, header):
+    """Send a batch of planned rows through the normal submitter path."""
+    def send(rows, on_row_result):
+        from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
+        from app.adapters.browser.form_submitter import FormSubmitter
+        from app.config import Config
+        from app.domain.response_plan import PlanRow, ResponsePlan
+
+        submitter = FormSubmitter(
+            form=form,
+            chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
+            chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
+            headless=True,
+        )
+        submitter.plan = ResponsePlan(seed=header["seed"], mode=header["mode"], rows=[
+            PlanRow(index=row["index"], answers=row["answers"], skipped=row.get("skipped") or [],
+                    persona_id=row.get("persona_id"))
+            for row in rows
+        ])
+        submitter.submit_plan(
+            concurrent_threads=int(header.get("threads") or 1),
+            min_delay=float(header.get("min_delay") or 0),
+            max_delay=float(header.get("max_delay") or 0),
+            on_row_result=on_row_result,
+        )
+    return send
+
+
+# Replaced in tests to avoid real browsers.
+send_batch_factory = make_send_batch
+
+
+def start_drip_thread(form, runner):
+    """Run a registered scheduled run in the background and record its summary."""
+    def job():
+        try:
+            final = runner.run()
+            status = runner.get_status()
+            if final in ("completed", "stopped") and status["completed"]:
+                from app.models import Submission
+
+                with get_storage_service() as storage:
+                    storage.add_submission(form.id, Submission(
+                        num_submission=status["completed"],
+                        concurrent_thread=int(runner.header.get("threads") or 1),
+                        time_used=status["elapsed_time"],
+                        success_rate=round(status["success_rate"], 2),
+                        network_status="Scheduled",
+                    ))
+        except Exception:
+            logger.exception("Scheduled run job failed for form %s", form.id)
+        finally:
+            runner._finished_at = time.monotonic()
+            runner._run_live = False
+
+    thread = threading.Thread(target=job)
+    thread.daemon = True
+    thread.start()
+    return thread
+
+
 def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None, upload_id=None):
     """Internal helper: Runs submission in background thread"""
     try:

@@ -87,7 +87,8 @@ class RunStore:
         self._append_lines(run_id, (
             {"kind": "plan", "index": row["index"], "answers": row["answers"],
              "skipped": row.get("skipped", []),
-             **({"persona_id": row["persona_id"]} if row.get("persona_id") else {})}
+             **({"persona_id": row["persona_id"]} if row.get("persona_id") else {}),
+             **({"due_at": row["due_at"]} if row.get("due_at") else {})}
             for row in rows
         ))
         header = {
@@ -154,6 +155,13 @@ class RunStore:
             "started_at": started_at, "finished_at": finished_at, "at": _now(),
         }])
 
+    def record_schedule(self, run_id: str, due_at_by_index: Dict[int, str]) -> None:
+        """Give rows new send times (scheduled runs)."""
+        self._append_lines(run_id, (
+            {"kind": "schedule", "index": index, "due_at": due_at, "at": _now()}
+            for index, due_at in due_at_by_index.items()
+        ))
+
     def load_rows(self, run_id: str) -> List[Dict[str, Any]]:
         """Return every row of a run, merged by index, ordered by index.
 
@@ -182,12 +190,15 @@ class RunStore:
                         "answers": record.get("answers") or {},
                         "skipped": record.get("skipped") or [],
                         "persona_id": record.get("persona_id"),
+                        "due_at": record.get("due_at"),
                         "status": ROW_PLANNED,
                         "error": None,
                         "started_at": None,
                         "finished_at": None,
                         "attempts": 0,
                     }
+                elif record.get("kind") == "schedule" and index in rows:
+                    rows[index]["due_at"] = record.get("due_at")
                 elif record.get("kind") == "result" and index in rows:
                     row = rows[index]
                     row["status"] = record.get("status")

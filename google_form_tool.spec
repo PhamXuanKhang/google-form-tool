@@ -104,6 +104,7 @@ a = Analysis(
         "app.domain.personas",
         "app.domain.edit_validation",
         "app.domain.autopilot_proposal",
+        "app.domain.drip_schedule",
         "app.adapters",
         "app.adapters.browser",
         "app.adapters.browser.driver_manager",
@@ -119,6 +120,7 @@ a = Analysis(
         "app.services.history_export",
         "app.services.run_store",
         "app.services.template_store",
+        "app.services.drip_runner",
         "app.runtime_info",
         # Misc runtime deps
         "email.mime.multipart",
