@@ -86,8 +86,41 @@ function getFormSettings() {
         settings.use_file_data = true;
     }
 
+    if (document.getElementById("settings-schedule")?.checked) {
+        settings.schedule = { window_minutes: parseFloat(document.getElementById("settings-window-minutes")?.value) };
+    }
+
     return settings;
 }
+
+/** "About 1 every 1.8 minutes, done around 14:30" for the schedule fields. */
+function updateSchedulePreview() {
+    const on = document.getElementById("settings-schedule")?.checked;
+    document.getElementById("settings-schedule-fields")?.classList.toggle("d-none", !on);
+    const preview = document.getElementById("settings-schedule-preview");
+    if (!on || !preview) return;
+    const minutes = parseFloat(document.getElementById("settings-window-minutes")?.value);
+    const count = getFormSettings().num_submissions;
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > 10080 || !count) {
+        preview.textContent = t("scheduleWindowRange", "Choose between 1 and 10080 minutes.");
+        return;
+    }
+    const every = minutes / count;
+    const end = new Date(Date.now() + minutes * 60000);
+    const sameDay = end.toDateString() === new Date().toDateString();
+    const endText = sameDay
+        ? end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : end.toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+    preview.textContent = t("schedulePreview", "About 1 response every {every} minutes, done around {end}.")
+        .replace("{every}", every >= 10 ? Math.round(every) : every.toFixed(1))
+        .replace("{end}", endText);
+}
+
+["settings-schedule", "settings-window-minutes", "settings-form-count"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", updateSchedulePreview);
+    document.getElementById(id)?.addEventListener("change", updateSchedulePreview);
+});
+window.updateSchedulePreview = updateSchedulePreview;
 
 window.getFormSettings = getFormSettings;
 window.validatePrefillCompatibility = validatePrefillCompatibility;

@@ -255,6 +255,24 @@
                     <i class="fas fa-info-circle"></i>
                     {{ _('Backend limits still apply: max 500 submissions, max 10 threads, and threads cannot exceed submissions.') }}
                 </p>
+                <div class="schedule-box mt-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="settings-schedule" aria-controls="settings-schedule-fields">
+                        <label class="form-check-label fw-semibold" for="settings-schedule">{{ _('Spread over time') }}</label>
+                    </div>
+                    <div id="settings-schedule-fields" class="d-none mt-2">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-sm-6">
+                                <label for="settings-window-minutes" class="form-label small">{{ _('Spread over (minutes)') }}</label>
+                                <input type="number" class="form-control" id="settings-window-minutes" min="1" max="10080" value="60" step="1">
+                            </div>
+                            <div class="col-sm-6 small" id="settings-schedule-preview" aria-live="polite"></div>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0">
+                            <i class="fas fa-circle-info me-1" aria-hidden="true"></i>{{ _('Responses are sent only while the app is open. If you close it, the run pauses and can be resumed later.') }}
+                        </p>
+                    </div>
+                </div>
                 <div class="d-flex justify-content-between mt-3">
                     <button class="btn btn-outline-secondary" onclick="prevStep()"><i class="fas fa-arrow-left me-2"></i> {{ _('Previous') }}</button>
                     <button class="btn btn-primary" onclick="nextStep()">{{ _('Review and Start') }} <i class="fas fa-arrow-right ms-2"></i></button>
@@ -273,6 +291,12 @@
                         </button>
                         <button id="stop-button" class="btn btn-danger d-none" onclick="stopFormSubmission()">
                             <i class="fas fa-stop me-1"></i> {{ _('Stop Automation') }}
+                        </button>
+                        <button id="pause-button" class="btn btn-outline-secondary d-none" type="button">
+                            <i class="fas fa-pause me-1" aria-hidden="true"></i> {{ _('Pause') }}
+                        </button>
+                        <button id="resume-button" class="btn btn-outline-primary d-none" type="button">
+                            <i class="fas fa-play me-1" aria-hidden="true"></i> {{ _('Resume') }}
                         </button>
                         <a id="view-report-link" class="btn btn-outline-primary d-none" href="#">
                             <i class="fas fa-chart-column me-1" aria-hidden="true"></i> {{ _('View report') }}
@@ -329,6 +353,7 @@
 
                 <!-- Live progress -->
                 <div class="submission-status-section">
+                    <p id="schedule-info" class="small text-muted d-none mb-2" aria-live="polite"></p>
                     <div class="progress mb-3">
                         <div id="submission-progress" class="progress-bar progress-bar-striped progress-bar-animated"
                              role="progressbar" style="width: 0%"
@@ -505,7 +530,13 @@ window.i18n = {
     persona: {{ _('Persona') | tojson }},
     finishPersonaFirst: {{ _('Save or cancel the persona answers first.') | tojson }},
     describeAudience: {{ _('Describe who answers the form first.') | tojson }},
-    proposalApplied: {{ _('Proposal applied. Simulate the batch to check it.') | tojson }}
+    proposalApplied: {{ _('Proposal applied. Simulate the batch to check it.') | tojson }},
+    nextSendAt: {{ _('Next response at') | tojson }},
+    keepAppOpen: {{ _('Keep the app open until the run ends.') | tojson }},
+    runPaused: {{ _('Paused. Resume to send the remaining responses.') | tojson }},
+    pausing: {{ _('Pausing after the responses being sent now.') | tojson }},
+    scheduleWindowRange: {{ _('Choose between 1 and 10080 minutes.') | tojson }},
+    schedulePreview: {{ _('About 1 response every {every} minutes, done around {end}.') | tojson }}
 };
 </script>
 <script src="{{ url_for('static', filename='vendor/chart.js-4.5.1/chart.umd.min.js') }}"></script>

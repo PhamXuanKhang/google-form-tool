@@ -816,3 +816,54 @@ msgstr "Hãy mô tả nhóm người trả lời trước."
 
 msgid "Proposal applied. Simulate the batch to check it."
 msgstr "Đã áp dụng đề xuất. Hãy mô phỏng đợt gửi để kiểm tra."
+
+msgid "Spread over time"
+msgstr "Rải theo thời gian"
+
+msgid "Spread over (minutes)"
+msgstr "Rải trong (phút)"
+
+msgid "Responses are sent only while the app is open. If you close it, the run pauses and can be resumed later."
+msgstr "Lượt gửi chỉ chạy khi app đang mở. Nếu đóng app, đợt chạy dừng lại và có thể tiếp tục sau."
+
+msgid "Pause"
+msgstr "Tạm dừng"
+
+msgid "Resume"
+msgstr "Tiếp tục"
+
+msgid "Next response at"
+msgstr "Lượt kế tiếp lúc"
+
+msgid "Keep the app open until the run ends."
+msgstr "Hãy để app mở cho tới khi đợt chạy xong."
+
+msgid "Paused. Resume to send the remaining responses."
+msgstr "Đã tạm dừng. Bấm Tiếp tục để gửi các lượt còn lại."
+
+msgid "Pausing after the responses being sent now."
+msgstr "Sẽ tạm dừng sau khi các lượt đang gửi hoàn tất."
+
+msgid "Choose between 1 and 10080 minutes."
+msgstr "Chọn từ 1 đến 10080 phút."
+
+msgid "About 1 response every {every} minutes, done around {end}."
+msgstr "Khoảng 1 lượt mỗi {every} phút, xong vào khoảng {end}."
+
+msgid "Resumed. The remaining responses are spread over what is left of the window."
+msgstr "Đã tiếp tục. Các lượt còn lại được rải trên phần thời gian còn lại."
+
+msgid "Spread over"
+msgstr "Rải trong"
+
+msgid "minutes"
+msgstr "phút"
+
+msgid "Open the report to resume it."
+msgstr "Mở báo cáo để tiếp tục."
+
+msgid "runs stopped when the app closed."
+msgstr "đợt chạy đã dừng khi app đóng."
+
+msgid "A run stopped when the app closed."
+msgstr "Một đợt chạy đã dừng khi app đóng."

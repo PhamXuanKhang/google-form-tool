@@ -210,6 +210,8 @@ function updateStatusDisplay(statusData) {
         timeElement.textContent = formatTime(statusData.elapsed_time);
     }
 
+    updateScheduleControls(statusData);
+
     setText('success-count', statusData.success || 0);
     setText('failed-count', statusData.failed || 0);
     const minutes = (statusData.elapsed_time || 0) / 60;
@@ -230,6 +232,51 @@ function updateStatusDisplay(statusData) {
     // Update charts if they exist
     updateCharts(statusData);
 }
+
+/** Next send time and pause/resume buttons for scheduled runs. */
+function updateScheduleControls(statusData) {
+    const info = document.getElementById('schedule-info');
+    const pause = document.getElementById('pause-button');
+    const resume = document.getElementById('resume-button');
+    const scheduled = Boolean(statusData.scheduled);
+    info?.classList.toggle('d-none', !scheduled);
+    pause?.classList.toggle('d-none', !(scheduled && statusData.running));
+    resume?.classList.toggle('d-none', !(scheduled && !statusData.running && statusData.run_status === 'paused'));
+    if (!scheduled || !info) return;
+    if (statusData.running && statusData.next_due_at) {
+        info.textContent = `${t('nextSendAt', 'Next response at')} ${new Date(statusData.next_due_at).toLocaleString()}. `
+            + t('keepAppOpen', 'Keep the app open until the run ends.');
+    } else if (statusData.run_status === 'paused') {
+        info.textContent = t('runPaused', 'Paused. Resume to send the remaining responses.');
+    } else {
+        info.textContent = '';
+    }
+}
+
+async function postRunAction(action) {
+    if (!currentRunId) return null;
+    const response = await fetch(`/runs/${encodeURIComponent(currentRunId)}/${action}`, { method: 'POST' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.error) {
+        showStatusMessage(data.error || t('requestFailed', 'Request failed.'), 'error');
+        return null;
+    }
+    return data;
+}
+
+document.getElementById('pause-button')?.addEventListener('click', async () => {
+    if (await postRunAction('pause')) {
+        showStatusMessage(t('pausing', 'Pausing after the responses being sent now.'), 'info');
+    }
+});
+
+document.getElementById('resume-button')?.addEventListener('click', async () => {
+    if (await postRunAction('resume')) {
+        submissionActive = true;
+        updateUIForActiveSubmission();
+        startStatusMonitoring();
+    }
+});
 
 function setText(id, value) {
     const element = document.getElementById(id);

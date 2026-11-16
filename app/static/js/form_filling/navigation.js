@@ -34,6 +34,7 @@ function goToStep(step) {
 
     if (step === 3) {
         syncSettingsFromExistingFormCount();
+        window.updateSchedulePreview?.();
     }
 }
 
@@ -168,6 +169,12 @@ function validateSettingsStep() {
     }
     if (maxDelay < minDelay) {
         return t("settingsDelayRange", "Maximum delay must be greater than or equal to minimum delay.");
+    }
+    if (settings.schedule) {
+        const minutes = settings.schedule.window_minutes;
+        if (!Number.isFinite(minutes) || minutes < 1 || minutes > 10080) {
+            return t("scheduleWindowRange", "Choose between 1 and 10080 minutes.");
+        }
     }
 
     return null;

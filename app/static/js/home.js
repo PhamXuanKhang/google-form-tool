@@ -74,6 +74,28 @@ async function loadRuns(formId) {
     }
 }
 
+/** Tell the user about scheduled runs that stopped because the app closed. */
+async function showInterruptedRuns() {
+    const banner = document.getElementById('interrupted-banner');
+    if (!banner) return;
+    try {
+        const response = await fetch('/runs?status=interrupted');
+        const data = await readJsonResponse(response);
+        const runs = (data.runs || []).filter((run) => run.schedule);
+        if (!runs.length) return;
+        const i18n = window.i18n || {};
+        document.getElementById('interrupted-text').textContent = runs.length === 1
+            ? (i18n.interruptedRun || 'A run stopped when the app closed.')
+            : `${runs.length} ${i18n.interruptedRuns || 'runs stopped when the app closed.'}`;
+        document.getElementById('interrupted-link').href = `/runs/${encodeURIComponent(runs[0].run_id)}/view`;
+        banner.classList.remove('d-none');
+    } catch (error) {
+        console.debug('Could not check interrupted runs:', error);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', showInterruptedRuns);
+
 function textElement(tag, text, className) {
     const node = document.createElement(tag);
     if (className) node.className = className;

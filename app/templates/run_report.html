@@ -17,6 +17,9 @@
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary btn-sm d-none" id="resume-run">
+                <i class="fas fa-play me-1" aria-hidden="true"></i>{{ _('Resume') }}
+            </button>
             <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.export_run', run_id=run_id, format='csv') }}" download>
                 <i class="fas fa-file-csv me-1" aria-hidden="true"></i>{{ _('Export CSV') }}
             </a>
@@ -120,6 +123,9 @@ window.i18n = {
     seed: {{ _('Seed') | tojson }},
     retryOf: {{ _('Retry of an earlier run') | tojson }},
     rowsRange: {{ _('{from}–{to} of {total}') | tojson }},
+    resumed: {{ _('Resumed. The remaining responses are spread over what is left of the window.') | tojson }},
+    scheduledOver: {{ _('Spread over') | tojson }},
+    minutes: {{ _('minutes') | tojson }},
     statuses: {
         success: {{ _('Success') | tojson }},
         failed: {{ _('Failed') | tojson }},

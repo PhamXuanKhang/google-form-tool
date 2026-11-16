@@ -12,6 +12,11 @@
 	</a>
 </div>
 
+<div id="interrupted-banner" class="state-error mb-3 d-none" role="status">
+	<i class="fas fa-circle-pause" aria-hidden="true"></i>
+	<span><span id="interrupted-text"></span> <a href="#" id="interrupted-link">{{ _('Open the report to resume it.') }}</a></span>
+</div>
+
 <form method="GET" action="/" class="form-search" role="search">
 	<div class="input-group">
 		<span class="input-group-text"><i class="fas fa-search" aria-hidden="true"></i></span>
@@ -97,6 +102,8 @@
 		runs: {{ _('Runs') | tojson }},
 		noRunsYet: {{ _('No runs yet.') | tojson }},
 		couldNotLoadRuns: {{ _('Could not load runs.') | tojson }},
+		interruptedRuns: {{ _('runs stopped when the app closed.') | tojson }},
+		interruptedRun: {{ _('A run stopped when the app closed.') | tojson }},
 		runStatuses: {
 			pending: {{ _('Pending') | tojson }},
 			running: {{ _('Running') | tojson }},

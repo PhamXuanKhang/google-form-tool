@@ -96,9 +96,49 @@ function createWindow() {
     mainWindow?.show();
   });
 
+  // Closing the app stops any run in progress (the backend is stopped with
+  // it), so ask first when something is still sending.
+  let closeConfirmed = false;
+  mainWindow.on('close', async (event) => {
+    if (closeConfirmed) {
+      return;
+    }
+    event.preventDefault();
+    const running = await countRunningSubmissions();
+    if (running > 0) {
+      const { response } = await dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        buttons: ['Keep running', 'Close anyway'],
+        defaultId: 0,
+        cancelId: 0,
+        title: 'A run is in progress',
+        message: running === 1 ? 'A form run is still in progress.' : `${running} form runs are still in progress.`,
+        detail: 'Closing the app stops sending. Scheduled runs can be resumed from their report the next time you open the app.',
+      });
+      if (response === 0) {
+        return;
+      }
+    }
+    closeConfirmed = true;
+    mainWindow?.close();
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+}
+
+async function countRunningSubmissions() {
+  try {
+    const response = await fetch(`${backendUrl}/submission_status`);
+    if (!response.ok) {
+      return 0;
+    }
+    const data = await response.json();
+    return Object.values(data.active_submissions || {}).filter((status) => status && status.running).length;
+  } catch (error) {
+    return 0;
+  }
 }
 
 function shouldOpenExternally(url) {

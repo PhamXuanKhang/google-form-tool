@@ -76,7 +76,12 @@
             `${i18n.seed || 'Seed'} ${run.seed}`,
         ];
         if (run.retry_of) parts.push(i18n.retryOf || 'Retry of an earlier run');
+        if (run.schedule) {
+            parts.push(`${i18n.scheduledOver || 'Spread over'} ${Math.round(run.schedule.window_seconds / 60)} ${i18n.minutes || 'minutes'}`);
+        }
         document.getElementById('report-meta').textContent = ' · ' + parts.join(' · ');
+        const resume = document.getElementById('resume-run');
+        resume.classList.toggle('d-none', !(run.schedule && ['paused', 'interrupted'].includes(run.status)));
     }
 
     function renderMetrics(summary) {
@@ -225,5 +230,18 @@
     document.getElementById('rows-prev').addEventListener('click', () => { rowsOffset = Math.max(0, rowsOffset - PAGE_SIZE); loadRows(); });
     document.getElementById('rows-next').addEventListener('click', () => { rowsOffset += PAGE_SIZE; loadRows(); });
     document.getElementById('retry-button').addEventListener('click', retry);
+    const resumeButton = document.getElementById('resume-run');
+    resumeButton.addEventListener('click', async () => {
+        resumeButton.disabled = true;
+        try {
+            await getJson(`/runs/${encodeURIComponent(runId)}/resume`, { method: 'POST' });
+            window.showToast(i18n.resumed || 'Resumed.', 'success');
+            load();
+        } catch (error) {
+            window.showToast(error.message, 'error');
+        } finally {
+            resumeButton.disabled = false;
+        }
+    });
     load();
 })();

@@ -816,3 +816,54 @@ msgstr "Describe who answers the form first."
 
 msgid "Proposal applied. Simulate the batch to check it."
 msgstr "Proposal applied. Simulate the batch to check it."
+
+msgid "Spread over time"
+msgstr "Spread over time"
+
+msgid "Spread over (minutes)"
+msgstr "Spread over (minutes)"
+
+msgid "Responses are sent only while the app is open. If you close it, the run pauses and can be resumed later."
+msgstr "Responses are sent only while the app is open. If you close it, the run pauses and can be resumed later."
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Resume"
+msgstr "Resume"
+
+msgid "Next response at"
+msgstr "Next response at"
+
+msgid "Keep the app open until the run ends."
+msgstr "Keep the app open until the run ends."
+
+msgid "Paused. Resume to send the remaining responses."
+msgstr "Paused. Resume to send the remaining responses."
+
+msgid "Pausing after the responses being sent now."
+msgstr "Pausing after the responses being sent now."
+
+msgid "Choose between 1 and 10080 minutes."
+msgstr "Choose between 1 and 10080 minutes."
+
+msgid "About 1 response every {every} minutes, done around {end}."
+msgstr "About 1 response every {every} minutes, done around {end}."
+
+msgid "Resumed. The remaining responses are spread over what is left of the window."
+msgstr "Resumed. The remaining responses are spread over what is left of the window."
+
+msgid "Spread over"
+msgstr "Spread over"
+
+msgid "minutes"
+msgstr "minutes"
+
+msgid "Open the report to resume it."
+msgstr "Open the report to resume it."
+
+msgid "runs stopped when the app closed."
+msgstr "runs stopped when the app closed."
+
+msgid "A run stopped when the app closed."
+msgstr "A run stopped when the app closed."
