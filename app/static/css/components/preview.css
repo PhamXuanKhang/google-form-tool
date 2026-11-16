@@ -1,30 +1,210 @@
-.page-block {
-    background-color: #ffffff;
-    border-left: 4px solid #0d6efd;
-    padding: 1rem 1.25rem;
-    border-radius: 0.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+/* Form Filling: horizontal stepper. navigation.js toggles .active on the
+   item and swaps bg-dark/bg-secondary on the badge; the look comes from
+   the classes below, not from those Bootstrap colours. */
+.stepper {
+    margin-bottom: var(--gf-space-5);
 }
 
-/* QUESTION */
+.stepper-list {
+    display: flex;
+    gap: var(--gf-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: none;
+}
+
+.stepper-item {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    gap: var(--gf-space-3);
+    min-width: 0;
+    padding: var(--gf-space-3) var(--gf-space-4);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-surface);
+    color: var(--gf-text-muted);
+    font-size: var(--gf-text-sm);
+    font-weight: 500;
+    transition: border-color var(--gf-duration) var(--gf-ease),
+        background-color var(--gf-duration) var(--gf-ease),
+        color var(--gf-duration) var(--gf-ease);
+}
+
+.stepper-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stepper-badge.badge {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--gf-border-strong);
+    background-color: var(--gf-surface-2) !important;
+    color: var(--gf-text-muted);
+    font-size: var(--gf-text-xs);
+    font-variant-numeric: tabular-nums;
+    transition: background-color var(--gf-duration) var(--gf-ease), color var(--gf-duration) var(--gf-ease);
+}
+
+.stepper-item.active {
+    border-color: var(--gf-accent);
+    background: var(--gf-accent-soft);
+    color: var(--gf-accent-text);
+    font-weight: 600;
+}
+
+.stepper-item.active .stepper-badge.badge {
+    border-color: var(--gf-accent);
+    background-color: var(--gf-accent) !important;
+    color: var(--gf-on-accent);
+}
+
+/* Steps before the active one are done. */
+.stepper-item:has(~ .stepper-item.active) {
+    color: var(--gf-text);
+}
+
+.stepper-item:has(~ .stepper-item.active) .stepper-badge.badge {
+    border-color: var(--gf-success);
+    background-color: var(--gf-success-soft) !important;
+    color: var(--gf-success);
+}
+
+/* Step panels fade in when shown. */
+.step-section:not(.d-none) {
+    animation: gf-fade-in var(--gf-duration) var(--gf-ease);
+}
+
+.step-section > .card {
+    padding: var(--gf-space-5) !important;
+}
+
+.step-section .card-title {
+    font-size: var(--gf-text-xl);
+    font-weight: 600;
+    margin-bottom: var(--gf-space-4);
+}
+
+.step-section .card .card {
+    box-shadow: none;
+}
+
+/* Preview panel */
+.preview-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-surface-2);
+}
+
+#form-preview-container.preview-loaded {
+    display: block;
+    padding: var(--gf-space-3);
+    text-align: left;
+}
+
+#form-preview-container.preview-loaded > .card {
+    border: 0;
+    background: transparent !important;
+}
+
+/* Monitor */
+.stats-row {
+    row-gap: var(--gf-space-3);
+}
+
+.stat-card {
+    padding: var(--gf-space-3);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-surface);
+}
+
+.stat-value {
+    font-size: var(--gf-text-xl);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    color: var(--gf-text);
+    transition: color var(--gf-duration) var(--gf-ease);
+}
+
+.stat-label {
+    color: var(--gf-text-muted);
+    font-size: var(--gf-text-sm);
+}
+
+@media (max-width: 1100px) {
+    .stepper-item {
+        padding: var(--gf-space-2) var(--gf-space-3);
+    }
+}
+
+/* Form Filling: extracted form preview */
+.page-block {
+    background-color: var(--gf-surface);
+    border: 1px solid var(--gf-border);
+    border-left: 3px solid var(--gf-accent);
+    padding: var(--gf-space-4) var(--gf-space-4);
+    border-radius: var(--gf-radius-md);
+    margin-bottom: var(--gf-space-4);
+}
+
 .question-block {
-    background-color: #f1f3f5;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.25rem;
-    border: 1px solid #dee2e6;
+    background-color: var(--gf-surface-2);
+    padding: var(--gf-space-3) var(--gf-space-4);
+    border-radius: var(--gf-radius-md);
+    margin-bottom: var(--gf-space-3);
+    border: 1px solid var(--gf-border);
 }
 
 .question-title {
     font-weight: 600;
-    font-size: 1rem;
-    color: #343a40;
+    font-size: var(--gf-text-md);
+    color: var(--gf-text);
 }
 
 .question-type {
-    font-size: 0.85rem;
-    color: #6c757d;
-    font-style: italic;
-    margin-bottom: 0.5rem;
+    font-size: var(--gf-text-sm);
+    color: var(--gf-text-muted);
+    margin-bottom: var(--gf-space-2);
+}
+
+.option-scroll-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gf-space-2);
+}
+
+.option-card {
+    padding: 2px var(--gf-space-3);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-pill);
+    background: var(--gf-surface);
+    font-size: var(--gf-text-sm);
+}
+
+/* Step 2: generated question cards */
+#step-2-questions .card[data-question-id] {
+    padding: var(--gf-space-4) !important;
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-surface);
+    transition: border-color var(--gf-duration-fast) var(--gf-ease);
+}
+
+#step-2-questions .card[data-question-id]:focus-within {
+    border-color: var(--gf-accent);
+}
+
+#step-2-questions .card[data-question-id] h6 {
+    margin-bottom: var(--gf-space-1);
 }

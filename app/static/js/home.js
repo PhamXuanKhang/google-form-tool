@@ -55,7 +55,7 @@ async function deleteSelectedForm(formUrl) {
 
         window.location.reload();
     } catch (error) {
-        alert(error.message);
+        window.showToast(error.message, 'error');
     }
 }
 

@@ -2,47 +2,50 @@
 {% block title %}{{ _('Home') }} - {{ _('Google Form Automation Tool') }}{% endblock%}
 {% block css %} <link rel="stylesheet" href="{{ url_for('static', filename='css/components/card.css') }}"> {% endblock %}
 {% block content %}
-<!-- Search Form -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-	<h2 class="h3 fw-bold mb-0">{{ _('Recent Forms') }}</h2>
+<div class="page-header">
+	<h1 class="page-title">{{ _('Recent Forms') }}</h1>
 	<a href="{{ url_for('main.form_filling') }}" class="btn btn-primary">
-		<i class="fas fa-plus me-1"></i> {{ _('New Form') }}
+		<i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('New Form') }}
 	</a>
 </div>
-<form method="GET" action="/">
-	<div class="input-group mb-3">
-		<input type="text" name="search" class="form-control" placeholder="{{ _('Search forms by title or description') }}" value="{{ search_query | default('') }}" class="form-control">
-		<button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
+
+<form method="GET" action="/" class="form-search" role="search">
+	<div class="input-group">
+		<span class="input-group-text"><i class="fas fa-search" aria-hidden="true"></i></span>
+		<input type="search" name="search" class="form-control" aria-label="{{ _('Search forms by title or description') }}"
+		       placeholder="{{ _('Search forms by title or description') }}" value="{{ request.args.get('search', '') }}">
 	</div>
 </form>
 
-<!-- Recent Form Cards -->
 {% if recent_forms|length == 0 %}
-	<!-- Can't find available form in database -->
-	<div class="text-center my-5">
-		<i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-			<h4 class="text-muted">{{ _('Cannot find any available form.') }}</h4>
-  	</div>
+	<div class="card">
+		<div class="empty-state">
+			<span class="empty-state-icon" aria-hidden="true"><i class="fas fa-folder-open"></i></span>
+			<h2 class="empty-state-title">{{ _('Cannot find any available form.') }}</h2>
+			{% if request.args.get('search', '').strip() %}
+			<p>{{ _('Try a different search term.') }}</p>
+			<a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary mt-2">{{ _('Clear search') }}</a>
+			{% else %}
+			<p>{{ _('Extract a Google Form to configure answers and run submissions. It will appear here.') }}</p>
+			<a href="{{ url_for('main.form_filling') }}" class="btn btn-primary mt-2">
+				<i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('New Form') }}
+			</a>
+			{% endif %}
+		</div>
+	</div>
 {% else %}
-  	<!-- Form List -->
-	<div class="row g-4">
+	<div class="form-grid">
 		{% for form in recent_forms %}
-			<div class="col-md-4">
-				<div class="card h-100 shadow-sm hover-shadow" onclick="openFormModal('{{ form.id }}')" style="cursor: pointer;">
-					<div class="card-body d-flex">
-						<div class="me-3">
-							<div class="rounded-circle bg-info d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-								<i class="fas fa-file-alt"></i>
-							</div>
-						</div>
-						<div>
-							<h5 class="card-title">{{ form.title }}</h5>
-							<p class="card-text">{{ form.created_at }}</p>
-							<p class="card-text"><i class="fas fa-paper-plane"></i> {{ form.total_fill }} {{ _('submissions') }}</p>
-						</div>
-					</div>
-				</div>
-			</div>
+		<button type="button" class="form-card" onclick="openFormModal('{{ form.id }}')">
+			<span class="form-card-head">
+				<span class="form-card-icon" aria-hidden="true"><i class="fas fa-file-alt"></i></span>
+				<span class="form-card-title">{{ form.title }}</span>
+			</span>
+			<span class="form-card-meta">
+				<span><i class="far fa-calendar me-1" aria-hidden="true"></i>{{ form.created_at }}</span>
+				<span><i class="fas fa-paper-plane me-1" aria-hidden="true"></i>{{ form.total_fill }} {{ _('submissions') }}</span>
+			</span>
+		</button>
 		{% endfor %}
 	</div>
 {% endif %}

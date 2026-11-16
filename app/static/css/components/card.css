@@ -1,15 +1,74 @@
-/* hover effect for cards */
-.hover-shadow:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-    transition: all 0.2s ease-in-out;
-    background-color: #abd4fc;
+/* Home: grid of saved forms */
+.form-search {
+    max-width: 420px;
+    margin-bottom: var(--gf-space-5);
 }
 
-.modal-body {
-    max-height: 70vh; /* Giới hạn chiều cao để tránh tràn dọc */
-    overflow-y: auto; /* Thanh cuộn dọc nếu cần */
-    overflow-x: hidden; /* Ngăn tràn ngang */
-    word-wrap: break-word; /* Cho phép xuống dòng khi cần */
-    word-break: break-all; /* Chia nhỏ từ để xuống dòng */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--gf-space-4);
+}
+
+.form-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gf-space-3);
+    width: 100%;
+    padding: var(--gf-space-4);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-lg);
+    background: var(--gf-surface);
+    color: var(--gf-text);
+    text-align: left;
+    box-shadow: var(--gf-shadow-sm);
+    transition: border-color var(--gf-duration-fast) var(--gf-ease),
+        box-shadow var(--gf-duration-fast) var(--gf-ease),
+        transform var(--gf-duration-fast) var(--gf-ease);
+}
+
+.form-card:hover {
+    border-color: var(--gf-accent);
+    box-shadow: var(--gf-shadow-md);
+    transform: translateY(-1px);
+}
+
+.form-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--gf-space-3);
+}
+
+.form-card-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-accent-soft);
+    color: var(--gf-accent-text);
+}
+
+.form-card-title {
+    margin: 0;
+    font-size: var(--gf-text-md);
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.form-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gf-space-2) var(--gf-space-4);
+    margin-top: auto;
+    color: var(--gf-text-muted);
+    font-size: var(--gf-text-sm);
+    font-variant-numeric: tabular-nums;
 }

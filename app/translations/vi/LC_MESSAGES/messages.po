@@ -414,3 +414,21 @@ msgstr "Bật/tắt chế độ tối"
 
 msgid "Report Bug"
 msgstr "Báo lỗi"
+
+msgid "Try a different search term."
+msgstr "Hãy thử từ khoá khác."
+
+msgid "Clear search"
+msgstr "Xoá tìm kiếm"
+
+msgid "Extract a Google Form to configure answers and run submissions. It will appear here."
+msgstr "Trích xuất một Google Form để cấu hình câu trả lời và chạy gửi. Biểu mẫu sẽ hiện ở đây."
+
+msgid "Reading the form structure..."
+msgstr "Đang đọc cấu trúc biểu mẫu..."
+
+msgid "The stepper above tracks your progress through 4 steps: Enter URL → Configure Answers → Settings → Monitor. Steps unlock as you complete each one."
+msgstr "Thanh bước phía trên theo dõi tiến độ qua 4 bước: Nhập URL → Cấu hình câu trả lời → Cài đặt → Theo dõi. Mỗi bước mở khi bạn hoàn tất bước trước."
+
+msgid "You can restart this tour at any time by clicking the Quick Tour button at the top of the page. Good luck! 🚀"
+msgstr "Bạn có thể xem lại hướng dẫn bất cứ lúc nào bằng nút Quick Tour ở đầu trang. Chúc may mắn! 🚀"

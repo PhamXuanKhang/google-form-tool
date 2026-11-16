@@ -414,3 +414,21 @@ msgstr "Toggle dark mode"
 
 msgid "Report Bug"
 msgstr "Report Bug"
+
+msgid "Try a different search term."
+msgstr "Try a different search term."
+
+msgid "Clear search"
+msgstr "Clear search"
+
+msgid "Extract a Google Form to configure answers and run submissions. It will appear here."
+msgstr "Extract a Google Form to configure answers and run submissions. It will appear here."
+
+msgid "Reading the form structure..."
+msgstr "Reading the form structure..."
+
+msgid "The stepper above tracks your progress through 4 steps: Enter URL → Configure Answers → Settings → Monitor. Steps unlock as you complete each one."
+msgstr "The stepper above tracks your progress through 4 steps: Enter URL → Configure Answers → Settings → Monitor. Steps unlock as you complete each one."
+
+msgid "You can restart this tour at any time by clicking the Quick Tour button at the top of the page. Good luck! 🚀"
+msgstr "You can restart this tour at any time by clicking the Quick Tour button at the top of the page. Good luck! 🚀"

@@ -4,20 +4,21 @@
 {% block css %}
 <style>
   .about-hero {
-    background: linear-gradient(135deg, #0d6efd11 0%, #6610f211 100%);
-    border-radius: 1rem;
+    background: var(--gf-surface);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-lg);
     padding: 2.5rem 2rem;
     margin-bottom: 2rem;
   }
   .feature-card {
-    border: none;
-    border-radius: .75rem;
-    transition: transform .2s, box-shadow .2s;
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-lg);
+    transition: transform var(--gf-duration) var(--gf-ease), box-shadow var(--gf-duration) var(--gf-ease);
     height: 100%;
   }
   .feature-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0,0,0,.1);
+    transform: translateY(-2px);
+    box-shadow: var(--gf-shadow-md) !important;
   }
   .feature-icon {
     width: 48px;
@@ -41,15 +42,15 @@
     flex-shrink: 0;
   }
   .gif-placeholder {
-    background: #f0f4ff;
-    border: 2px dashed #a0b4e0;
-    border-radius: .75rem;
+    background: var(--gf-surface-2);
+    border: 2px dashed var(--gf-border-strong);
+    border-radius: var(--gf-radius-lg);
     min-height: 260px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #6c8cc4;
+    color: var(--gf-text-muted);
     gap: .5rem;
     font-size: .9rem;
   }
@@ -63,17 +64,18 @@
     display: inline-flex;
     align-items: center;
     gap: .4rem;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 2rem;
+    background: var(--gf-surface);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-pill);
     padding: .35rem .9rem;
     font-size: .85rem;
     font-weight: 500;
   }
   .author-card {
-    border-radius: 1rem;
-    background: linear-gradient(135deg, #0d6efd, #6610f2);
-    color: white;
+    border: 0;
+    border-radius: var(--gf-radius-lg);
+    background: var(--gf-accent);
+    color: var(--gf-on-accent);
   }
   .author-card a {
     color: rgba(255,255,255,.85);
@@ -177,7 +179,7 @@
         </div>
       </div>
       {% if not loop.last %}
-      <div class="ms-4 ps-1" style="border-left:2px dashed #dee2e6; height:16px;"></div>
+      <div class="ms-4 ps-1" style="border-left:2px dashed var(--gf-border-strong); height:16px;"></div>
       {% endif %}
       {% endfor %}
 

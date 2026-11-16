@@ -209,41 +209,288 @@ body {
     }
 }
 
-/* ===== Existing helpers, on tokens ===== */
+/* ===== Page header ===== */
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gf-space-4);
+    margin-bottom: var(--gf-space-5);
+}
+
+.page-title {
+    margin: 0;
+    font-size: var(--gf-text-2xl);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--gf-text);
+}
+
+.page-subtitle {
+    margin: var(--gf-space-1) 0 0;
+    color: var(--gf-text-muted);
+    max-width: 68ch;
+}
+
+.section-title {
+    font-size: var(--gf-text-lg);
+    font-weight: 600;
+    margin-bottom: var(--gf-space-3);
+}
+
+/* ===== Bootstrap components on tokens ===== */
+.card {
+    --bs-card-bg: var(--gf-surface);
+    --bs-card-border-color: var(--gf-border);
+    --bs-card-border-radius: var(--gf-radius-lg);
+    --bs-card-inner-border-radius: calc(var(--gf-radius-lg) - 1px);
+    --bs-card-cap-bg: var(--gf-surface-2);
+    color: var(--gf-text);
+}
+
+.card.shadow-sm {
+    box-shadow: var(--gf-shadow-sm) !important;
+}
+
+/* Bootstrap's light utilities are hard-coded light colours; keep them on the
+   current theme so existing markup reads in dark mode too. */
+.bg-light {
+    background-color: var(--gf-surface-2) !important;
+    color: var(--gf-text);
+}
+
+.text-dark:not(.badge) {
+    color: var(--gf-text) !important;
+}
+
+/* Solid accent fills keep white text readable in both themes. */
+.bg-primary {
+    background-color: var(--gf-accent) !important;
+}
+
+.btn {
+    --bs-btn-border-radius: var(--gf-radius-md);
+    --bs-btn-font-weight: 500;
+    --bs-btn-focus-box-shadow: var(--gf-focus-ring);
+    transition: background-color var(--gf-duration-fast) var(--gf-ease),
+        border-color var(--gf-duration-fast) var(--gf-ease),
+        color var(--gf-duration-fast) var(--gf-ease);
+}
+
+.btn-primary {
+    --bs-btn-color: var(--gf-on-accent);
+    --bs-btn-bg: var(--gf-accent);
+    --bs-btn-border-color: var(--gf-accent);
+    --bs-btn-hover-color: var(--gf-on-accent);
+    --bs-btn-hover-bg: var(--gf-accent-hover);
+    --bs-btn-hover-border-color: var(--gf-accent-hover);
+    --bs-btn-active-color: var(--gf-on-accent);
+    --bs-btn-active-bg: var(--gf-accent-hover);
+    --bs-btn-active-border-color: var(--gf-accent-hover);
+    --bs-btn-disabled-color: var(--gf-on-accent);
+    --bs-btn-disabled-bg: var(--gf-accent);
+    --bs-btn-disabled-border-color: var(--gf-accent);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--gf-accent-text);
+    --bs-btn-border-color: var(--gf-accent-text);
+    --bs-btn-hover-color: var(--gf-on-accent);
+    --bs-btn-hover-bg: var(--gf-accent);
+    --bs-btn-hover-border-color: var(--gf-accent);
+    --bs-btn-active-color: var(--gf-on-accent);
+    --bs-btn-active-bg: var(--gf-accent-hover);
+    --bs-btn-active-border-color: var(--gf-accent-hover);
+    --bs-btn-disabled-color: var(--gf-accent-text);
+    --bs-btn-disabled-border-color: var(--gf-border-strong);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--gf-text);
+    --bs-btn-border-color: var(--gf-border-strong);
+    --bs-btn-hover-color: var(--gf-text);
+    --bs-btn-hover-bg: var(--gf-surface-2);
+    --bs-btn-hover-border-color: var(--gf-border-strong);
+    --bs-btn-active-color: var(--gf-text);
+    --bs-btn-active-bg: var(--gf-surface-sunken);
+    --bs-btn-active-border-color: var(--gf-border-strong);
+}
+
+.btn-ghost {
+    --bs-btn-color: var(--gf-text-muted);
+    --bs-btn-hover-color: var(--gf-text);
+    --bs-btn-hover-bg: var(--gf-surface-2);
+    --bs-btn-active-bg: var(--gf-surface-sunken);
+}
+
+.form-control,
+.form-select {
+    background-color: var(--gf-surface);
+    border-color: var(--gf-border-strong);
+    color: var(--gf-text);
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: var(--gf-accent);
+    box-shadow: var(--gf-focus-ring);
+}
+
+.form-control[readonly],
+.form-control:disabled {
+    background-color: var(--gf-surface-2);
+}
+
+.form-check-input:checked {
+    background-color: var(--gf-accent);
+    border-color: var(--gf-accent);
+}
+
+.input-group-text {
+    background-color: var(--gf-surface-2);
+    border-color: var(--gf-border-strong);
+    color: var(--gf-text-muted);
+}
+
+.progress {
+    --bs-progress-bg: var(--gf-surface-sunken);
+    --bs-progress-bar-bg: var(--gf-accent);
+    --bs-progress-height: 0.75rem;
+    --bs-progress-border-radius: var(--gf-radius-pill);
+}
+
+.progress-bar {
+    transition: width var(--gf-duration) var(--gf-ease);
+}
+
+.dropdown-menu {
+    --bs-dropdown-bg: var(--gf-surface);
+    --bs-dropdown-border-color: var(--gf-border);
+    --bs-dropdown-link-color: var(--gf-text);
+    --bs-dropdown-link-hover-bg: var(--gf-surface-2);
+    --bs-dropdown-link-active-bg: var(--gf-accent);
+    --bs-dropdown-link-active-color: var(--gf-on-accent);
+    box-shadow: var(--gf-shadow-md);
+}
+
+.modal {
+    --bs-modal-bg: var(--gf-surface);
+    --bs-modal-border-color: var(--gf-border);
+    --bs-modal-border-radius: var(--gf-radius-lg);
+}
+
 .modal-body {
     max-height: 70vh;
     overflow-y: auto;
     overflow-x: hidden;
-    word-wrap: break-word;
-    word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
-.page-block {
-    background-color: var(--gf-surface);
-    border-left: 4px solid var(--gf-accent);
-    padding: 1rem 1.25rem;
-    border-radius: var(--gf-radius-md);
-    margin-bottom: 2rem;
-    box-shadow: var(--gf-shadow-sm);
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--gf-text);
+    --bs-table-border-color: var(--gf-border);
+    --bs-table-striped-bg: var(--gf-surface-2);
+    --bs-table-striped-color: var(--gf-text);
 }
 
-.question-block {
-    background-color: var(--gf-surface-2);
-    padding: 1rem;
-    border-radius: var(--gf-radius-md);
-    margin-bottom: 1.25rem;
-    border: 1px solid var(--gf-border);
+.alert-info {
+    --bs-alert-bg: var(--gf-info-soft);
+    --bs-alert-color: var(--gf-text);
+    --bs-alert-border-color: transparent;
 }
 
-.question-title {
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--gf-text);
+.toast {
+    --bs-toast-border-radius: var(--gf-radius-md);
+    box-shadow: var(--gf-shadow-lg);
 }
 
-.question-type {
-    font-size: 0.85rem;
+code {
+    color: var(--gf-accent-text);
+}
+
+.diagnostics-table th,
+.diagnostics-table td {
+    padding: var(--gf-space-3) var(--gf-space-4);
+}
+
+.diagnostics-table th {
     color: var(--gf-text-muted);
-    font-style: italic;
-    margin-bottom: 0.5rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.diagnostics-table code {
+    overflow-wrap: anywhere;
+}
+
+/* ===== States: empty, loading, error ===== */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gf-space-2);
+    padding: var(--gf-space-6) var(--gf-space-4);
+    text-align: center;
+    color: var(--gf-text-muted);
+}
+
+.empty-state-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--gf-radius-lg);
+    background: var(--gf-surface-2);
+    color: var(--gf-text-subtle);
+    font-size: 1.35rem;
+}
+
+.empty-state-title {
+    margin: 0;
+    color: var(--gf-text);
+    font-weight: 600;
+    font-size: var(--gf-text-lg);
+}
+
+.empty-state p {
+    margin: 0;
+    max-width: 48ch;
+}
+
+.state-error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--gf-space-3);
+    padding: var(--gf-space-3) var(--gf-space-4);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-danger-soft);
+    color: var(--gf-text);
+    text-align: left;
+}
+
+.state-error i {
+    color: var(--gf-danger);
+    margin-top: 0.2rem;
+}
+
+.skeleton-line {
+    height: 0.8rem;
+    border-radius: var(--gf-radius-sm);
+    background: linear-gradient(90deg, var(--gf-surface-2) 25%, var(--gf-surface-sunken) 50%, var(--gf-surface-2) 75%);
+    background-size: 200% 100%;
+    animation: gf-shimmer 1.2s linear infinite;
+}
+
+@keyframes gf-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
+@keyframes gf-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
 }

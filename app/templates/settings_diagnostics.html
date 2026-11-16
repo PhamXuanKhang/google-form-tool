@@ -3,24 +3,25 @@
 {% block title %}{{ _('Runtime Diagnostics') }} - {{ _('Google Form Automation Tool') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
-        <h1 class="mb-1">{{ _('Runtime Diagnostics') }}</h1>
-        <p class="text-muted mb-0">{{ _('Chrome, ChromeDriver, and writable app data paths used by the desktop runtime.') }}</p>
+        <h1 class="page-title">{{ _('Runtime Diagnostics') }}</h1>
+        <p class="page-subtitle">{{ _('Chrome, ChromeDriver, and writable app data paths used by the desktop runtime.') }}</p>
     </div>
-    <a class="btn btn-outline-secondary" href="{{ url_for('main.runtime_diagnostics') }}" target="_blank" rel="noopener">
-        <i class="fas fa-code"></i> {{ _('View JSON') }}
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.runtime_diagnostics') }}" target="_blank" rel="noopener">
+        <i class="fas fa-code" aria-hidden="true"></i> {{ _('View JSON') }}
     </a>
 </div>
 
-<div class="alert alert-info" role="alert">
-    {{ _('Bundled Chromium is not included in this installer scope. The app uses installed Chrome/Chromium, cached ChromeDriver, or Selenium fallback diagnostics.') }}
+<div class="alert alert-info d-flex gap-2" role="note">
+    <i class="fas fa-circle-info mt-1" aria-hidden="true"></i>
+    <span>{{ _('Bundled Chromium is not included in this installer scope. The app uses installed Chrome/Chromium, cached ChromeDriver, or Selenium fallback diagnostics.') }}</span>
 </div>
 
 <div class="card shadow-sm">
-    <div class="card-body">
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-striped align-middle mb-0">
+            <table class="table align-middle mb-0 diagnostics-table">
                 <tbody>
                     <tr>
                         <th scope="row" class="w-25">{{ _('Runtime mode') }}</th>
