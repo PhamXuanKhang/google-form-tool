@@ -43,19 +43,23 @@ class AIResponder:
         self.model_name = self._resolve_model_name(self.client, Config.GEMINI_MODEL)
         self.timeout_seconds = Config.AI_REQUEST_TIMEOUT_SECONDS
 
-    def _generate_content(self, prompt: str):
+    def _generate_content(self, prompt: str, config: Optional[dict] = None):
         if len(prompt) > Config.AI_MAX_PROMPT_CHARS:
             raise ValueError("Input too large")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(
-                self.client.models.generate_content,
-                model=self.model_name,
-                contents=prompt,
-            )
+        kwargs = {"model": self.model_name, "contents": prompt}
+        if config is not None:
+            kwargs["config"] = config
+        # Do not use the executor as a context manager: its exit would wait for
+        # a hung request, so the timeout would only fire after Gemini answers.
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(self.client.models.generate_content, **kwargs)
             try:
                 return future.result(timeout=self.timeout_seconds)
             except concurrent.futures.TimeoutError as exc:
                 raise TimeoutError("AI request timed out") from exc
+        finally:
+            executor.shutdown(wait=False)
 
     def generate_text_variations(
         self,

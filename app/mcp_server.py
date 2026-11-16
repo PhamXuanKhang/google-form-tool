@@ -198,7 +198,8 @@ def create_server(request: Optional[RequestFn] = None) -> FastMCP:
             description=(
                 "Per question_id: optional fill_percentage (0-100), answers (list of text answers), "
                 "options (list of {text, percentage, next_page_id}; next_page_id '__submit__' ends the "
-                "form after that option). Option percentages of one question should total 100."
+                "form after that option). Option percentages of a single-choice question total 100; "
+                "checkbox percentages are independent chances per option."
             ),
         ),
     ) -> Dict[str, Any]:

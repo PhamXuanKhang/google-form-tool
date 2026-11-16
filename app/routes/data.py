@@ -106,8 +106,13 @@ def save_edit():
             form = storage.get_form_by_id(form_id)
             if not form:
                 return jsonify({"error": "Form not found"}), 404
-            
+
+            from app.domain.edit_validation import validate_edits
             from app.domain.form_processor import FormProcessor
+            try:
+                validate_edits(form, edits)
+            except ValueError as e:
+                return jsonify({"error": str(e)}), 400
             processor = FormProcessor(form)
             processor.apply_user_edits(edits)
             
