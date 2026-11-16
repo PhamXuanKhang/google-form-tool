@@ -22,6 +22,14 @@ def get_storage_service():
     return StorageService(db_path)
 
 
+def get_template_store():
+    from app.services.template_store import TemplateStore
+
+    db_path = Config.DB_PATH
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    return TemplateStore(db_path)
+
+
 _run_store_provider = None
 
 

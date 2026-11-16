@@ -27,7 +27,10 @@ goes through the running app, so the app's own limits and checks apply.
    `get_form` to see questions, options and current settings.
 3. Propose a configuration in plain words (for example "Q1: 60% Yes, 40% No; Q3: names from
    this list") and ask the user to confirm or adjust it. Then apply it with `set_answer_config`.
-   Option percentages of one question should add up to 100.
+   Option percentages of one question should add up to 100. For common shapes use
+   `apply_preset` (uniform, first_heavy; for scales also positive_skew, negative_skew, bell).
+   To reuse a configuration, `list_templates` and `import_config` (preview first, then
+   `apply: true`), or `export_config` to keep a copy.
 4. `simulate` with the number of responses the user wants. Present the spread per question
    against the target, any skipped questions, and a few sample rows. Keep the `seed`.
 5. Only after the user explicitly agrees, call `start_run` with the same count and the `seed`

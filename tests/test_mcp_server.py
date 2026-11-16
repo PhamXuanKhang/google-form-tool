@@ -21,6 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_TOOLS = {
     "app_status", "list_forms", "extract_form", "get_form", "set_answer_config", "simulate",
     "start_run", "run_status", "stop_run", "list_runs", "get_report", "retry_failed",
+    "apply_preset", "export_config", "import_config", "list_templates",
 }
 
 FORM_JSON = {
@@ -125,6 +126,37 @@ def test_extract_then_set_answers_return_the_compact_form():
     assert form["form_id"] == "f1"
     assert form["questions"][0]["options"][1] == {"text": "B", "percentage": 40, "submit_after": True}
     assert ("POST", "/save_edit", {"form_id": "f1", "edits": edits}) in backend.calls
+
+
+def test_apply_preset_sets_fitting_questions_through_save_edit():
+    form = json.loads(json.dumps(FORM_JSON))
+    form["response_config"]["pages"][0]["questions"].append(
+        {"question_id": "q2", "type": "linear_scale", "text": "Rate",
+         "answer_config": {"fill_percentage": 100, "answers": None,
+                           "options": [{"text": str(n), "percentage": 20, "next_page_id": None} for n in range(1, 6)]}})
+    backend = FakeBackend({("GET", "/forms/f1"): (200, {"form": form})})
+    server = mcp_server.create_server(backend)
+
+    bell = _payload(_call(server, "apply_preset", {"form_id": "f1", "preset": "bell"}))
+    uniform = _payload(_call(server, "apply_preset", {"form_id": "f1", "preset": "uniform", "question_id": "q1"}))
+    none_fit = _call(server, "apply_preset", {"form_id": "f1", "preset": "bell", "question_id": "q1"})
+
+    assert bell == {"applied_to": ["q2"], "skipped": ["q1"]}
+    saved = [call for call in backend.calls if call[1] == "/save_edit"]
+    assert sum(option["percentage"] for option in saved[0][2]["edits"]["q2"]["options"]) == pytest.approx(100)
+    assert saved[1][2]["edits"]["q1"]["options"] == [{"text": "A", "percentage": 50.0}, {"text": "B", "percentage": 50.0}]
+    assert uniform["applied_to"] == ["q1"]
+    assert none_fit.isError
+
+
+def test_import_config_needs_exactly_one_source_and_previews_by_default():
+    backend = FakeBackend()
+    server = mcp_server.create_server(backend)
+
+    assert _call(server, "import_config", {"form_id": "f1"}).isError
+    _payload(_call(server, "import_config", {"form_id": "f1", "template_id": "t1"}))
+
+    assert backend.calls[-1] == ("POST", "/forms/f1/config/import", {"apply": False, "template_id": "t1"})
 
 
 @pytest.mark.parametrize("status", [400, 404, 409])

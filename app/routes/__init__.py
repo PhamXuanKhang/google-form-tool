@@ -33,4 +33,4 @@ def _check_same_origin():
     return None
 
 
-from app.routes import health, pages, forms, data, ai, submissions, history, runs  # noqa: E402,F401
+from app.routes import health, pages, forms, data, ai, submissions, history, runs, templates  # noqa: E402,F401

@@ -24,6 +24,8 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from pydantic import Field
 
+from app.domain.distribution_presets import ORDERED_TYPES, presets_for
+from app.domain.distribution_presets import apply_preset as apply_distribution_preset
 from app.runtime_info import read_runtime_info
 
 logger = logging.getLogger("google_form_tool.mcp")
@@ -276,6 +278,65 @@ def create_server(request: Optional[RequestFn] = None) -> FastMCP:
         data = await call("POST", f"/runs/{quoted(run_id)}/retry", {"include_unknown": include_unknown})
         data.pop("success", None)
         return data
+
+    @server.tool()
+    async def apply_preset(
+        form_id: str = Field(min_length=1),
+        preset: Literal["uniform", "positive_skew", "negative_skew", "bell", "first_heavy"] = Field(
+            description="uniform, first_heavy for any choice question; positive_skew, negative_skew and bell for scale questions",
+        ),
+        question_id: str = Field(default="all", min_length=1, description="One question_id, or 'all' for every question the preset fits"),
+    ) -> Dict[str, Any]:
+        """Set option percentages of choice questions to a ready-made distribution."""
+        form = (await call("GET", f"/forms/{quoted(form_id)}"))["form"]
+        edits: Dict[str, Any] = {}
+        skipped = []
+        for question in _compact_form(form)["questions"]:
+            if question_id != "all" and question["question_id"] != question_id:
+                continue
+            options = question.get("options") or []
+            if not options or preset not in presets_for(question["type"]):
+                skipped.append(question["question_id"])
+                continue
+            values = apply_distribution_preset(len(options), preset, question["type"] in ORDERED_TYPES)
+            edits[question["question_id"]] = {
+                "options": [{"text": option["text"], "percentage": value} for option, value in zip(options, values)],
+            }
+        if not edits:
+            raise ToolError(f"Preset '{preset}' fits none of the selected questions.")
+        await call("POST", "/save_edit", {"form_id": form_id, "edits": edits})
+        return {"applied_to": list(edits), "skipped": skipped if question_id == "all" else []}
+
+    @server.tool()
+    async def export_config(form_id: str = Field(min_length=1)) -> Dict[str, Any]:
+        """Export a form's answer configuration as a template object that import_config accepts."""
+        return await call("GET", f"/forms/{quoted(form_id)}/config/export")
+
+    @server.tool()
+    async def import_config(
+        form_id: str = Field(min_length=1),
+        template: Optional[Dict[str, Any]] = Field(default=None, description="Template object from export_config"),
+        template_id: Optional[str] = Field(default=None, description="Id of a saved template from list_templates"),
+        apply: bool = Field(default=False, description="False only previews which questions match; True applies them"),
+    ) -> Dict[str, Any]:
+        """Apply a configuration template to a form. Preview first (apply false), then apply."""
+        if (template is None) == (template_id is None):
+            raise ToolError("Give either template or template_id.")
+        body: Dict[str, Any] = {"apply": apply}
+        if template is not None:
+            body["template"] = template
+        else:
+            body["template_id"] = template_id
+        data = await call("POST", f"/forms/{quoted(form_id)}/config/import", body)
+        data.pop("success", None)
+        return data
+
+    @server.tool()
+    async def list_templates() -> Dict[str, Any]:
+        """List answer configuration templates saved in the app."""
+        data = await call("GET", "/templates")
+        templates = data.get("templates") or []
+        return {"templates": templates[:MAX_LIST_ITEMS], "total": len(templates)}
 
     return server
 

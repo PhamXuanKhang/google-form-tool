@@ -58,6 +58,12 @@ EXPECTED_ROUTES = {
     ("/runs/<run_id>/export", ("GET",), "main.export_run"),
     ("/runs/<run_id>/retry", ("POST",), "main.retry_run"),
     ("/runs/<run_id>/view", ("GET",), "main.run_view"),
+    ("/presets", ("GET",), "main.presets"),
+    ("/forms/<form_id>/config/export", ("GET",), "main.export_config"),
+    ("/forms/<form_id>/config/import", ("POST",), "main.import_config"),
+    ("/templates", ("GET",), "main.list_templates"),
+    ("/templates", ("POST",), "main.save_template"),
+    ("/templates/<template_id>/delete", ("POST",), "main.delete_template"),
 }
 
 
@@ -338,4 +344,4 @@ def test_main_blueprint_routes_match_expected_table(client):
         actual.add((rule.rule, methods, rule.endpoint))
 
     assert actual == EXPECTED_ROUTES
-    assert len(actual) == 31
+    assert len(actual) == 37
