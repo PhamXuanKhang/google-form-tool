@@ -49,6 +49,13 @@ EXPECTED_ROUTES = {
     ("/submission_status", ("GET",), "main.submission_status"),
     ("/submission_history/<form_id>", ("GET",), "main.submission_history"),
     ("/export_history/<form_id>", ("GET",), "main.export_history"),
+    ("/simulate", ("POST",), "main.simulate"),
+    ("/runs", ("GET",), "main.list_runs"),
+    ("/runs/<run_id>", ("GET",), "main.run_detail"),
+    ("/runs/<run_id>/rows", ("GET",), "main.run_rows"),
+    ("/runs/<run_id>/export", ("GET",), "main.export_run"),
+    ("/runs/<run_id>/retry", ("POST",), "main.retry_run"),
+    ("/runs/<run_id>/view", ("GET",), "main.run_view"),
 }
 
 
@@ -326,4 +333,4 @@ def test_main_blueprint_routes_match_expected_table(client):
         actual.add((rule.rule, methods, rule.endpoint))
 
     assert actual == EXPECTED_ROUTES
-    assert len(actual) == 22
+    assert len(actual) == 29

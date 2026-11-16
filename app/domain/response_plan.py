@@ -98,6 +98,7 @@ def target_snapshot(form: Form) -> Dict[str, Dict[str, Any]]:
             snapshot[question.question_id] = {
                 "text": question.text,
                 "type": question.type,
+                "entry_param": question.get_entry_param(),
                 "fill_percentage": config.fill_percentage if config else None,
                 "options": (
                     {option.text: option.percentage for option in config.options}

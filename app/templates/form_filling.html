@@ -317,21 +317,7 @@ window.i18n = {
 };
 </script>
 <script src="{{ url_for('static', filename='vendor/chart.js-4.5.1/chart.umd.min.js') }}"></script>
-<script>
-(function () {
-  // Keep chart text and grid lines readable in both themes.
-  function syncChartTheme() {
-    if (!window.Chart) return;
-    const styles = getComputedStyle(document.documentElement);
-    Chart.defaults.color = styles.getPropertyValue('--gf-text-muted').trim();
-    Chart.defaults.borderColor = styles.getPropertyValue('--gf-border').trim();
-    Chart.defaults.elements.arc.borderColor = styles.getPropertyValue('--gf-surface').trim();
-    Object.values(Chart.instances || {}).forEach((chart) => chart.update());
-  }
-  syncChartTheme();
-  document.addEventListener('themechange', syncChartTheme);
-})();
-</script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/main.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/navigation.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form_filling/question_config.js') }}"></script>

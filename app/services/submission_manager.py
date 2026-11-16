@@ -151,6 +151,73 @@ def _submit_planned_run(submitter, concurrent_threads, min_delay, max_delay):
         store.update_run(run_id, **fields)
 
 
+class RunAlreadyActive(Exception):
+    """The form already has a submission running."""
+
+
+def form_has_running_submission(form_id):
+    with active_submitters_lock:
+        submitter = active_submitters.get(form_id)
+        return bool(submitter and submitter.get_status().get("running", False))
+
+
+def live_run_ids():
+    """Run ids whose submitter is still running in this process."""
+    with active_submitters_lock:
+        return {
+            getattr(sub, "run_id", None) for sub in active_submitters.values()
+            if sub.get_status().get("running", False)
+        } - {None}
+
+
+def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, retry_of=None, snapshot=None):
+    """Record ``plan`` as a run and start submitting it in the background.
+
+    Raises RunAlreadyActive if the form has a running submission. The check
+    and the registration happen under one lock so two requests cannot both
+    start. Returns the run header.
+    """
+    from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
+    from app.adapters.browser.form_submitter import FormSubmitter
+    from app.config import Config
+    from app.domain.response_plan import target_snapshot
+
+    threads = max(1, min(concurrent_threads, len(plan.rows)))
+    submitter = FormSubmitter(
+        form=form,
+        chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
+        chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
+        headless=True,
+    )
+    submitter.plan = plan
+    with active_submitters_lock:
+        if form_has_running_submission(form.id):
+            raise RunAlreadyActive(form.id)
+        run = get_run_store().create_run(
+            form_id=form.id,
+            mode=plan.mode,
+            seed=plan.seed,
+            threads=threads,
+            min_delay=min_delay,
+            max_delay=max_delay,
+            rows=[row.to_dict() for row in plan.rows],
+            target_snapshot=snapshot if snapshot is not None else target_snapshot(form),
+            retry_of=retry_of,
+        )
+        submitter.run_id = run["run_id"]
+        # Mark it running now so a second request sees it before the thread starts.
+        submitter._set_status_values(running=True, total=len(plan.rows))
+        active_submitters[form.id] = submitter
+
+    thread = threading.Thread(
+        target=run_submission,
+        args=(submitter, form.id, len(plan.rows), threads, min_delay, max_delay, None, None, plan.mode, None),
+    )
+    thread.daemon = True
+    thread.start()
+    return run
+
+
 def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None, upload_id=None):
     """Internal helper: Runs submission in background thread"""
     try:
