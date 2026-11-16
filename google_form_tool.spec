@@ -103,6 +103,7 @@ a = Analysis(
         "app.domain.config_template",
         "app.domain.personas",
         "app.domain.edit_validation",
+        "app.domain.autopilot_proposal",
         "app.adapters",
         "app.adapters.browser",
         "app.adapters.browser.driver_manager",
