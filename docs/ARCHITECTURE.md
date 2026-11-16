@@ -8,6 +8,8 @@ This project is a local desktop app for extracting, configuring, and submitting 
 - `app/__init__.py` creates the Flask app, registers routes, and initializes logging.
 - `electron/main.js` owns the desktop window lifecycle.
 - `electron/backendProcess.js` starts and stops the packaged backend sidecar.
+- `app/mcp_server.py` (`python -m app.mcp_server`, packaged as `GoogleFormToolMcp.exe` via `mcp_server_entry.py`) is a stdio MCP server for agents. It proxies the running backend over HTTP on `127.0.0.1`, found through `runtime.json`; see `docs/decisions/0005-mcp-proxy.md`.
+- `app/factory.py` holds the Flask application factory; `import app` stays light and loads it on first use.
 
 ## Main Flows
 
@@ -23,6 +25,7 @@ This project is a local desktop app for extracting, configuring, and submitting 
 ## Boundaries
 
 - UI code should call Flask routes, not storage or Selenium directly.
+- The MCP server calls Flask routes only. It must not import storage, Flask or Selenium, and must not write anything but the MCP protocol to stdout.
 - Route handlers live in `app/routes/` (one shared `main` blueprint), validate input, and delegate business logic to `app/domain/`, `app/adapters/`, or `app/services/`. See `docs/decisions/0002-route-split.md`.
 - `app/domain/` holds form processing, prefill link generation, and form copy planning, and does not import Selenium or adapters. Browser automation lives in `app/adapters/browser/` and the Gemini client in `app/adapters/ai/`. Runtime configuration is `app/config.py`.
 - Selenium lifecycle belongs in extractor/submitter/copy modules; each path must clean up drivers.

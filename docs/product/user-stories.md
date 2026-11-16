@@ -215,6 +215,32 @@ Routes: `/runs`, `/runs/<run_id>`, `/runs/<run_id>/rows`, `/runs/<run_id>/export
 Modules: `app/routes/runs.py`, `app/domain/run_report.py`, `app/services/run_store.py`, `app/services/history_export.py`, `app/templates/run_report.html`, `app/static/js/run_report.js`
 Tests: `tests/test_simulation_and_reports.py`, `tests/test_run_report.py`, `tests/test_planned_submission.py`
 
+## US-012 Drive the app from an agent
+
+As a Claude (or other MCP client) user, I want an agent to extract, configure, preview, run and
+review form batches through the app, so that I can hand off a test with one request.
+
+Status: keep
+
+Acceptance criteria:
+
+1. The MCP server (`GoogleFormToolMcp.exe`, or `python -m app.mcp_server` from source) offers
+   `app_status`, `list_forms`, `extract_form`, `get_form`, `set_answer_config`, `simulate`,
+   `start_run`, `run_status`, `stop_run`, `list_runs`, `get_report` and `retry_failed`.
+2. Every tool goes through the running app over `127.0.0.1`; when the app is closed, tools say
+   to open it. The server never opens the database or starts the app.
+3. The app's limits and checks apply unchanged (500 responses, 10 threads, one run per form);
+   errors from the app come back as tool errors. `stop_run` requires a form id.
+4. Only JSON-RPC is written to the server's stdout.
+5. Settings shows the configuration for Claude Desktop and Claude Code, and the Claude skill,
+   which tells the agent to simulate first and to send only after the user agrees.
+6. `GET /forms` and `GET /forms/<form_id>` return saved forms as JSON; `/form_filling/extract`
+   also returns the `form_id`.
+
+Routes: `/forms`, `/forms/<form_id>` (plus the routes the tools call)
+Modules: `app/mcp_server.py`, `mcp_server_entry.py`, `app/runtime_info.py`, `app/routes/forms.py`, `app/routes/pages.py`, `skills/google-form-automation/SKILL.md`
+Tests: `tests/test_mcp_server.py`, `tests/test_route_snapshot.py`; `scripts/smoke-mcp.py` (packaged or `--from-source`)
+
 ## Route to story map
 
 | Route | Story |
@@ -227,6 +253,7 @@ Tests: `tests/test_simulation_and_reports.py`, `tests/test_run_report.py`, `test
 | `/validate_api_key`, `/generate_ai_text_answers` | US-004 |
 | `/form_copy`, `/form_copy/extract_source`, `/form_copy/preview_plan`, `/form_copy/apply_to_target` | US-007 |
 | `/simulate` | US-010 |
+| `/forms`, `/forms/<form_id>` | US-012 |
 | `/runs`, `/runs/<run_id>`, `/runs/<run_id>/rows`, `/runs/<run_id>/export`, `/runs/<run_id>/retry`, `/runs/<run_id>/view` | US-011 |
 
 Retired routes (no story): `/generate_response`, `/ai_status`, `/monitoring_history`, `/system_status`.
