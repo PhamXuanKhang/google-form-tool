@@ -30,6 +30,8 @@ Story codes refer to `docs/product/user-stories.md`.
 | US-008 Windows packaging | Build backend sidecar and Electron installer | no | no | manual | Windows | implemented | `scripts/package-windows.ps1`, `google_form_tool.spec`, `electron-builder.yml` |
 | US-008 Landing page | Build static release landing page with latest-release CTA | no | yes | manual | static web | implemented | `landing/package.json`, `landing/index.html`, `landing/styles.css` |
 | US-009 Offline UI and theme | Pages load only bundled assets; vendor libraries ship licenses; theme, sidebar and stepper | yes | yes | manual | desktop/browser | implemented | `tests/test_offline_assets.py`, `tests/test_i18n_render.py` |
+| US-010 Batch preview | Seeded simulation per question, no driver, no run; same seed reproduces the run | yes | yes | manual | backend/browser | implemented | `tests/test_simulation_and_reports.py`, `tests/test_run_report.py` |
+| US-011 Run report and retry | Run summaries, paged rows, safe CSV/JSON export, retry of failed rows only | yes | yes | manual | backend/browser | implemented | `tests/test_simulation_and_reports.py`, `tests/test_run_report.py` |
 
 ## Evidence Rules
 

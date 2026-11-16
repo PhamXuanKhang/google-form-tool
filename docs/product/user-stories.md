@@ -176,6 +176,45 @@ Routes: none new (restyles `/`, `/form_filling`, `/form_copy`, `/settings/diagno
 Modules: `app/templates/base.html`, `app/static/css/tokens.css`, `app/static/css/styles.css`, `app/static/js/scripts.js`, `app/static/vendor/`
 Tests: `tests/test_offline_assets.py`, `tests/test_i18n_render.py`, `tests/test_form_copy_ui.py`; visual check by eye in both themes
 
+## US-010 Preview a batch before sending
+
+As a form tester, I want to see the answers a batch will send before anything reaches Google,
+so that I can fix the configuration first.
+
+Status: keep
+
+Acceptance criteria:
+
+1. `POST /simulate` plans the batch with the same seeded planner a run uses and returns, per
+   question, counts and rates per option next to the configured target (text questions: distinct
+   values and samples), blank rates, skipped-answer warnings and up to 20 sample rows.
+2. Simulation never starts a browser and never records a run; more than 500 responses returns 400.
+3. Starting a run with the simulated `seed` sends exactly the simulated rows, in both submission modes.
+4. Form Filling step 4 shows the preview with charts and samples, can generate a new plan, and can run exactly the previewed one.
+
+Routes: `/simulate`
+Modules: `app/domain/run_report.py`, `app/domain/response_plan.py`, `app/routes/runs.py`, `app/static/js/form_filling/simulation.js`
+Tests: `tests/test_simulation_and_reports.py`, `tests/test_run_report.py`
+
+## US-011 Review a run and resend failures
+
+As a form tester, I want a report of each run and a way to resend the responses that failed,
+so that I know what reached the form and can complete the batch.
+
+Status: keep
+
+Acceptance criteria:
+
+1. `GET /runs?form_id=` lists a form's runs, newest first; `GET /runs/<run_id>` returns the header and a summary: success, failed, unknown and pending counts, duration, failure reasons, and actual against target per question counting only successful responses.
+2. `GET /runs/<run_id>/rows` pages responses (limit up to 100) and filters by status; `GET /runs/<run_id>/export?format=csv|json` downloads them, and CSV cells that a spreadsheet would run as a formula are neutralized.
+3. `POST /runs/<run_id>/retry` starts a new run with the original answers of failed responses. Responses with an unknown outcome are included only with `include_unknown: true`. A retry always refers to the first run, and a response any retry already sent successfully is never sent again; when nothing is left, it returns 400. A running submission on the form returns 409, an unknown run 404.
+4. Run ids outside the expected format return 400 before any file is read. Responses still marked in flight on a run that is no longer running read as unknown.
+5. The monitor shows live counts, rate per minute, time left and the latest responses, and links to the report page `/runs/<run_id>/view`. The Home form popup lists the form's runs.
+
+Routes: `/runs`, `/runs/<run_id>`, `/runs/<run_id>/rows`, `/runs/<run_id>/export`, `/runs/<run_id>/retry`, `/runs/<run_id>/view`
+Modules: `app/routes/runs.py`, `app/domain/run_report.py`, `app/services/run_store.py`, `app/services/history_export.py`, `app/templates/run_report.html`, `app/static/js/run_report.js`
+Tests: `tests/test_simulation_and_reports.py`, `tests/test_run_report.py`, `tests/test_planned_submission.py`
+
 ## Route to story map
 
 | Route | Story |
@@ -187,6 +226,8 @@ Tests: `tests/test_offline_assets.py`, `tests/test_i18n_render.py`, `tests/test_
 | `/start_submission`, `/stop_submission`, `/submission_status` | US-003 |
 | `/validate_api_key`, `/generate_ai_text_answers` | US-004 |
 | `/form_copy`, `/form_copy/extract_source`, `/form_copy/preview_plan`, `/form_copy/apply_to_target` | US-007 |
+| `/simulate` | US-010 |
+| `/runs`, `/runs/<run_id>`, `/runs/<run_id>/rows`, `/runs/<run_id>/export`, `/runs/<run_id>/retry`, `/runs/<run_id>/view` | US-011 |
 
 Retired routes (no story): `/generate_response`, `/ai_status`, `/monitoring_history`, `/system_status`.
 
