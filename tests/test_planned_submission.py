@@ -274,6 +274,41 @@ def test_status_includes_run_id(started, client, monkeypatch):
     assert all_status["form_run"]["run_id"] == run_id
 
 
+def test_second_start_is_refused_before_the_first_job_begins(client, storage_stub, run_store, monkeypatch):
+    storage_stub(FakeStorage(_form()))
+    CapturingThread.instances = []
+    monkeypatch.setattr(threading, "Thread", CapturingThread)
+    body = {"form_id": "form_run", "num_submissions": 2, "concurrent_threads": 1, "min_delay": 0, "max_delay": 0}
+
+    first = client.post("/start_submission", json=body)
+    second = client.post("/start_submission", json=body)
+
+    assert first.status_code == 200
+    assert second.status_code == 409
+    assert len(run_store.list_runs()) == 1
+
+
+def test_run_stays_live_until_its_job_ends(started, run_store, client, monkeypatch):
+    seen = {}
+
+    def stop_then_look(self, driver, url):
+        # What stop() leaves behind when a worker outlives its join timeout.
+        self.stop_flag.set()
+        self._set_status_values(running=False)
+        seen["live"] = self.run_id in submission_manager.live_run_ids()
+        seen["blocked"] = submission_manager.form_has_running_submission("form_run")
+        return True
+
+    monkeypatch.setattr(FormSubmitter, "_submit_prefilled_url", stop_then_look)
+
+    run_id = started(num_submissions=2, concurrent_threads=1, seed=1).get_json()["run_id"]
+
+    assert seen == {"live": True, "blocked": True}
+    assert submission_manager.form_has_running_submission("form_run") is False
+    assert run_id not in submission_manager.live_run_ids()
+    assert run_store.get_run(run_id)["status"] == "stopped"
+
+
 def test_submitter_module_constants_match_plan_modes():
     assert form_submitter_module.SUBMISSION_MODE_PREFILL == "prefill_link"
     assert form_submitter_module.SUBMISSION_MODE_DOM_FILL == "dom_fill"

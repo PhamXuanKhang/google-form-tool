@@ -67,10 +67,8 @@ def start_submission():
 
     submission_manager.cleanup_finished_submitters()
 
-    with submission_manager.active_submitters_lock:
-        current_submitter = submission_manager.active_submitters.get(form_id)
-        if current_submitter and current_submitter.get_status().get("running", False):
-            return jsonify({"error": "A submission is already running for this form."}), 409
+    if submission_manager.form_has_running_submission(form_id):
+        return jsonify({"error": "A submission is already running for this form."}), 409
 
     try:
         with get_storage_service() as storage:
@@ -109,19 +107,19 @@ def start_submission():
                     include_debug_sample=Config.PREFILL_DEBUG_SAMPLE,
                 )
 
-            run = get_run_store().create_run(
-                form_id=form_id,
-                mode=submission_mode,
-                seed=plan.seed,
-                threads=concurrent_threads,
-                min_delay=min_delay,
-                max_delay=max_delay,
-                rows=[row.to_dict() for row in plan.rows],
-                target_snapshot=target_snapshot(form),
-            )
-            submitter.run_id = run["run_id"]
-            with submission_manager.active_submitters_lock:
-                submission_manager.active_submitters[form_id] = submitter
+            try:
+                run = submission_manager.register_run(form_id, submitter, lambda: get_run_store().create_run(
+                    form_id=form_id,
+                    mode=submission_mode,
+                    seed=plan.seed,
+                    threads=concurrent_threads,
+                    min_delay=min_delay,
+                    max_delay=max_delay,
+                    rows=[row.to_dict() for row in plan.rows],
+                    target_snapshot=target_snapshot(form),
+                ))
+            except submission_manager.RunAlreadyActive:
+                return jsonify({"error": "A submission is already running for this form."}), 409
 
             warnings = submission_manager.format_skipped_type_warning(skipped_summary)
 

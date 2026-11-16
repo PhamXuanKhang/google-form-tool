@@ -102,7 +102,7 @@ def cleanup_finished_submitters():
     with active_submitters_lock:
         finished = [
             fid for fid, sub in active_submitters.items()
-            if not sub.get_status().get("running", False)
+            if not _is_live(sub)
             and (now - getattr(sub, "_finished_at", 0)) > FINISHED_STATUS_TTL
         ]
         for fid in finished:
@@ -155,19 +155,43 @@ class RunAlreadyActive(Exception):
     """The form already has a submission running."""
 
 
+def _is_live(submitter):
+    """A submitter is live from registration until its background job ends.
+
+    ``running`` alone is not enough: it is False before the job starts and
+    turns False on stop while workers may still be sending.
+    """
+    return bool(submitter.get_status().get("running", False) or getattr(submitter, "_run_live", False))
+
+
 def form_has_running_submission(form_id):
     with active_submitters_lock:
         submitter = active_submitters.get(form_id)
-        return bool(submitter and submitter.get_status().get("running", False))
+        return bool(submitter and _is_live(submitter))
 
 
 def live_run_ids():
-    """Run ids whose submitter is still running in this process."""
+    """Run ids whose submission job is still live in this process."""
     with active_submitters_lock:
         return {
-            getattr(sub, "run_id", None) for sub in active_submitters.values()
-            if sub.get_status().get("running", False)
+            getattr(sub, "run_id", None) for sub in active_submitters.values() if _is_live(sub)
         } - {None}
+
+
+def register_run(form_id, submitter, create_run):
+    """Atomically refuse a second submission, record the run, and register it.
+
+    ``create_run`` is called under the lock and returns the run header.
+    Raises RunAlreadyActive when the form already has a live submission.
+    """
+    with active_submitters_lock:
+        if form_has_running_submission(form_id):
+            raise RunAlreadyActive(form_id)
+        run = create_run()
+        submitter.run_id = run["run_id"]
+        submitter._run_live = True
+        active_submitters[form_id] = submitter
+    return run
 
 
 def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, retry_of=None, snapshot=None):
@@ -190,24 +214,17 @@ def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, ret
         headless=True,
     )
     submitter.plan = plan
-    with active_submitters_lock:
-        if form_has_running_submission(form.id):
-            raise RunAlreadyActive(form.id)
-        run = get_run_store().create_run(
-            form_id=form.id,
-            mode=plan.mode,
-            seed=plan.seed,
-            threads=threads,
-            min_delay=min_delay,
-            max_delay=max_delay,
-            rows=[row.to_dict() for row in plan.rows],
-            target_snapshot=snapshot if snapshot is not None else target_snapshot(form),
-            retry_of=retry_of,
-        )
-        submitter.run_id = run["run_id"]
-        # Mark it running now so a second request sees it before the thread starts.
-        submitter._set_status_values(running=True, total=len(plan.rows))
-        active_submitters[form.id] = submitter
+    run = register_run(form.id, submitter, lambda: get_run_store().create_run(
+        form_id=form.id,
+        mode=plan.mode,
+        seed=plan.seed,
+        threads=threads,
+        min_delay=min_delay,
+        max_delay=max_delay,
+        rows=[row.to_dict() for row in plan.rows],
+        target_snapshot=snapshot if snapshot is not None else target_snapshot(form),
+        retry_of=retry_of,
+    ))
 
     thread = threading.Thread(
         target=run_submission,
@@ -253,3 +270,4 @@ def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_
     finally:
         upload_cache.delete_cached_upload(upload_id)
         submitter._finished_at = time.monotonic()
+        submitter._run_live = False
