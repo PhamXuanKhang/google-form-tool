@@ -151,6 +151,30 @@ Routes: none (packaging and static site)
 Modules: `scripts/package-windows.ps1`, `google_form_tool.spec`, `electron-builder.yml`, `landing/`
 Tests: manual packaging smoke; `landing/package.json` build
 
+## US-009 Use the app offline with a consistent interface
+
+As a user, I want every screen to load without internet, follow my light or dark preference,
+and share one navigation, so that the desktop app works anywhere and feels like one tool.
+
+Status: keep
+
+Acceptance criteria:
+
+1. The five pages load scripts, stylesheets, fonts, icons and images only from the app;
+   third-party libraries live in `app/static/vendor/` with their licenses.
+2. The theme follows the OS preference until the user picks one in the sidebar; the choice
+   persists and is applied before first paint. Reduced-motion preferences turn off
+   non-essential animation.
+3. A left sidebar links Home, Form Filling, Copy Form, Settings and About, marks the current
+   page, holds the language picker, theme toggle, bug report link and version, and collapses
+   to icons in narrow windows.
+4. Form Filling shows a horizontal stepper; loading, empty and error states each have their
+   own design, and notifications use one shared toast.
+
+Routes: none new (restyles `/`, `/form_filling`, `/form_copy`, `/settings/diagnostics`, `/about`)
+Modules: `app/templates/base.html`, `app/static/css/tokens.css`, `app/static/css/styles.css`, `app/static/js/scripts.js`, `app/static/vendor/`
+Tests: `tests/test_offline_assets.py`, `tests/test_i18n_render.py`, `tests/test_form_copy_ui.py`; visual check by eye in both themes
+
 ## Route to story map
 
 | Route | Story |

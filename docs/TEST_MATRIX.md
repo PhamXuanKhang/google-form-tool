@@ -28,6 +28,7 @@ Story codes refer to `docs/product/user-stories.md`.
 | US-007 Form copy MVP | Best-effort copy preview and apply flow | yes | yes | manual | desktop/browser | implemented | `tests/test_form_copier.py`, `tests/test_form_copy_planner.py`, `tests/test_form_copy_routes.py`, `tests/test_form_copy_ui.py` |
 | US-008 Windows packaging | Build backend sidecar and Electron installer | no | no | manual | Windows | implemented | `scripts/package-windows.ps1`, `google_form_tool.spec`, `electron-builder.yml` |
 | US-008 Landing page | Build static release landing page with latest-release CTA | no | yes | manual | static web | implemented | `landing/package.json`, `landing/index.html`, `landing/styles.css` |
+| US-009 Offline UI and theme | Pages load only bundled assets; vendor libraries ship licenses; theme, sidebar and stepper | yes | yes | manual | desktop/browser | implemented | `tests/test_offline_assets.py`, `tests/test_i18n_render.py` |
 
 ## Evidence Rules
 
