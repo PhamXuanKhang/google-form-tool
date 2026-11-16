@@ -169,7 +169,11 @@ async function startEditing(persona) {
     const merged = JSON.parse(JSON.stringify(baseForm));
     questions(merged).forEach((question) => {
         const override = editing.overrides[question.question_id];
-        if (override) question.answer_config = { ...question.answer_config, ...override };
+        if (override) {
+            // Only fields the override sets replace the shared ones.
+            const set = Object.fromEntries(Object.entries(override).filter(([, value]) => value !== null && value !== undefined));
+            question.answer_config = { ...question.answer_config, ...set };
+        }
     });
     window.renderQuestionsStep2?.(window.formQuestionsData);
     window.applyConfigToCards?.(merged);

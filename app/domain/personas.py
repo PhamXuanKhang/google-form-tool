@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from pydantic import ValidationError
 
-from app.models import Form, Persona
+from app.models import AnswerConfig, Form, Persona
 
 MAX_PERSONAS = 8
 WEIGHT_TOLERANCE = 0.01
@@ -27,14 +27,19 @@ def merged_form(form: Form, persona: Persona) -> Form:
         override = persona.overrides.get(question.question_id)
         if override is None:
             continue
-        base_branches = {
-            option.text: option.next_page_id
-            for option in ((question.answer_config.options or []) if question.answer_config else [])
-        }
-        question.answer_config = override.model_copy(deep=True)
+        base = question.answer_config or AnswerConfig()
+        base_branches = {option.text: option.next_page_id for option in (base.options or [])}
+        # An override only replaces the fields it sets; the rest stay shared.
+        merged_config = base.model_copy(deep=True)
+        for field_name in ("fill_percentage", "answers", "options"):
+            value = getattr(override, field_name)
+            if value is not None:
+                setattr(merged_config, field_name, [item.model_copy() for item in value]
+                        if field_name == "options" else (list(value) if field_name == "answers" else value))
         # Branching belongs to the form, not to a persona: keep the shared setting.
-        for option in question.answer_config.options or []:
+        for option in merged_config.options or []:
             option.next_page_id = base_branches.get(option.text)
+        question.answer_config = merged_config
     merged.personas = None
     return merged
 

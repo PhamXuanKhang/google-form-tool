@@ -105,6 +105,28 @@ def test_blended_targets_and_shared_branching():
 
 
 @pytest.mark.domain
+@pytest.mark.parametrize("mode", [PLAN_MODE_PREFILL, PLAN_MODE_DOM_FILL])
+def test_partial_overrides_keep_the_shared_fields(mode):
+    fill_only = Persona(persona_id="f", name="Fill only", weight=50,
+                        overrides={"q1": AnswerConfig(fill_percentage=50)})
+    options_only = Persona(persona_id="o", name="Options only", weight=50,
+                           overrides={"q2": AnswerConfig(options=_options({"X1": 100.0, "X2": 0.0, "Y1": 0.0, "Y2": 0.0}))})
+    form = _form([fill_only, options_only])
+
+    merged_fill = merged_form(form, fill_only).response_config.pages[0].questions[0].answer_config
+    merged_options = merged_form(form, options_only).response_config.pages[0].questions[1].answer_config
+    plan = build_plan(form, 40, seed=2, mode=mode)
+
+    assert merged_fill.fill_percentage == 50 and [o.text for o in merged_fill.options] == ["X1", "X2", "Y1", "Y2"]
+    assert merged_options.fill_percentage == 100
+    known = X | Y
+    for row in plan.rows:
+        assert set(row.answers.values()) <= known, row.answers
+        if row.persona_id == "o":
+            assert row.answers["q2"] == "X1"
+
+
+@pytest.mark.domain
 def test_run_report_breaks_results_down_by_persona():
     form = _form(_split_personas())
     from app.domain.personas import persona_targets
