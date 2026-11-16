@@ -399,3 +399,18 @@ msgstr "An API key is required to use AI Generate."
 
 msgid "AI Generate only supports text-like questions in this beta."
 msgstr "AI Generate only supports text-like questions in this beta."
+
+msgid "Skip to content"
+msgstr "Skip to content"
+
+msgid "Main navigation"
+msgstr "Main navigation"
+
+msgid "Language"
+msgstr "Language"
+
+msgid "Toggle dark mode"
+msgstr "Toggle dark mode"
+
+msgid "Report Bug"
+msgstr "Report Bug"

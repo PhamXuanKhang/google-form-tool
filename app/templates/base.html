@@ -29,102 +29,84 @@
     {% block css %}{% endblock %}
 </head>
 <body>
-    <!-- ================= HEADER ================= -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <div class="container">
-            <!-- Logo -->
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">
-                <i class="fas fa-robot mr-2"></i> {{ _('Google Form Automation Tool') }}
+    <a class="skip-link" href="#main-content">{{ _('Skip to content') }}</a>
+    <div class="app-shell">
+        <!-- ================= SIDEBAR ================= -->
+        <aside class="app-sidebar" aria-label="{{ _('Main navigation') }}">
+            <a class="app-brand" href="{{ url_for('main.index') }}" title="{{ _('Google Form Automation Tool') }}">
+                <span class="app-brand-mark" aria-hidden="true"><i class="fas fa-robot"></i></span>
+                <span class="app-brand-text">{{ _('Google Form Automation Tool') }}</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
 
-            <!-- Navbar -->
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'home' %}active{% endif %}" href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> {{ _('Home') }} </a>
+            {% set nav_items = [
+                ('home', url_for('main.index'), 'fas fa-home', _('Home')),
+                ('form_filling', url_for('main.form_filling'), 'fas fa-file-alt', _('Form Filling')),
+                ('form_copy', url_for('main.form_copy'), 'fas fa-copy', _('Copy Form')),
+                ('settings_diagnostics', url_for('main.settings_diagnostics'), 'fas fa-gear', _('Settings')),
+                ('about', url_for('main.about'), 'fas fa-info-circle', _('About')),
+            ] %}
+            <nav class="app-nav">
+                <ul class="app-nav-list">
+                    {% for key, href, icon, label in nav_items %}
+                    <li>
+                        <a class="app-nav-link {% if active_page == key %}active{% endif %}" href="{{ href }}" title="{{ label }}"
+                           {% if active_page == key %}aria-current="page"{% endif %}>
+                            <i class="{{ icon }}" aria-hidden="true"></i>
+                            <span class="app-nav-label">{{ label }}</span>
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'form_filling' %}active{% endif %}" href="{{ url_for('main.form_filling') }}"><i class="fas fa-file-alt"></i> {{ _('Form Filling') }} </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'form_copy' %}active{% endif %}" href="{{ url_for('main.form_copy') }}"><i class="fas fa-copy"></i> {{ _('Copy Form') }} </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'settings_diagnostics' %}active{% endif %}" href="{{ url_for('main.settings_diagnostics') }}"><i class="fas fa-gear"></i> {{ _('Settings') }} </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'about' %}active{% endif %}" href="{{ url_for('main.about') }}"><i class="fas fa-info-circle"></i> {{ _('About') }} </a>
-                    </li>
+                    {% endfor %}
                 </ul>
-                <div class="d-flex align-items-center ms-3">
-                    <!-- Language selector -->
-                    <div class="dropdown me-2">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-globe"></i> {{ current_locale|default('en')|upper }}
+            </nav>
+
+            <div class="app-sidebar-footer">
+                <div class="app-sidebar-controls">
+                    <div class="dropup">
+                        <button class="app-icon-btn" type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                                title="{{ _('Language') }}">
+                            <i class="fas fa-globe" aria-hidden="true"></i>
+                            <span class="app-nav-label">{{ current_locale|default('en')|upper }}</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
+                        <ul class="dropdown-menu" aria-labelledby="langDropdown">
                             <li><a class="dropdown-item {% if current_locale == 'en' %}active{% endif %}" href="?lang=en">{{ _('English') }}</a></li>
                             <li><a class="dropdown-item {% if current_locale == 'vi' %}active{% endif %}" href="?lang=vi">{{ _('Vietnamese') }}</a></li>
                         </ul>
                     </div>
-                    <!-- Button to transfer between dark/light mode -->
-                    <button class="btn btn-sm btn-light me-2" onclick="toggleDarkMode()">
-                        <i id= "darkModeIcon" class="fas fa-moon"></i>
+                    <button class="app-icon-btn" type="button" id="theme-toggle" onclick="toggleDarkMode()"
+                            aria-pressed="false" title="{{ _('Toggle dark mode') }}">
+                        <i id="darkModeIcon" class="fas fa-moon" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ _('Toggle dark mode') }}</span>
                     </button>
                 </div>
+                <a class="app-sidebar-link" href="https://github.com/PhamXuanKhang/google-form-tool/issues/new" target="_blank" rel="noopener"
+                   title="{{ _('Report Bug') }}">
+                    <i class="fas fa-bug" aria-hidden="true"></i>
+                    <span class="app-nav-label">{{ _('Report Bug') }}</span>
+                </a>
+                <div class="app-version" title="v{{ app_version }}">v{{ app_version }}</div>
             </div>
+        </aside>
 
-        </div>
-    </nav>
-
-    <!-- Space between navbar and banner -->
-    <div style="height: 56px;"></div>
-
-    <!-- Header Banner -->
-    <header class="position-relative">
-        <div class="w-100 h-64 bg-cover bg-center banner-img">
-            <div class="position-absolute inset-0"></div>
-        </div>
-    </header>
-
-    <!-- ================= MAIN CONTENT ================= -->
-    <main class="container my-5">
-        {% block content %}{% endblock %}
-    </main>
-
-    <!-- ================= FOOTER =================-->
-    <footer class="py-4 border-top">
-        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center text-center text-md-start">
-            <div class="mb-2 mb-md-0">
-                {{ _('Made with') }} <i class="fas fa-heart text-danger"></i> {{ _('by KhangPham') }}
-                <span class="text-muted ms-1" style="font-size:0.8em;">v{{ app_version }}</span>
+        <!-- ================= MAIN CONTENT ================= -->
+        <main class="app-main" id="main-content" tabindex="-1">
+            <div class="app-content">
+                {% block content %}{% endblock %}
             </div>
-            <div class="mb-2 mb-md-0">
-                {{ _('©2025 All rights reserved') }}
-            </div>
-            <div>
-                <a href="mailto:phamxuankhang2004@gmail.com" class="text-decoration-none me-3">
-                    <i class="fas fa-envelope"></i> Email
-                </a>
-                <a href="https://www.linkedin.com/in/xuan-khang-pham-715208279/" target="_blank" class="text-decoration-none me-3">
-                    <i class="fab fa-linkedin"></i> LinkedIn
-                </a>
-                <a href="https://github.com/PhamXuanKhang" target="_blank" class="text-decoration-none me-3">
-                    <i class="fab fa-github"></i> GitHub
-                </a>
-                <a href="https://github.com/PhamXuanKhang/google-form-tool/issues/new" target="_blank" class="text-decoration-none text-warning">
-                    <i class="fas fa-bug"></i> {{ _('Report Bug') }}
-                </a>
+        </main>
+    </div>
+
+    <!-- Shared toast -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="statusToast" class="toast align-items-center text-bg-info border-0" role="status" aria-live="polite" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-message">...</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="{{ _('Close') }}"></button>
             </div>
         </div>
-    </footer>
+    </div>
 
     <script src="{{ url_for('static', filename='vendor/bootstrap-5.3.6/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
-

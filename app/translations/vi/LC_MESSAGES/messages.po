@@ -399,3 +399,18 @@ msgstr "Cần API key để dùng AI Generate."
 
 msgid "AI Generate only supports text-like questions in this beta."
 msgstr "AI Generate trong beta này chỉ hỗ trợ câu hỏi dạng text."
+
+msgid "Skip to content"
+msgstr "Chuyển đến nội dung"
+
+msgid "Main navigation"
+msgstr "Điều hướng chính"
+
+msgid "Language"
+msgstr "Ngôn ngữ"
+
+msgid "Toggle dark mode"
+msgstr "Bật/tắt chế độ tối"
+
+msgid "Report Bug"
+msgstr "Báo lỗi"
