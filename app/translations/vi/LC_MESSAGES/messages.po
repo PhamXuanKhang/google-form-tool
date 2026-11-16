@@ -600,3 +600,42 @@ msgstr "Chưa có đợt chạy nào."
 
 msgid "Could not load runs."
 msgstr "Không tải được danh sách đợt chạy."
+
+msgid "Agent connection (MCP)"
+msgstr "Kết nối agent (MCP)"
+
+msgid "Let Claude or another MCP client extract, configure, simulate, run and review batches through this app. The app must be open while the agent works; the agent cannot start it."
+msgstr "Cho Claude hoặc client MCP khác trích xuất, cấu hình, mô phỏng, chạy và xem báo cáo qua app này. App phải đang mở khi agent làm việc; agent không tự mở app được."
+
+msgid "The MCP server program was not found next to the app. Reinstall the app or run it from source."
+msgstr "Không tìm thấy chương trình MCP server cạnh app. Hãy cài lại app hoặc chạy từ mã nguồn."
+
+msgid "Claude Desktop"
+msgstr "Claude Desktop"
+
+msgid "Copy"
+msgstr "Sao chép"
+
+msgid "Add this to claude_desktop_config.json, then restart Claude Desktop."
+msgstr "Thêm đoạn này vào claude_desktop_config.json rồi khởi động lại Claude Desktop."
+
+msgid "Claude Code"
+msgstr "Claude Code"
+
+msgid "Run this command in a terminal."
+msgstr "Chạy lệnh này trong terminal."
+
+msgid "Claude skill"
+msgstr "Claude skill"
+
+msgid "Download SKILL.md"
+msgstr "Tải SKILL.md"
+
+msgid "Save it as skills/google-form-automation/SKILL.md in your Claude skills folder so the agent follows the safe workflow: simulate first, and send only after you agree."
+msgstr "Lưu thành skills/google-form-automation/SKILL.md trong thư mục skills của Claude để agent làm theo quy trình an toàn: mô phỏng trước, chỉ gửi khi bạn đồng ý."
+
+msgid "Show skill"
+msgstr "Xem skill"
+
+msgid "Copied."
+msgstr "Đã sao chép."

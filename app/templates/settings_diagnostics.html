@@ -60,4 +60,92 @@
         </div>
     </div>
 </div>
+
+<section class="mt-5" aria-labelledby="mcp-title">
+    <h2 class="page-title h4" id="mcp-title">{{ _('Agent connection (MCP)') }}</h2>
+    <p class="page-subtitle mb-3">{{ _('Let Claude or another MCP client extract, configure, simulate, run and review batches through this app. The app must be open while the agent works; the agent cannot start it.') }}</p>
+
+    {% if mcp %}
+    {% if not mcp.available %}
+    <div class="state-error mb-3" role="alert">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <span>{{ _('The MCP server program was not found next to the app. Reinstall the app or run it from source.') }}</span>
+    </div>
+    {% endif %}
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h3 class="section-title mb-0">{{ _('Claude Desktop') }}</h3>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="mcp-desktop-json">
+                    <i class="fas fa-copy me-1" aria-hidden="true"></i>{{ _('Copy') }}
+                </button>
+            </div>
+            <p class="small text-muted">{{ _('Add this to claude_desktop_config.json, then restart Claude Desktop.') }}</p>
+            <pre class="code-block" id="mcp-desktop-json">{{ mcp.desktop_json }}</pre>
+        </div>
+    </div>
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h3 class="section-title mb-0">{{ _('Claude Code') }}</h3>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="mcp-claude-code">
+                    <i class="fas fa-copy me-1" aria-hidden="true"></i>{{ _('Copy') }}
+                </button>
+            </div>
+            <p class="small text-muted">{{ _('Run this command in a terminal.') }}</p>
+            <pre class="code-block" id="mcp-claude-code">{{ mcp.claude_code }}</pre>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if skill_text %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <h3 class="section-title mb-0">{{ _('Claude skill') }}</h3>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="skill-text">
+                        <i class="fas fa-copy me-1" aria-hidden="true"></i>{{ _('Copy') }}
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="skill-download">
+                        <i class="fas fa-download me-1" aria-hidden="true"></i>{{ _('Download SKILL.md') }}
+                    </button>
+                </div>
+            </div>
+            <p class="small text-muted">{{ _('Save it as skills/google-form-automation/SKILL.md in your Claude skills folder so the agent follows the safe workflow: simulate first, and send only after you agree.') }}</p>
+            <details>
+                <summary class="small fw-semibold">{{ _('Show skill') }}</summary>
+                <pre class="code-block mt-2" id="skill-text">{{ skill_text }}</pre>
+            </details>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const copied = {{ _('Copied.') | tojson }};
+    document.querySelectorAll('[data-copy-target]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const text = document.getElementById(button.dataset.copyTarget)?.textContent || '';
+            try {
+                await navigator.clipboard.writeText(text);
+                window.showToast(copied, 'success');
+            } catch (error) {
+                window.showToast(error.message, 'error');
+            }
+        });
+    });
+    document.getElementById('skill-download')?.addEventListener('click', () => {
+        const text = document.getElementById('skill-text')?.textContent || '';
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown' }));
+        link.download = 'SKILL.md';
+        link.click();
+        URL.revokeObjectURL(link.href);
+    });
+})();
+</script>
 {% endblock %}

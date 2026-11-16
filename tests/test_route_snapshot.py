@@ -285,7 +285,7 @@ def test_runtime_diagnostics_keys(client):
     response = client.get("/diagnostics/runtime")
 
     assert response.status_code == 200
-    assert {"app_data_path", "db_path", "log_path", "chrome_path", "chromedriver_path", "mode"} <= set(
+    assert {"app_data_path", "db_path", "log_path", "chrome_path", "chromedriver_path", "mode", "version", "mcp"} <= set(
         response.get_json()
     )
 

@@ -600,3 +600,42 @@ msgstr "No runs yet."
 
 msgid "Could not load runs."
 msgstr "Could not load runs."
+
+msgid "Agent connection (MCP)"
+msgstr "Agent connection (MCP)"
+
+msgid "Let Claude or another MCP client extract, configure, simulate, run and review batches through this app. The app must be open while the agent works; the agent cannot start it."
+msgstr "Let Claude or another MCP client extract, configure, simulate, run and review batches through this app. The app must be open while the agent works; the agent cannot start it."
+
+msgid "The MCP server program was not found next to the app. Reinstall the app or run it from source."
+msgstr "The MCP server program was not found next to the app. Reinstall the app or run it from source."
+
+msgid "Claude Desktop"
+msgstr "Claude Desktop"
+
+msgid "Copy"
+msgstr "Copy"
+
+msgid "Add this to claude_desktop_config.json, then restart Claude Desktop."
+msgstr "Add this to claude_desktop_config.json, then restart Claude Desktop."
+
+msgid "Claude Code"
+msgstr "Claude Code"
+
+msgid "Run this command in a terminal."
+msgstr "Run this command in a terminal."
+
+msgid "Claude skill"
+msgstr "Claude skill"
+
+msgid "Download SKILL.md"
+msgstr "Download SKILL.md"
+
+msgid "Save it as skills/google-form-automation/SKILL.md in your Claude skills folder so the agent follows the safe workflow: simulate first, and send only after you agree."
+msgstr "Save it as skills/google-form-automation/SKILL.md in your Claude skills folder so the agent follows the safe workflow: simulate first, and send only after you agree."
+
+msgid "Show skill"
+msgstr "Show skill"
+
+msgid "Copied."
+msgstr "Copied."

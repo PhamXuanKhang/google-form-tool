@@ -28,6 +28,7 @@ a = Analysis(
         ("app/templates",    "app/templates"),
         ("app/static",       "app/static"),
         ("app/translations", "app/translations"),
+        ("skills/google-form-automation/SKILL.md", "skills/google-form-automation"),
     ] + babel_datas + flask_babel_datas,
     hiddenimports=[
         # TinyDB
@@ -93,6 +94,7 @@ a = Analysis(
         "app.domain.form_processor",
         "app.domain.prefill_link_generator",
         "app.domain.form_copy_planner",
+        "app.mcp_server",
         "app.domain.response_plan",
         "app.domain.run_report",
         "app.adapters",
@@ -140,11 +142,50 @@ exe = EXE(
     icon="app/static/images/app_icon.ico",
 )
 
+# MCP server: a second, always-console exe in the same folder. It speaks MCP
+# over stdin/stdout, so it cannot share the backend exe, whose console flag is
+# fixed at build time. It only needs the HTTP proxy, not Flask or Selenium.
+mcp_analysis = Analysis(
+    ["mcp_server_entry.py"],
+    pathex=["."],
+    binaries=[],
+    datas=collect_data_files("jsonschema_specifications"),
+    hiddenimports=["app.mcp_server", "app.runtime_info", "app.config"],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=["pytest", "_pytest", "unittest", "test", "flask", "selenium", "tinydb"],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+mcp_pyz = PYZ(mcp_analysis.pure, mcp_analysis.zipped_data, cipher=block_cipher)
+
+mcp_exe = EXE(
+    mcp_pyz,
+    mcp_analysis.scripts,
+    [],
+    exclude_binaries=True,
+    name="GoogleFormToolMcp",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    console=True,
+    icon="app/static/images/app_icon.ico",
+)
+
 coll = COLLECT(
     exe,
     a.binaries,
     a.zipfiles,
     a.datas,
+    mcp_exe,
+    mcp_analysis.binaries,
+    mcp_analysis.zipfiles,
+    mcp_analysis.datas,
     strip=False,
     upx=False,
     upx_exclude=[],

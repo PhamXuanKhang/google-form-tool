@@ -411,6 +411,21 @@ code {
     color: var(--gf-accent-text);
 }
 
+.code-block {
+    margin: 0;
+    padding: var(--gf-space-3) var(--gf-space-4);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-surface-2);
+    color: var(--gf-text);
+    font-family: var(--gf-font-mono);
+    font-size: var(--gf-text-sm);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
 .diagnostics-table th,
 .diagnostics-table td {
     padding: var(--gf-space-3) var(--gf-space-4);
