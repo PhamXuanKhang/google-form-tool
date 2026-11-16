@@ -197,6 +197,22 @@ class StorageService:
                 return True
         return False
 
+    def update_personas(self, form_id: str, personas) -> bool:
+        """
+        Replace the personas of a form; an empty list removes them.
+
+        Returns:
+            bool: True if updated, False if form not found.
+        """
+        with _DB_WRITE_LOCK:
+            form = self._load_form(form_id)
+            if form:
+                form.personas = list(personas) or None
+                self.db.update(self._dump(form), self.query.id == form_id)
+                logger.info(f"Updated personas for form: {form_id}")
+                return True
+        return False
+
     def add_submission(self, form_id: str, submission: Submission) -> bool:
         """
         Add a submission record to a form.

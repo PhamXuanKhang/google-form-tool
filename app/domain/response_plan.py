@@ -39,9 +39,13 @@ class PlanRow:
     index: int
     answers: Dict[str, Any]
     skipped: List[Dict[str, str]] = field(default_factory=list)
+    persona_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"index": self.index, "answers": self.answers, "skipped": self.skipped}
+        data = {"index": self.index, "answers": self.answers, "skipped": self.skipped}
+        if self.persona_id is not None:
+            data["persona_id"] = self.persona_id
+        return data
 
 
 @dataclass
@@ -88,7 +92,33 @@ def question_type_lookup(form: Form) -> Dict[str, str]:
 
 def target_snapshot(form: Form) -> Dict[str, Dict[str, Any]]:
     """Capture each question's configured target so later reports compare a
-    run against what was asked for at the time, not against later edits."""
+    run against what was asked for at the time, not against later edits.
+
+    With personas, each target is the weighted blend of the personas' targets.
+    """
+    if form.personas:
+        return _blended_snapshot(form)
+    return _plain_snapshot(form)
+
+
+def _blended_snapshot(form: Form) -> Dict[str, Dict[str, Any]]:
+    from app.domain.personas import merged_form
+
+    blended = _plain_snapshot(form)
+    parts = [(persona.weight / 100, _plain_snapshot(merged_form(form, persona))) for persona in form.personas]
+    for question_id, meta in blended.items():
+        fills = [(share, snap[question_id]["fill_percentage"]) for share, snap in parts]
+        if any(fill is not None for _, fill in fills):
+            meta["fill_percentage"] = round(sum(share * (100 if fill is None else fill) for share, fill in fills), 2)
+        if meta["options"]:
+            meta["options"] = {
+                text: round(sum(share * ((snap[question_id]["options"] or {}).get(text) or 0) for share, snap in parts), 2)
+                for text in meta["options"]
+            }
+    return blended
+
+
+def _plain_snapshot(form: Form) -> Dict[str, Dict[str, Any]]:
     snapshot: Dict[str, Dict[str, Any]] = {}
     if not form.response_config or not form.response_config.pages:
         return snapshot
@@ -152,24 +182,54 @@ def build_plan(
     if seed is None:
         seed = new_seed()
 
-    processor = FormProcessor(form, rng=random.Random(seed))
-    if responses_list:
-        raw_rows = [dict(row) for row in responses_list]
-    elif responses is not None:
-        raw_rows = [dict(responses) for _ in range(max(0, count))]
-    elif mode == PLAN_MODE_PREFILL:
-        raw_rows = processor.generate_prefill_responses(count, shuffle=True)
+    if responses_list or responses is not None:
+        processor = FormProcessor(form, rng=random.Random(seed))
+        if responses_list:
+            raw_rows = [dict(row) for row in responses_list]
+        else:
+            raw_rows = [dict(responses) for _ in range(max(0, count))]
+        raw_rows = processor.apply_prefill_branch_stops(raw_rows)
+        persona_ids: List[Optional[str]] = [None] * len(raw_rows)
+    elif form.personas:
+        raw_rows, persona_ids = _persona_rows(form, count, seed, mode)
     else:
-        raw_rows = [
-            FormProcessor(form, rng=random.Random(f"{seed}:{index}")).generate_random_responses()
-            for index in range(max(0, count))
-        ]
-
-    raw_rows = processor.apply_prefill_branch_stops(raw_rows)
+        raw_rows = _configured_rows(form, count, seed, mode, random.Random(seed), "")
+        persona_ids = [None] * len(raw_rows)
 
     type_lookup = question_type_lookup(form)
     rows = []
-    for index, answers in enumerate(raw_rows):
+    for index, (answers, persona_id) in enumerate(zip(raw_rows, persona_ids)):
         kept, skipped = filter_unsendable(answers, type_lookup, mode)
-        rows.append(PlanRow(index=index, answers=kept, skipped=skipped))
+        rows.append(PlanRow(index=index, answers=kept, skipped=skipped, persona_id=persona_id))
     return ResponsePlan(seed=seed, mode=mode, rows=rows)
+
+
+def _configured_rows(form: Form, count: int, seed: int, mode: str, rng: random.Random, salt: str) -> List[Dict[str, Any]]:
+    """Rows from the form's answer settings, after branch-to-submit stops."""
+    processor = FormProcessor(form, rng=rng)
+    if mode == PLAN_MODE_PREFILL:
+        rows = processor.generate_prefill_responses(count, shuffle=True)
+    else:
+        rows = [
+            FormProcessor(form, rng=random.Random(f"{seed}:{salt}{index}")).generate_random_responses()
+            for index in range(max(0, count))
+        ]
+    return processor.apply_prefill_branch_stops(rows)
+
+
+def _persona_rows(form: Form, count: int, seed: int, mode: str):
+    """Split ``count`` across personas by weight and build each persona's rows
+    from its own settings. The combined rows are shuffled with the seed so
+    personas do not arrive in blocks."""
+    from app.domain.personas import merged_form
+
+    personas = form.personas
+    counts = FormProcessor._allocate_counts([persona.weight for persona in personas], max(0, count))
+    tagged = []
+    for persona, persona_count in zip(personas, counts):
+        persona_form = merged_form(form, persona)
+        rng = random.Random(f"{seed}:persona:{persona.persona_id}")
+        for row in _configured_rows(persona_form, persona_count, seed, mode, rng, f"{persona.persona_id}:"):
+            tagged.append((row, persona.persona_id))
+    random.Random(f"{seed}:order").shuffle(tagged)
+    return [row for row, _ in tagged], [persona_id for _, persona_id in tagged]

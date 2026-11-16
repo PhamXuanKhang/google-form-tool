@@ -86,7 +86,8 @@ class RunStore:
         rows = list(rows)
         self._append_lines(run_id, (
             {"kind": "plan", "index": row["index"], "answers": row["answers"],
-             "skipped": row.get("skipped", [])}
+             "skipped": row.get("skipped", []),
+             **({"persona_id": row["persona_id"]} if row.get("persona_id") else {})}
             for row in rows
         ))
         header = {
@@ -180,6 +181,7 @@ class RunStore:
                         "index": index,
                         "answers": record.get("answers") or {},
                         "skipped": record.get("skipped") or [],
+                        "persona_id": record.get("persona_id"),
                         "status": ROW_PLANNED,
                         "error": None,
                         "started_at": None,

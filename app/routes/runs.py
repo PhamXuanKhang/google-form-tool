@@ -59,6 +59,7 @@ def simulate():
         "questions": summary["questions"],
         "skipped": summary["skipped"],
         "warnings": submission_manager.format_skipped_type_warning(summary["skipped"]),
+        "personas": summary.get("personas"),
         "sample_rows": [
             {"index": row.index, "answers": row.answers}
             for row in plan.rows[:SIMULATION_SAMPLE_ROWS]
@@ -227,12 +228,14 @@ def retry_run(run_id):
     plan = ResponsePlan(
         seed=root["seed"],
         mode=root["mode"],
-        rows=[PlanRow(index=row["index"], answers=row["answers"], skipped=row["skipped"]) for row in candidates],
+        rows=[PlanRow(index=row["index"], answers=row["answers"], skipped=row["skipped"],
+                      persona_id=row.get("persona_id")) for row in candidates],
     )
     try:
         new_run = submission_manager.launch_planned_run(
             form, plan, root.get("threads") or 1, root.get("min_delay") or 0, root.get("max_delay") or 0,
             retry_of=root_id, snapshot=root.get("target_snapshot"),
+            extra={"personas": root["personas"]} if root.get("personas") else None,
         )
     except submission_manager.RunAlreadyActive:
         return json_error("A submission is already running for this form.", 409)

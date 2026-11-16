@@ -30,7 +30,9 @@ goes through the running app, so the app's own limits and checks apply.
    Option percentages of one question should add up to 100. For common shapes use
    `apply_preset` (uniform, first_heavy; for scales also positive_skew, negative_skew, bell).
    To reuse a configuration, `list_templates` and `import_config` (preview first, then
-   `apply: true`), or `export_config` to keep a copy.
+   `apply: true`), or `export_config` to keep a copy. When respondents form distinct groups,
+   describe them as personas with `set_personas` (weights total 100; each persona overrides only
+   the questions where it differs) and check them with `get_personas`.
 4. `simulate` with the number of responses the user wants. Present the spread per question
    against the target, any skipped questions, and a few sample rows. Keep the `seed`.
 5. Only after the user explicitly agrees, call `start_run` with the same count and the `seed`

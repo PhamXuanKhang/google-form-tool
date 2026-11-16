@@ -194,7 +194,7 @@ def register_run(form_id, submitter, create_run):
     return run
 
 
-def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, retry_of=None, snapshot=None):
+def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, retry_of=None, snapshot=None, extra=None):
     """Record ``plan`` as a run and start submitting it in the background.
 
     Raises RunAlreadyActive if the form has a running submission. The check
@@ -224,6 +224,7 @@ def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, ret
         rows=[row.to_dict() for row in plan.rows],
         target_snapshot=snapshot if snapshot is not None else target_snapshot(form),
         retry_of=retry_of,
+        extra=extra,
     ))
 
     thread = threading.Thread(

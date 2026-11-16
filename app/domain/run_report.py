@@ -117,13 +117,37 @@ def retry_candidates(
     return [row for row in family[0] if current.get(row["index"]) in wanted]
 
 
+def _persona_breakdown(persona_targets: List[Dict[str, Any]], rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Per persona: how many rows it got and how its answers compare with its own targets."""
+    total = len(rows)
+    breakdown = []
+    for persona in persona_targets:
+        mine = [row["answers"] for row in rows if row.get("persona_id") == persona["persona_id"]]
+        breakdown.append({
+            "persona_id": persona["persona_id"],
+            "name": persona["name"],
+            "weight": persona["weight"],
+            "count": len(mine),
+            "share": _rate(len(mine), total),
+            "questions": distribution(persona["targets"], mine),
+        })
+    return breakdown
+
+
 def summarize_plan(form: Form, plan: ResponsePlan) -> Dict[str, Any]:
-    """What a plan would send, question by question."""
-    return {
+    """What a plan would send, question by question, and per persona when the form has them."""
+    summary = {
         "total": len(plan.rows),
         "questions": distribution(target_snapshot(form), plan.answers()),
         "skipped": plan.skipped_summary(),
     }
+    if form.personas and any(row.persona_id for row in plan.rows):
+        from app.domain.personas import persona_targets
+
+        summary["personas"] = _persona_breakdown(
+            persona_targets(form), [{"answers": row.answers, "persona_id": row.persona_id} for row in plan.rows]
+        )
+    return summary
 
 
 def _parse_time(value: Optional[str]) -> Optional[datetime]:
@@ -150,7 +174,7 @@ def summarize_run(form: Optional[Form], header: Dict[str, Any], rows: Iterable[D
     snapshot = header.get("target_snapshot") or (target_snapshot(form) if form else {})
     failures = Counter(row.get("error") or "unknown_error" for row in rows if row.get("status") == "failed")
 
-    return {
+    summary = {
         "total": len(rows),
         "success": statuses.get("success", 0),
         "failed": statuses.get("failed", 0),
@@ -162,3 +186,8 @@ def summarize_run(form: Optional[Form], header: Dict[str, Any], rows: Iterable[D
         "questions": distribution(snapshot, successful),
         "failure_reasons": [{"reason": reason, "count": count} for reason, count in failures.most_common()],
     }
+    if header.get("personas"):
+        summary["personas"] = _persona_breakdown(
+            header["personas"], [row for row in rows if row.get("status") == "success"]
+        )
+    return summary

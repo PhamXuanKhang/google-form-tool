@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_TOOLS = {
     "app_status", "list_forms", "extract_form", "get_form", "set_answer_config", "simulate",
     "start_run", "run_status", "stop_run", "list_runs", "get_report", "retry_failed",
-    "apply_preset", "export_config", "import_config", "list_templates",
+    "apply_preset", "export_config", "import_config", "list_templates", "get_personas", "set_personas",
 }
 
 FORM_JSON = {
@@ -81,6 +81,15 @@ def test_all_tools_are_listed_with_strict_inputs():
     assert tools["start_run"].inputSchema["properties"]["concurrent_threads"]["default"] == 1
 
 
+def test_no_tool_takes_an_api_key():
+    async def go():
+        async with create_connected_server_and_client_session(mcp_server.create_server(FakeBackend())) as session:
+            return (await session.list_tools()).tools
+
+    for tool in anyio.run(go):
+        assert not any("key" in name.lower() for name in tool.inputSchema.get("properties", {})), tool.name
+
+
 def test_stop_run_without_form_id_is_rejected_before_the_backend():
     backend = FakeBackend()
 
@@ -103,6 +112,8 @@ def test_stop_run_without_form_id_is_rejected_before_the_backend():
     ("list_runs", {"form_id": "f1"}, "GET", "/runs?form_id=f1", None),
     ("get_report", {"run_id": "abc"}, "GET", "/runs/abc", None),
     ("retry_failed", {"run_id": "abc"}, "POST", "/runs/abc/retry", {"include_unknown": False}),
+    ("get_personas", {"form_id": "f1"}, "GET", "/forms/f1/personas", None),
+    ("set_personas", {"form_id": "f1", "personas": []}, "POST", "/forms/f1/personas", {"personas": []}),
 ])
 def test_each_tool_calls_its_route(name, arguments, method, path, body):
     backend = FakeBackend({("GET", "/forms/"): (200, {"form": FORM_JSON})})

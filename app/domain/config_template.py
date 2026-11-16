@@ -48,6 +48,7 @@ class ConfigTemplate(BaseModel):
     created_at: str = Field(max_length=50)
     form_fingerprint: str = Field(max_length=100)
     questions: List[TemplateQuestion] = Field(max_length=1000)
+    personas: Optional[List[Dict[str, Any]]] = Field(default=None, max_length=8)
 
 
 def _questions(form: Form):
@@ -88,6 +89,8 @@ def build_template(form: Form, name: Optional[str] = None) -> Dict[str, Any]:
         "form_fingerprint": form_fingerprint(form),
         "questions": questions,
     }
+    if form.personas:
+        template["personas"] = [persona.model_dump(mode="json") for persona in form.personas]
     return ConfigTemplate.model_validate(template).model_dump(mode="json")
 
 
@@ -112,7 +115,7 @@ def match_template(form: Form, template: ConfigTemplate) -> Dict[str, Any]:
     for question in _questions(form):
         by_text.setdefault((question.text.strip().lower(), question.type), question)
 
-    matched, unmatched, edits = [], [], {}
+    matched, unmatched, edits, id_map = [], [], {}, {}
     used = set()
     for item in template.questions:
         target = by_id.get(item.question_id)
@@ -129,6 +132,7 @@ def match_template(form: Form, template: ConfigTemplate) -> Dict[str, Any]:
                 unmatched.append({"question_id": item.question_id, "text": item.text, "reason": "options_differ"})
                 continue
         used.add(target.question_id)
+        id_map[item.question_id] = target.question_id
         edit: Dict[str, Any] = {}
         if item.fill_percentage is not None:
             edit["fill_percentage"] = item.fill_percentage
@@ -153,4 +157,5 @@ def match_template(form: Form, template: ConfigTemplate) -> Dict[str, Any]:
         "unmatched": unmatched,
         "missing": missing,
         "edits": edits,
+        "id_map": id_map,
     }

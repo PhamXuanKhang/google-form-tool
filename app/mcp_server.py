@@ -17,7 +17,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 import anyio
 from mcp.server.fastmcp import FastMCP
@@ -331,6 +331,29 @@ def create_server(request: Optional[RequestFn] = None) -> FastMCP:
         data = await call("POST", f"/forms/{quoted(form_id)}/config/import", body)
         data.pop("success", None)
         return data
+
+    @server.tool()
+    async def get_personas(form_id: str = Field(min_length=1)) -> Dict[str, Any]:
+        """Show a form's personas: weighted groups of respondents with their own answer settings."""
+        data = await call("GET", f"/forms/{quoted(form_id)}/personas")
+        return {"personas": data.get("personas") or []}
+
+    @server.tool()
+    async def set_personas(
+        form_id: str = Field(min_length=1),
+        personas: List[Dict[str, Any]] = Field(
+            max_length=8,
+            description=(
+                "The full list, replacing any existing one; [] removes personas. Each item: name, weight "
+                "(all weights total 100), optional description, and overrides: question_id -> "
+                "{fill_percentage, answers, options: [{text, percentage}]} for questions that differ "
+                "from the form's shared settings. Option texts must exist on the question."
+            ),
+        ),
+    ) -> Dict[str, Any]:
+        """Replace the personas of a form. Simulate afterwards to check the split."""
+        data = await call("POST", f"/forms/{quoted(form_id)}/personas", {"personas": personas})
+        return {"personas": data.get("personas") or []}
 
     @server.tool()
     async def list_templates() -> Dict[str, Any]:

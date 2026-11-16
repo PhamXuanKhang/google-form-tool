@@ -4,6 +4,7 @@
 from flask import jsonify, request
 
 from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
+from app.domain.personas import persona_targets
 from app.domain.response_plan import build_plan, target_snapshot
 from app.logging_config import logger
 from app.routes import bp, json_error
@@ -117,6 +118,7 @@ def start_submission():
                     max_delay=max_delay,
                     rows=[row.to_dict() for row in plan.rows],
                     target_snapshot=target_snapshot(form),
+                    extra={"personas": persona_targets(form)} if form.personas else None,
                 ))
             except submission_manager.RunAlreadyActive:
                 return jsonify({"error": "A submission is already running for this form."}), 409

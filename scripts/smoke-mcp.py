@@ -23,7 +23,7 @@ from pathlib import Path
 EXPECTED_TOOLS = {
     "app_status", "list_forms", "extract_form", "get_form", "set_answer_config", "simulate",
     "start_run", "run_status", "stop_run", "list_runs", "get_report", "retry_failed",
-    "apply_preset", "export_config", "import_config", "list_templates",
+    "apply_preset", "export_config", "import_config", "list_templates", "get_personas", "set_personas",
 }
 
 

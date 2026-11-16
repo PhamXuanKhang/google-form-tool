@@ -8,6 +8,7 @@ from flask import Response, jsonify, request
 from app.domain.config_template import build_template, match_template, parse_template
 from app.domain.distribution_presets import PRESET_TYPES, preset_table
 from app.domain.form_processor import FormProcessor
+from app.domain.personas import validate_personas
 from app.logging_config import logger
 from app.routes import bp, json_error
 from app.services import get_storage_service, get_template_store
@@ -79,12 +80,38 @@ def import_config(form_id):
             return json_error("Form not found", 404)
         preview = match_template(form, template)
         edits = preview.pop("edits")
+        id_map = preview.pop("id_map")
+        personas = None
+        if template.personas:
+            personas, preview["personas"] = _template_personas(form, template.personas, id_map)
         if apply and edits:
             FormProcessor(form).apply_user_edits(edits)
             if not storage.save_form(form):
                 logger.error("Failed to save imported configuration for form_id=%s", form_id)
                 return json_error("Could not save form configuration.", 500)
-    return jsonify({"success": True, "applied": bool(apply and edits), "preview": preview})
+        if apply and personas is not None and not storage.update_personas(form_id, personas):
+            return json_error("Could not save personas.", 500)
+    applied = bool(apply and (edits or personas is not None))
+    return jsonify({"success": True, "applied": applied, "preview": preview})
+
+
+def _template_personas(form, raw_personas, id_map):
+    """Personas from a template, with question ids mapped onto this form.
+
+    They are kept only when every overridden question maps to a question of
+    the form and the result passes the usual persona checks.
+    """
+    remapped = []
+    for persona in raw_personas:
+        overrides = persona.get("overrides") or {}
+        if any(question_id not in id_map for question_id in overrides):
+            return None, {"status": "skipped", "reason": "questions_not_matched"}
+        remapped.append({**persona, "overrides": {id_map[qid]: config for qid, config in overrides.items()}})
+    try:
+        personas = validate_personas(form, remapped)
+    except ValueError as error:
+        return None, {"status": "skipped", "reason": str(error)}
+    return personas, {"status": "included", "count": len(personas)}
 
 
 @bp.route('/templates', methods=['GET'])
