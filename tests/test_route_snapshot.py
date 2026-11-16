@@ -158,6 +158,9 @@ class _FakeSubmitter:
             network_status="ok",
         )
 
+    def submit_plan(self, **kwargs):
+        return self.submit_form(**kwargs)
+
     def get_status(self):
         return {"running": False}
 
@@ -219,7 +222,7 @@ JSON_CASES = [
     ("start-bad-count", "post", "/start_submission", {"json": {"form_id": FORM_ID, "num_submissions": 0}}, 400, ["error"]),
     ("start-bad-upload", "post", "/start_submission", {"json": {"form_id": FORM_ID, "upload_id": "gone"}}, 400, ["error"]),
     ("start-unknown-form", "post", "/start_submission", {"json": {"form_id": "nope", "num_submissions": 1}}, 404, ["error"]),
-    ("start-ok", "post", "/start_submission", {"json": {"form_id": FORM_ID, "num_submissions": 2, "concurrent_threads": 1}}, 200, ["message", "prepared_count", "submission_mode", "success", "warnings"]),
+    ("start-ok", "post", "/start_submission", {"json": {"form_id": FORM_ID, "num_submissions": 2, "concurrent_threads": 1}}, 200, ["message", "prepared_count", "run_id", "seed", "submission_mode", "success", "warnings"]),
     ("stop-all", "post", "/stop_submission", {"json": {}}, 200, ["message", "success"]),
     ("stop-unknown", "post", "/stop_submission", {"json": {"form_id": "nope"}}, 200, ["message", "success"]),
     ("status-all", "get", "/submission_status", {}, 200, ["active_submissions", "count"]),

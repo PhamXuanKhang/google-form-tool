@@ -86,6 +86,27 @@ def question_type_lookup(form: Form) -> Dict[str, str]:
     return lookup
 
 
+def target_snapshot(form: Form) -> Dict[str, Dict[str, Any]]:
+    """Capture each question's configured target so later reports compare a
+    run against what was asked for at the time, not against later edits."""
+    snapshot: Dict[str, Dict[str, Any]] = {}
+    if not form.response_config or not form.response_config.pages:
+        return snapshot
+    for page in form.response_config.pages:
+        for question in page.questions or []:
+            config = question.answer_config
+            snapshot[question.question_id] = {
+                "text": question.text,
+                "type": question.type,
+                "fill_percentage": config.fill_percentage if config else None,
+                "options": (
+                    {option.text: option.percentage for option in config.options}
+                    if config and config.options else None
+                ),
+            }
+    return snapshot
+
+
 def filter_unsendable(
     answers: Dict[str, Any], type_lookup: Dict[str, str], mode: str
 ) -> tuple[Dict[str, Any], List[Dict[str, str]]]:

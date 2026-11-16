@@ -4,9 +4,10 @@
 from flask import jsonify, request
 
 from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
+from app.domain.response_plan import build_plan, target_snapshot
 from app.logging_config import logger
 from app.routes import bp, json_error
-from app.services import get_storage_service, submission_manager, upload_cache
+from app.services import get_run_store, get_storage_service, submission_manager, upload_cache
 from app.config import Config
 
 
@@ -60,6 +61,7 @@ def start_submission():
 
     try:
         num_submissions, concurrent_threads, min_delay, max_delay = submission_manager.validate_submission_request(data)
+        seed = submission_manager.parse_seed(data.get('seed'))
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -78,12 +80,33 @@ def start_submission():
 
             from app.adapters.browser.form_submitter import FormSubmitter
 
+            plan = build_plan(
+                form,
+                num_submissions,
+                seed=seed,
+                mode=submission_mode,
+                responses_list=responses_list,
+                responses=responses,
+            )
+            run = get_run_store().create_run(
+                form_id=form_id,
+                mode=submission_mode,
+                seed=plan.seed,
+                threads=concurrent_threads,
+                min_delay=min_delay,
+                max_delay=max_delay,
+                rows=[row.to_dict() for row in plan.rows],
+                target_snapshot=target_snapshot(form),
+            )
+
             submitter = FormSubmitter(
                 form=form,
                 chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
                 chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
                 headless=True
             )
+            submitter.plan = plan
+            submitter.run_id = run["run_id"]
             with submission_manager.active_submitters_lock:
                 submission_manager.active_submitters[form_id] = submitter
 
@@ -129,6 +152,8 @@ def start_submission():
                 "submission_mode": submission_mode,
                 "prepared_count": prepared_count,
                 "warnings": warnings,
+                "run_id": run["run_id"],
+                "seed": plan.seed,
             }
             if debug_prefill_sample:
                 response_body["debug_prefill_sample"] = debug_prefill_sample

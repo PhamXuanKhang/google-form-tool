@@ -2,9 +2,11 @@
 
 import threading
 import time
+from datetime import datetime
 
 from app.logging_config import logger
-from app.services import get_storage_service, upload_cache
+from app.services import get_run_store, get_storage_service, upload_cache
+from app.services.run_store import ROW_IN_FLIGHT, ROW_PLANNED
 
 
 active_submitters: dict = {}
@@ -75,6 +77,25 @@ def validate_submission_request(data):
     return num_submissions, concurrent_threads, min_delay, max_delay
 
 
+MAX_SEED = 2 ** 53 - 1  # largest integer JavaScript represents exactly
+
+
+def parse_seed(value):
+    """Return None when no seed was given, else a validated integer seed."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"Seed must be an integer from 0 to {MAX_SEED}.")
+    if isinstance(value, str):
+        value = value.strip()
+        if not value.isdigit():
+            raise ValueError(f"Seed must be an integer from 0 to {MAX_SEED}.")
+        value = int(value)
+    if not isinstance(value, int) or value < 0 or value > MAX_SEED:
+        raise ValueError(f"Seed must be an integer from 0 to {MAX_SEED}.")
+    return value
+
+
 def cleanup_finished_submitters():
     """Remove finished submitters whose final-status TTL has expired."""
     now = time.monotonic()
@@ -95,20 +116,58 @@ def format_skipped_type_warning(skipped_summary):
     return [f"Skipping unsupported question types in prefill mode: {', '.join(parts)}."]
 
 
-def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None, upload_id=None):
-    """Internal helper: Runs submission in background thread"""
+def _final_run_status(rows, stopped):
+    """Completed when every row has a final result; otherwise stopped or interrupted."""
+    unfinished = any(row["status"] in (ROW_PLANNED, ROW_IN_FLIGHT) for row in rows)
+    if not unfinished:
+        return "completed"
+    return "stopped" if stopped else "interrupted"
+
+
+def _submit_planned_run(submitter, concurrent_threads, min_delay, max_delay):
+    """Run ``submitter.plan`` and keep the run store in step with each row."""
+    run_id = submitter.run_id
+    store = get_run_store()
+    store.update_run(run_id, status="running", started_at=datetime.now().isoformat(timespec="seconds"))
+
+    def on_row_result(index, status, error, started_at, finished_at):
+        store.record_result(run_id, index, status, error, started_at, finished_at)
+
+    final_status = "interrupted"
+    submission_result = None
     try:
-        submit_kwargs = dict(
-            num_submissions=num_submissions,
-            responses_list=responses_list,
-            responses=responses,
+        submission_result = submitter.submit_plan(
             concurrent_threads=concurrent_threads,
             min_delay=min_delay,
             max_delay=max_delay,
+            on_row_result=on_row_result,
         )
-        if submission_mode is not None:
-            submit_kwargs["submission_mode"] = submission_mode
-        submission_result = submitter.submit_form(**submit_kwargs)
+        final_status = _final_run_status(store.load_rows(run_id), submitter.stop_flag.is_set())
+        return submission_result
+    finally:
+        fields = {"status": final_status, "finished_at": datetime.now().isoformat(timespec="seconds")}
+        if submission_result is not None:
+            fields["submission_id"] = submission_result.submission_id
+        store.update_run(run_id, **fields)
+
+
+def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None, upload_id=None):
+    """Internal helper: Runs submission in background thread"""
+    try:
+        if getattr(submitter, "plan", None) is not None and getattr(submitter, "run_id", None):
+            submission_result = _submit_planned_run(submitter, concurrent_threads, min_delay, max_delay)
+        else:
+            submit_kwargs = dict(
+                num_submissions=num_submissions,
+                responses_list=responses_list,
+                responses=responses,
+                concurrent_threads=concurrent_threads,
+                min_delay=min_delay,
+                max_delay=max_delay,
+            )
+            if submission_mode is not None:
+                submit_kwargs["submission_mode"] = submission_mode
+            submission_result = submitter.submit_form(**submit_kwargs)
 
         try:
             with get_storage_service() as storage:
