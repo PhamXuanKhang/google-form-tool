@@ -432,3 +432,171 @@ msgstr "The stepper above tracks your progress through 4 steps: Enter URL → Co
 
 msgid "You can restart this tour at any time by clicking the Quick Tour button at the top of the page. Good luck! 🚀"
 msgstr "You can restart this tour at any time by clicking the Quick Tour button at the top of the page. Good luck! 🚀"
+
+msgid "Run report"
+msgstr "Run report"
+
+msgid "Export CSV"
+msgstr "Export CSV"
+
+msgid "Export JSON"
+msgstr "Export JSON"
+
+msgid "Unknown"
+msgstr "Unknown"
+
+msgid "Duration"
+msgstr "Duration"
+
+msgid "Send failed responses again"
+msgstr "Send failed responses again"
+
+msgid "Starts a new run with the same answers for responses that failed. Responses with an unknown outcome may already have reached Google, so they are only included when you ask."
+msgstr "Starts a new run with the same answers for responses that failed. Responses with an unknown outcome may already have reached Google, so they are only included when you ask."
+
+msgid "Also send responses with an unknown outcome"
+msgstr "Also send responses with an unknown outcome"
+
+msgid "Send failed again"
+msgstr "Send failed again"
+
+msgid "Actual versus target"
+msgstr "Actual versus target"
+
+msgid "Counts only responses that were submitted successfully."
+msgstr "Counts only responses that were submitted successfully."
+
+msgid "Why responses failed"
+msgstr "Why responses failed"
+
+msgid "Responses"
+msgstr "Responses"
+
+msgid "Filter by status"
+msgstr "Filter by status"
+
+msgid "All"
+msgstr "All"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Finished"
+msgstr "Finished"
+
+msgid "Answers"
+msgstr "Answers"
+
+msgid "Next"
+msgstr "Next"
+
+msgid "Target"
+msgstr "Target"
+
+msgid "Actual"
+msgstr "Actual"
+
+msgid "No choice questions to compare."
+msgstr "No choice questions to compare."
+
+msgid "No responses match this filter."
+msgstr "No responses match this filter."
+
+msgid "Could not load this run."
+msgstr "Could not load this run."
+
+msgid "Started a new run for the failed responses."
+msgstr "Started a new run for the failed responses."
+
+msgid "Could not start the retry."
+msgstr "Could not start the retry."
+
+msgid "distinct values"
+msgstr "distinct values"
+
+msgid "Blank"
+msgstr "Blank"
+
+msgid "Seed"
+msgstr "Seed"
+
+msgid "Retry of an earlier run"
+msgstr "Retry of an earlier run"
+
+msgid "{from}–{to} of {total}"
+msgstr "{from}–{to} of {total}"
+
+msgid "Sending"
+msgstr "Sending"
+
+msgid "Running"
+msgstr "Running"
+
+msgid "Stopped"
+msgstr "Stopped"
+
+msgid "Interrupted"
+msgstr "Interrupted"
+
+msgid "Paused"
+msgstr "Paused"
+
+msgid "Prefilled links"
+msgstr "Prefilled links"
+
+msgid "Fill directly"
+msgstr "Fill directly"
+
+msgid "View report"
+msgstr "View report"
+
+msgid "Preview this batch"
+msgstr "Preview this batch"
+
+msgid "Plans every response in the app so you can check the answers before anything is sent. Nothing is sent to Google."
+msgstr "Plans every response in the app so you can check the answers before anything is sent. Nothing is sent to Google."
+
+msgid "Simulate"
+msgstr "Simulate"
+
+msgid "Generate again"
+msgstr "Generate again"
+
+msgid "Run exactly this"
+msgstr "Run exactly this"
+
+msgid "Run a simulation to see how answers will be spread across this batch."
+msgstr "Run a simulation to see how answers will be spread across this batch."
+
+msgid "Sample responses"
+msgstr "Sample responses"
+
+msgid "Per minute"
+msgstr "Per minute"
+
+msgid "Time left"
+msgstr "Time left"
+
+msgid "Latest responses"
+msgstr "Latest responses"
+
+msgid "Responses appear here as they are sent."
+msgstr "Responses appear here as they are sent."
+
+msgid "Simulated"
+msgstr "Simulated"
+
+msgid "Could not simulate this batch."
+msgstr "Could not simulate this batch."
+
+msgid "{total} responses · seed {seed}"
+msgstr "{total} responses · seed {seed}"
+
+msgid "Runs"
+msgstr "Runs"
+
+msgid "No runs yet."
+msgstr "No runs yet."
+
+msgid "Could not load runs."
+msgstr "Could not load runs."

@@ -92,6 +92,43 @@
     content: ":";
 }
 
+.simulation-panel {
+    padding: var(--gf-space-4);
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-md);
+    background: var(--gf-surface-2);
+}
+
+.sample-scroll {
+    max-height: 280px;
+    overflow: auto;
+}
+
+.sample-scroll th {
+    position: sticky;
+    top: 0;
+    background: var(--gf-surface-2);
+    white-space: nowrap;
+}
+
+.sample-table summary {
+    cursor: pointer;
+}
+
+.run-list a {
+    display: flex;
+    align-items: center;
+    gap: var(--gf-space-2);
+    padding: var(--gf-space-2) 0;
+    border-bottom: 1px solid var(--gf-border);
+    color: var(--gf-text);
+    text-decoration: none;
+}
+
+.run-list a:hover {
+    color: var(--gf-accent-text);
+}
+
 .event-list {
     list-style: none;
     margin: 0;

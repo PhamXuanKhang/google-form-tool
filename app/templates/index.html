@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ _('Home') }} - {{ _('Google Form Automation Tool') }}{% endblock%}
-{% block css %} <link rel="stylesheet" href="{{ url_for('static', filename='css/components/card.css') }}"> {% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/card.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/report.css') }}">
+{% endblock %}
 {% block content %}
 <div class="page-header">
 	<h1 class="page-title">{{ _('Recent Forms') }}</h1>
@@ -90,7 +93,18 @@
 		threads: {{ _('Threads') | tojson }},
 		timeUsed: {{ _('Time used') | tojson }},
 		successRate: {{ _('Success rate') | tojson }},
-		networkStatus: {{ _('Network/status') | tojson }}
+		networkStatus: {{ _('Network/status') | tojson }},
+		runs: {{ _('Runs') | tojson }},
+		noRunsYet: {{ _('No runs yet.') | tojson }},
+		couldNotLoadRuns: {{ _('Could not load runs.') | tojson }},
+		runStatuses: {
+			pending: {{ _('Pending') | tojson }},
+			running: {{ _('Running') | tojson }},
+			completed: {{ _('Completed') | tojson }},
+			stopped: {{ _('Stopped') | tojson }},
+			interrupted: {{ _('Interrupted') | tojson }},
+			paused: {{ _('Paused') | tojson }}
+		}
 	};
 </script>
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>

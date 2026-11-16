@@ -93,9 +93,13 @@ window.getFormSettings = getFormSettings;
 window.validatePrefillCompatibility = validatePrefillCompatibility;
 
 // Function to start form submission
-window.startFormSubmission = async function() {
+window.startFormSubmission = async function(seed) {
     try {
         const settings = getFormSettings();
+        // A seed from a simulation reproduces exactly the previewed answers.
+        if (Number.isInteger(seed)) {
+            settings.seed = seed;
+        }
         const manualEdits = window.collectManualEdits?.();
         const check = validatePrefillCompatibility(
             window.formQuestionsData,

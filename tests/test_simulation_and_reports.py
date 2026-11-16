@@ -327,6 +327,19 @@ def test_retry_is_refused_while_the_form_is_running(env, store):
     assert _retry(env, run_id).status_code == 409
 
 
+def test_report_and_simulation_scripts_never_write_html():
+    from pathlib import Path
+
+    static = Path(__file__).resolve().parents[1] / "app" / "static" / "js"
+    for script in (static / "run_report.js", static / "form_filling" / "simulation.js"):
+        source = script.read_text(encoding="utf-8")
+        assert "innerHTML" not in source, script.name
+        assert "textContent" in source, script.name
+    monitor = (static / "form_filling" / "submission.js").read_text(encoding="utf-8")
+    events = monitor[monitor.index("async function updateEvents"):monitor.index("function stopStatusMonitoring")]
+    assert "innerHTML" not in events
+
+
 def test_report_page_renders(env, store):
     run_id = _seed_run(store, ["success"])
 

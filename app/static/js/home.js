@@ -21,6 +21,8 @@ function openFormModal(formId) {
             <p><i class="fas fa-paper-plane"></i> ${selected.total_fill || 0} ${escapeHtml(i18n.submissions || 'submissions')}</p>
             <p><i class="fas fa-clock"></i> ${escapeHtml(i18n.lastUsed || 'Last used')}: ${escapeHtml(selected.last_used || i18n.never || 'Never')}</p>
             <hr>
+            <h6 class="fw-bold">${escapeHtml(i18n.runs || 'Runs')}</h6>
+            <div id="runHistoryContainer" class="run-list mb-3"></div>
             <h6 class="fw-bold">${escapeHtml(i18n.submissionHistory || 'Submission History')}</h6>
             <div id="submissionHistoryContainer" class="text-muted">${escapeHtml(i18n.loadingSubmissionHistory || 'Loading submission history...')}</div>
         `;
@@ -37,7 +39,46 @@ function openFormModal(formId) {
         const modal = new bootstrap.Modal(document.getElementById('formModal'));
         modal.show();
         loadSubmissionHistory(selected.id);
+        loadRuns(selected.id);
     }
+}
+
+/**
+ * List the runs of a form, newest first, each linking to its report.
+ */
+async function loadRuns(formId) {
+    const container = document.getElementById('runHistoryContainer');
+    if (!container) return;
+    const i18n = window.i18n || {};
+    try {
+        const response = await fetch(`/runs?form_id=${encodeURIComponent(formId)}`);
+        const data = await readJsonResponse(response);
+        if (!response.ok || data.error) throw new Error(data.error || '');
+        if (!data.runs || !data.runs.length) {
+            container.replaceChildren(textElement('p', i18n.noRunsYet || 'No runs yet.', 'text-muted mb-0'));
+            return;
+        }
+        container.replaceChildren(...data.runs.slice(0, 10).map((run) => {
+            const link = document.createElement('a');
+            link.href = `/runs/${encodeURIComponent(run.run_id)}/view`;
+            const status = (i18n.runStatuses && i18n.runStatuses[run.status]) || run.status;
+            link.append(
+                textElement('span', status, `status-pill status-${run.status}`),
+                textElement('span', run.created_at ? new Date(run.created_at).toLocaleString() : ''),
+                textElement('span', `${run.total} ${i18n.submissions || 'submissions'}`, 'ms-auto text-muted'),
+            );
+            return link;
+        }));
+    } catch (error) {
+        container.replaceChildren(textElement('p', i18n.couldNotLoadRuns || 'Could not load runs.', 'text-danger mb-0'));
+    }
+}
+
+function textElement(tag, text, className) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = text;
+    return node;
 }
 
 async function deleteSelectedForm(formUrl) {
