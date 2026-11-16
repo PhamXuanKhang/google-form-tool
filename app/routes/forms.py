@@ -32,6 +32,43 @@ def _is_valid_google_forms_url(url: str) -> bool:
     )
 
 
+def _question_count(form) -> int:
+    pages = form.response_config.pages if form.response_config else []
+    return sum(len(page.questions or []) for page in pages)
+
+
+@bp.route('/forms', methods=['GET'])
+def list_forms():
+    """Saved forms as a compact JSON list, for local clients such as the MCP server."""
+    with get_storage_service() as storage:
+        summaries = storage.get_all_forms_summary()
+        forms = []
+        for summary in summaries:
+            form = storage.get_form_by_id(summary["id"])
+            forms.append({
+                "id": summary["id"],
+                "title": summary["title"],
+                "url": summary["url"],
+                "created_at": summary["created_at"],
+                "last_used": summary["last_used"],
+                "question_count": _question_count(form) if form else 0,
+                "submission_count": summary["total_fill"],
+            })
+    return jsonify({"success": True, "forms": forms})
+
+
+@bp.route('/forms/<form_id>', methods=['GET'])
+def get_form(form_id):
+    """One saved form: its pages, questions, options and current answer settings."""
+    with get_storage_service() as storage:
+        form = storage.get_form_by_id(form_id)
+    if not form:
+        return jsonify({"error": "Form not found"}), 404
+    data = form.model_dump(mode="json", exclude={"submissions"})
+    data["question_count"] = _question_count(form)
+    return jsonify({"success": True, "form": data})
+
+
 @bp.route('/forms/delete', methods=['POST'])
 def delete_form():
     data = request.get_json(silent=True) or {}
@@ -226,7 +263,7 @@ def extract():
                 return jsonify({
                     "error": "The form could not be extracted because of an unknown error."
                 }), 500
-    return jsonify({"success": True, "message": "Form extracted successfully"})
+    return jsonify({"success": True, "message": "Form extracted successfully", "form_id": form.id})
 
 
 @bp.route('/form_filling/preview', methods=['GET'])

@@ -31,6 +31,8 @@ EXPECTED_ROUTES = {
     ("/diagnostics/runtime", ("GET",), "main.runtime_diagnostics"),
     ("/", ("GET",), "main.index"),
     ("/forms/delete", ("POST",), "main.delete_form"),
+    ("/forms", ("GET",), "main.list_forms"),
+    ("/forms/<form_id>", ("GET",), "main.get_form"),
     ("/form_filling", ("GET", "POST"), "main.form_filling"),
     ("/about", ("GET",), "main.about"),
     ("/settings/diagnostics", ("GET",), "main.settings_diagnostics"),
@@ -197,7 +199,10 @@ JSON_CASES = [
     ("delete-ok", "post", "/forms/delete", {"json": {"form_url": FORM_URL}}, 200, ["success"]),
     ("extract-empty", "post", "/form_filling/extract", {"json": {}}, 400, ["error"]),
     ("extract-bad-url", "post", "/form_filling/extract", {"json": {"form_url": "https://example.com/x"}}, 400, ["error"]),
-    ("extract-cached", "post", "/form_filling/extract", {"json": {"form_url": FORM_URL}}, 200, ["message", "success"]),
+    ("extract-cached", "post", "/form_filling/extract", {"json": {"form_url": FORM_URL}}, 200, ["form_id", "message", "success"]),
+    ("forms-list", "get", "/forms", {}, 200, ["forms", "success"]),
+    ("form-get", "get", f"/forms/{FORM_ID}", {}, 200, ["form", "success"]),
+    ("form-get-missing", "get", "/forms/nope", {}, 404, ["error"]),
     ("preview-no-session", "get", "/form_filling/preview", {}, 400, ["error"]),
     ("copy-source-empty", "post", "/form_copy/extract_source", {"json": {}}, 400, ["error"]),
     ("copy-source-bad-url", "post", "/form_copy/extract_source", {"json": {"form_url": "https://example.com/x"}}, 400, ["error"]),
@@ -333,4 +338,4 @@ def test_main_blueprint_routes_match_expected_table(client):
         actual.add((rule.rule, methods, rule.endpoint))
 
     assert actual == EXPECTED_ROUTES
-    assert len(actual) == 29
+    assert len(actual) == 31
