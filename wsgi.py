@@ -1,4 +1,4 @@
-"""
+﻿"""
 WSGI entry point for the Flask application.
 
 Usage:
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # the reloader's child process serves requests, so only it records itself.
     if not debug or os.getenv("WERKZEUG_RUN_MAIN") == "true":
         try:
-            from app.services.runtime_info import write_runtime_info
+            from app.runtime_info import write_runtime_info
             write_runtime_info(port, app.config.get("APP_VERSION", ""))
         except OSError as exc:
             print(f"Could not write runtime info: {exc}", file=sys.stderr)

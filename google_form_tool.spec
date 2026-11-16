@@ -1,4 +1,4 @@
-# -*- mode: python ; coding: utf-8 -*-
+﻿# -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec for Google Form Automation Tool
 # Build: pyinstaller google_form_tool.spec --clean
 
@@ -75,6 +75,7 @@ a = Analysis(
         "webdriver_manager.core.http",
         # App modules
         "app",
+        "app.factory",
         "app.routes",
         "app.routes.health",
         "app.routes.pages",
@@ -108,7 +109,7 @@ a = Analysis(
         "app.services.submission_manager",
         "app.services.history_export",
         "app.services.run_store",
-        "app.services.runtime_info",
+        "app.runtime_info",
         # Misc runtime deps
         "email.mime.multipart",
         "email.mime.text",

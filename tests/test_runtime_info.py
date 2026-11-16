@@ -1,7 +1,7 @@
-import json
+﻿import json
 import os
 
-from app.services.runtime_info import read_runtime_info, runtime_file_path, write_runtime_info
+from app.runtime_info import read_runtime_info, runtime_file_path, write_runtime_info
 
 
 def test_write_then_read_runtime_info(tmp_path):
