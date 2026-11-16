@@ -91,6 +91,7 @@ a = Analysis(
         "app.domain.form_processor",
         "app.domain.prefill_link_generator",
         "app.domain.form_copy_planner",
+        "app.domain.response_plan",
         "app.adapters",
         "app.adapters.browser",
         "app.adapters.browser.driver_manager",

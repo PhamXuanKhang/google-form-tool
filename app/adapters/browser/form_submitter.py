@@ -20,12 +20,17 @@ from selenium.common.exceptions import (
 from app.models import Form, Question, Submission
 from app.domain.form_processor import FormProcessor
 from app.domain.prefill_link_generator import PrefillLinkGenerator
+from app.domain.response_plan import (
+    PLAN_MODE_DOM_FILL,
+    PLAN_MODE_PREFILL,
+    PLAN_MODES,
+    SKIPPABLE_PREFILL_TYPES,
+)
 from app.logging_config import logger
 
-SUBMISSION_MODE_PREFILL = "prefill_link"
-SUBMISSION_MODE_DOM_FILL = "dom_fill"
-VALID_SUBMISSION_MODES = (SUBMISSION_MODE_PREFILL, SUBMISSION_MODE_DOM_FILL)
-SKIPPABLE_PREFILL_TYPES = {"file_upload", "rating", "unknown"}
+SUBMISSION_MODE_PREFILL = PLAN_MODE_PREFILL
+SUBMISSION_MODE_DOM_FILL = PLAN_MODE_DOM_FILL
+VALID_SUBMISSION_MODES = PLAN_MODES
 PREFILL_MAX_BUTTON_CLICKS = 25
 REQUIRED_ERROR_MARKERS = (
     "this is a required question",
