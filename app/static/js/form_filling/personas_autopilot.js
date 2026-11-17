@@ -155,6 +155,22 @@ function markOverrides() {
     });
 }
 
+// Draw the answer cards with the persona's overrides on top of the shared settings.
+function showPersonaCards(persona) {
+    const merged = JSON.parse(JSON.stringify(baseForm));
+    questions(merged).forEach((question) => {
+        const override = persona.overrides[question.question_id];
+        if (override) {
+            // Only fields the override sets replace the shared ones.
+            const set = Object.fromEntries(Object.entries(override).filter(([, value]) => value !== null && value !== undefined));
+            question.answer_config = { ...question.answer_config, ...set };
+        }
+    });
+    window.renderQuestionsStep2?.(window.formQuestionsData);
+    window.applyConfigToCards?.(merged);
+    markOverrides();
+}
+
 async function startEditing(persona) {
     if (editing) return;
     if (!(await window.saveManualConfiguration?.())) return;
@@ -166,18 +182,7 @@ async function startEditing(persona) {
     }
     editing = persona;
     editing.overrides = editing.overrides || {};
-    const merged = JSON.parse(JSON.stringify(baseForm));
-    questions(merged).forEach((question) => {
-        const override = editing.overrides[question.question_id];
-        if (override) {
-            // Only fields the override sets replace the shared ones.
-            const set = Object.fromEntries(Object.entries(override).filter(([, value]) => value !== null && value !== undefined));
-            question.answer_config = { ...question.answer_config, ...set };
-        }
-    });
-    window.renderQuestionsStep2?.(window.formQuestionsData);
-    window.applyConfigToCards?.(merged);
-    markOverrides();
+    showPersonaCards(persona);
     byId("persona-editing-name").textContent = `${t("editingPersona", "Editing answers for")} ${persona.name}`;
     byId("persona-editing-banner").classList.remove("d-none");
     byId("persona-editing-banner").scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -212,6 +217,7 @@ async function stopEditing(save) {
     if (save) {
         if (!(await savePersonas())) {
             editing = persona;  // keep the edits on screen to fix and retry
+            showPersonaCards(persona);
             byId("persona-editing-banner").classList.remove("d-none");
         }
     } else {
