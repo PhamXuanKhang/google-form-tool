@@ -31,6 +31,8 @@ EXPECTED_ROUTES = {
     ("/diagnostics/runtime", ("GET",), "main.runtime_diagnostics"),
     ("/", ("GET",), "main.index"),
     ("/forms/delete", ("POST",), "main.delete_form"),
+    ("/forms", ("GET",), "main.list_forms"),
+    ("/forms/<form_id>", ("GET",), "main.get_form"),
     ("/form_filling", ("GET", "POST"), "main.form_filling"),
     ("/about", ("GET",), "main.about"),
     ("/settings/diagnostics", ("GET",), "main.settings_diagnostics"),
@@ -49,6 +51,24 @@ EXPECTED_ROUTES = {
     ("/submission_status", ("GET",), "main.submission_status"),
     ("/submission_history/<form_id>", ("GET",), "main.submission_history"),
     ("/export_history/<form_id>", ("GET",), "main.export_history"),
+    ("/simulate", ("POST",), "main.simulate"),
+    ("/runs", ("GET",), "main.list_runs"),
+    ("/runs/<run_id>", ("GET",), "main.run_detail"),
+    ("/runs/<run_id>/rows", ("GET",), "main.run_rows"),
+    ("/runs/<run_id>/export", ("GET",), "main.export_run"),
+    ("/runs/<run_id>/retry", ("POST",), "main.retry_run"),
+    ("/runs/<run_id>/view", ("GET",), "main.run_view"),
+    ("/presets", ("GET",), "main.presets"),
+    ("/forms/<form_id>/config/export", ("GET",), "main.export_config"),
+    ("/forms/<form_id>/config/import", ("POST",), "main.import_config"),
+    ("/templates", ("GET",), "main.list_templates"),
+    ("/templates", ("POST",), "main.save_template"),
+    ("/templates/<template_id>/delete", ("POST",), "main.delete_template"),
+    ("/forms/<form_id>/personas", ("GET",), "main.get_personas"),
+    ("/forms/<form_id>/personas", ("POST",), "main.set_personas"),
+    ("/ai/propose_config", ("POST",), "main.ai_propose_config"),
+    ("/runs/<run_id>/pause", ("POST",), "main.pause_run"),
+    ("/runs/<run_id>/resume", ("POST",), "main.resume_run"),
 }
 
 
@@ -158,6 +178,9 @@ class _FakeSubmitter:
             network_status="ok",
         )
 
+    def submit_plan(self, **kwargs):
+        return self.submit_form(**kwargs)
+
     def get_status(self):
         return {"running": False}
 
@@ -187,7 +210,10 @@ JSON_CASES = [
     ("delete-ok", "post", "/forms/delete", {"json": {"form_url": FORM_URL}}, 200, ["success"]),
     ("extract-empty", "post", "/form_filling/extract", {"json": {}}, 400, ["error"]),
     ("extract-bad-url", "post", "/form_filling/extract", {"json": {"form_url": "https://example.com/x"}}, 400, ["error"]),
-    ("extract-cached", "post", "/form_filling/extract", {"json": {"form_url": FORM_URL}}, 200, ["message", "success"]),
+    ("extract-cached", "post", "/form_filling/extract", {"json": {"form_url": FORM_URL}}, 200, ["form_id", "message", "success"]),
+    ("forms-list", "get", "/forms", {}, 200, ["forms", "success"]),
+    ("form-get", "get", f"/forms/{FORM_ID}", {}, 200, ["form", "success"]),
+    ("form-get-missing", "get", "/forms/nope", {}, 404, ["error"]),
     ("preview-no-session", "get", "/form_filling/preview", {}, 400, ["error"]),
     ("copy-source-empty", "post", "/form_copy/extract_source", {"json": {}}, 400, ["error"]),
     ("copy-source-bad-url", "post", "/form_copy/extract_source", {"json": {"form_url": "https://example.com/x"}}, 400, ["error"]),
@@ -219,7 +245,7 @@ JSON_CASES = [
     ("start-bad-count", "post", "/start_submission", {"json": {"form_id": FORM_ID, "num_submissions": 0}}, 400, ["error"]),
     ("start-bad-upload", "post", "/start_submission", {"json": {"form_id": FORM_ID, "upload_id": "gone"}}, 400, ["error"]),
     ("start-unknown-form", "post", "/start_submission", {"json": {"form_id": "nope", "num_submissions": 1}}, 404, ["error"]),
-    ("start-ok", "post", "/start_submission", {"json": {"form_id": FORM_ID, "num_submissions": 2, "concurrent_threads": 1}}, 200, ["message", "prepared_count", "submission_mode", "success", "warnings"]),
+    ("start-ok", "post", "/start_submission", {"json": {"form_id": FORM_ID, "num_submissions": 2, "concurrent_threads": 1}}, 200, ["message", "prepared_count", "run_id", "seed", "submission_mode", "success", "warnings"]),
     ("stop-all", "post", "/stop_submission", {"json": {}}, 200, ["message", "success"]),
     ("stop-unknown", "post", "/stop_submission", {"json": {"form_id": "nope"}}, 200, ["message", "success"]),
     ("status-all", "get", "/submission_status", {}, 200, ["active_submissions", "count"]),
@@ -270,7 +296,7 @@ def test_runtime_diagnostics_keys(client):
     response = client.get("/diagnostics/runtime")
 
     assert response.status_code == 200
-    assert {"app_data_path", "db_path", "log_path", "chrome_path", "chromedriver_path", "mode"} <= set(
+    assert {"app_data_path", "db_path", "log_path", "chrome_path", "chromedriver_path", "mode", "version", "mcp"} <= set(
         response.get_json()
     )
 
@@ -323,4 +349,4 @@ def test_main_blueprint_routes_match_expected_table(client):
         actual.add((rule.rule, methods, rule.endpoint))
 
     assert actual == EXPECTED_ROUTES
-    assert len(actual) == 22
+    assert len(actual) == 42

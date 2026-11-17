@@ -12,6 +12,7 @@ import tempfile
 _TEST_DATA_DIR = tempfile.mkdtemp(prefix="gft-tests-")
 os.environ["LOG_DIR"] = os.path.join(_TEST_DATA_DIR, "logs")
 os.environ["DB_PATH"] = os.path.join(_TEST_DATA_DIR, "db.json")
+os.environ["RUNS_DIR"] = os.path.join(_TEST_DATA_DIR, "runs")
 os.environ["DRIVERS_DIR"] = os.path.join(_TEST_DATA_DIR, "drivers")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 
@@ -30,7 +31,7 @@ import pytest
 from datetime import datetime
 from app import create_app, Form, Submission, ResponseConfig, Page, Question, AnswerConfig, AnswerOption
 from app.adapters.browser.form_extractor import FormExtractor
-from app.services import StorageService, set_storage_provider
+from app.services import StorageService, set_run_store_provider, set_storage_provider
 from tempfile import NamedTemporaryFile
 from app.config import Config
 from app.logging_config import logger
@@ -50,6 +51,7 @@ def _reset_storage_provider():
     """Ngăn stub của một test rò sang test sau."""
     yield
     set_storage_provider(None)
+    set_run_store_provider(None)
 
 
 @pytest.fixture

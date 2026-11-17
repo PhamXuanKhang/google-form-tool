@@ -1,0 +1,177 @@
+/*
+ * Design tokens. Every colour, size and duration the UI uses comes from here.
+ * The theme lives on <html data-theme="light|dark">; data-bs-theme is set to
+ * the same value so Bootstrap components switch with it, and the --bs-*
+ * variables below point Bootstrap at these tokens.
+ */
+
+:root,
+[data-theme="light"] {
+    color-scheme: light;
+
+    /* Surfaces and text */
+    --gf-bg: #f6f7f9;
+    --gf-surface: #ffffff;
+    --gf-surface-2: #f0f2f5;
+    --gf-surface-sunken: #e9ecf0;
+    --gf-border: #dde1e7;
+    --gf-border-strong: #c3c9d2;
+    --gf-text: #1a1f29;
+    --gf-text-muted: #5b6474;
+    --gf-text-subtle: #6b7383;
+
+    /* Accent (single brand colour) */
+    --gf-accent: #4338ca;
+    --gf-accent-rgb: 67, 56, 202;
+    --gf-accent-hover: #3730a3;
+    --gf-accent-soft: #eef0ff;
+    --gf-accent-text: #3730a3;
+    --gf-on-accent: #ffffff;
+
+    /* Status */
+    --gf-success: #15803d;
+    --gf-success-rgb: 21, 128, 61;
+    --gf-success-soft: #e8f6ee;
+    --gf-danger: #b91c1c;
+    --gf-danger-rgb: 185, 28, 28;
+    --gf-danger-soft: #fdecec;
+    --gf-warning: #a16207;
+    --gf-warning-rgb: 161, 98, 7;
+    --gf-warning-soft: #fdf5e3;
+    --gf-info: #0e7490;
+    --gf-info-rgb: 14, 116, 144;
+    --gf-info-soft: #e6f5f8;
+
+    /* Elevation */
+    --gf-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --gf-shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+    --gf-shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.14);
+    --gf-focus-ring: 0 0 0 3px rgba(var(--gf-accent-rgb), 0.35);
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --gf-bg: #0f1117;
+    --gf-surface: #171a22;
+    --gf-surface-2: #1e222c;
+    --gf-surface-sunken: #12141b;
+    --gf-border: #2a2f3b;
+    --gf-border-strong: #3a4150;
+    --gf-text: #e6e8ee;
+    --gf-text-muted: #a3aab8;
+    --gf-text-subtle: #8d95a5;
+
+    --gf-accent: #4f46e5;
+    --gf-accent-rgb: 129, 140, 248;
+    --gf-accent-hover: #6366f1;
+    --gf-accent-soft: #23264a;
+    --gf-accent-text: #a5b4fc;
+    --gf-on-accent: #ffffff;
+
+    --gf-success: #4ade80;
+    --gf-success-rgb: 74, 222, 128;
+    --gf-success-soft: #13291d;
+    --gf-danger: #f87171;
+    --gf-danger-rgb: 248, 113, 113;
+    --gf-danger-soft: #331718;
+    --gf-warning: #facc15;
+    --gf-warning-rgb: 250, 204, 21;
+    --gf-warning-soft: #2e2611;
+    --gf-info: #22d3ee;
+    --gf-info-rgb: 34, 211, 238;
+    --gf-info-soft: #0f2a31;
+
+    --gf-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --gf-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --gf-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --gf-focus-ring: 0 0 0 3px rgba(var(--gf-accent-rgb), 0.45);
+}
+
+:root {
+    /* Typography: system fonts only, nothing downloaded */
+    --gf-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    --gf-font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+    --gf-text-xs: 0.75rem;
+    --gf-text-sm: 0.8125rem;
+    --gf-text-md: 0.9375rem;
+    --gf-text-lg: 1.125rem;
+    --gf-text-xl: 1.375rem;
+    --gf-text-2xl: 1.75rem;
+
+    /* Spacing scale */
+    --gf-space-1: 0.25rem;
+    --gf-space-2: 0.5rem;
+    --gf-space-3: 0.75rem;
+    --gf-space-4: 1rem;
+    --gf-space-5: 1.5rem;
+    --gf-space-6: 2rem;
+    --gf-space-7: 3rem;
+
+    /* Radius */
+    --gf-radius-sm: 6px;
+    --gf-radius-md: 8px;
+    --gf-radius-lg: 12px;
+    --gf-radius-pill: 999px;
+
+    /* Motion */
+    --gf-duration-fast: 150ms;
+    --gf-duration: 200ms;
+    --gf-ease: cubic-bezier(0.2, 0, 0, 1);
+
+    /* Layout */
+    --gf-sidebar-width: 232px;
+    --gf-sidebar-collapsed: 68px;
+    --gf-content-max: 1180px;
+}
+
+/* Bootstrap mapping: components read these, so they follow the theme. */
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+    --bs-body-font-family: var(--gf-font-sans);
+    --bs-font-monospace: var(--gf-font-mono);
+    --bs-body-font-size: var(--gf-text-md);
+    --bs-body-bg: var(--gf-bg);
+    --bs-body-bg-rgb: 246, 247, 249;
+    --bs-body-color: var(--gf-text);
+    --bs-emphasis-color: var(--gf-text);
+    --bs-secondary-color: var(--gf-text-muted);
+    --bs-tertiary-color: var(--gf-text-subtle);
+    --bs-secondary-bg: var(--gf-surface-2);
+    --bs-tertiary-bg: var(--gf-surface-2);
+    --bs-border-color: var(--gf-border);
+    --bs-border-color-translucent: var(--gf-border);
+    --bs-border-radius: var(--gf-radius-md);
+    --bs-border-radius-sm: var(--gf-radius-sm);
+    --bs-border-radius-lg: var(--gf-radius-lg);
+    --bs-box-shadow-sm: var(--gf-shadow-sm);
+    --bs-box-shadow: var(--gf-shadow-md);
+    --bs-box-shadow-lg: var(--gf-shadow-lg);
+    --bs-primary: var(--gf-accent);
+    --bs-primary-rgb: var(--gf-accent-rgb);
+    --bs-primary-text-emphasis: var(--gf-accent-text);
+    --bs-primary-bg-subtle: var(--gf-accent-soft);
+    --bs-link-color: var(--gf-accent-text);
+    --bs-link-color-rgb: var(--gf-accent-rgb);
+    --bs-link-hover-color: var(--gf-accent-hover);
+    --bs-focus-ring-color: rgba(var(--gf-accent-rgb), 0.35);
+}
+
+[data-bs-theme="dark"] {
+    --bs-body-bg-rgb: 15, 17, 23;
+    --bs-link-color: var(--gf-accent-text);
+    --bs-link-hover-color: #c7d2fe;
+}
+
+/* Only essential motion when the user asks for less. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

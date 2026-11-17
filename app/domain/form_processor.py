@@ -31,15 +31,19 @@ class FormProcessor:
     4. Validating and formatting responses
     """
     
-    def __init__(self, form: Form):
+    def __init__(self, form: Form, rng: Optional[random.Random] = None):
         """
         Initialize the FormProcessor with a form object.
         
         Args:
             form (Form): The form to process
+            rng (random.Random, optional): Source of randomness. Defaults to the
+                module-level ``random`` so existing callers keep their behavior;
+                pass a seeded ``random.Random`` for reproducible output.
         """
         self.form = form
         self.response_data = {}
+        self._rng = rng if rng is not None else random
     
     def load_data_from_file(
         self,
@@ -264,12 +268,16 @@ class FormProcessor:
         logger.info(f"Generated {len(responses)} random responses")
         return responses
 
-    def generate_prefill_responses(self, num_submissions: int) -> List[Dict[str, Any]]:
+    def generate_prefill_responses(self, num_submissions: int, shuffle: bool = False) -> List[Dict[str, Any]]:
         """Generate one response dictionary per prefill URL.
 
         Prefill mode needs materialized rows, not independent random draws, so
         text answers and option percentages are distributed across the URL list.
         This mirrors the old prefill-link script's "build all links first" flow.
+
+        With ``shuffle`` each question's values are shuffled across rows, which
+        keeps every question's totals but stops answers to different questions
+        lining up by row position.
         """
         responses_list = [{} for _ in range(max(0, num_submissions))]
         if not responses_list or not self.form.response_config or not self.form.response_config.pages:
@@ -278,6 +286,8 @@ class FormProcessor:
         for page in self.form.response_config.pages:
             for question in page.questions or []:
                 values = self._generate_prefill_values_for_question(question, len(responses_list))
+                if shuffle:
+                    self._rng.shuffle(values)
                 for index, value in enumerate(values):
                     if value is None or value == "" or value == []:
                         continue
@@ -501,7 +511,7 @@ class FormProcessor:
             return False
         if fill_percentage >= 100:
             return True
-        return random.random() * 100 < fill_percentage
+        return self._rng.random() * 100 < fill_percentage
 
     def _select_configured_answer(self, question: Question) -> Optional[Any]:
         """Select from user-configured text-like answers when available."""
@@ -512,7 +522,7 @@ class FormProcessor:
         if not answers:
             return None
 
-        return random.choice(answers)
+        return self._rng.choice(answers)
 
     def _select_weighted_option(self, question: Question) -> Optional[str]:
         """Select a single option using configured percentages when available."""
@@ -522,25 +532,25 @@ class FormProcessor:
         options = question.answer_config.options
         weights = [max(0, float(option.percentage or 0)) for option in options]
         if sum(weights) <= 0:
-            return random.choice([option.text for option in options])
+            return self._rng.choice([option.text for option in options])
 
-        return random.choices(options, weights=weights, k=1)[0].text
+        return self._rng.choices(options, weights=weights, k=1)[0].text
     
     def _generate_text_response(self, min_length: int, max_length: int) -> str:
         """Generate a random text string of specified length"""
-        length = random.randint(min_length, max_length)
+        length = self._rng.randint(min_length, max_length)
         words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 
                 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 
                 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua']
         
-        return ' '.join(random.choices(words, k=length // 3))
+        return ' '.join(self._rng.choices(words, k=length // 3))
     
     def _generate_email(self) -> str:
         """Generate a random email address"""
         domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'example.com']
-        username_length = random.randint(5, 10)
-        username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=username_length))
-        domain = random.choice(domains)
+        username_length = self._rng.randint(5, 10)
+        username = ''.join(self._rng.choices(string.ascii_lowercase + string.digits, k=username_length))
+        domain = self._rng.choice(domains)
         
         return f"{username}@{domain}"
     
@@ -549,7 +559,7 @@ class FormProcessor:
         if not question.answer_config or not question.answer_config.options:
             return "Option 1"  # Default fallback
         
-        return random.choice([opt.text for opt in question.answer_config.options])
+        return self._rng.choice([opt.text for opt in question.answer_config.options])
     
     def _select_multiple_options(self, question: Question) -> List[str]:
         """Select multiple random options for a checkbox question"""
@@ -562,32 +572,32 @@ class FormProcessor:
             selected = [
                 option.text
                 for option, weight in zip(configured_options, weights)
-                if random.random() * 100 < weight
+                if self._rng.random() * 100 < weight
             ]
-            return selected if selected else [random.choice([opt.text for opt in configured_options])]
+            return selected if selected else [self._rng.choice([opt.text for opt in configured_options])]
         
         options = [opt.text for opt in configured_options]
         # Select 1 to all options
-        num_to_select = random.randint(1, len(options))
+        num_to_select = self._rng.randint(1, len(options))
         
-        return random.sample(options, num_to_select)
+        return self._rng.sample(options, num_to_select)
     
     def _generate_scale_response(self) -> int:
         """Generate a random scale response (1-5)"""
-        return random.randint(1, 5)
+        return self._rng.randint(1, 5)
     
     def _generate_date(self) -> str:
         """Generate a random date in YYYY-MM-DD format"""
-        year = random.randint(2020, 2025)
-        month = random.randint(1, 12)
-        day = random.randint(1, 28)  # Simplified to avoid month length issues
+        year = self._rng.randint(2020, 2025)
+        month = self._rng.randint(1, 12)
+        day = self._rng.randint(1, 28)  # Simplified to avoid month length issues
         
         return f"{year}-{month:02d}-{day:02d}"
     
     def _generate_time(self) -> str:
         """Generate a random time in HH:MM format"""
-        hour = random.randint(0, 23)
-        minute = random.randint(0, 59)
+        hour = self._rng.randint(0, 23)
+        minute = self._rng.randint(0, 59)
         
         return f"{hour:02d}:{minute:02d}"
     
@@ -597,7 +607,7 @@ class FormProcessor:
             return ["Rank 1", "Rank 2", "Rank 3"]  # Default fallback
         
         options = [opt.text for opt in question.answer_config.options]
-        random.shuffle(options)
+        self._rng.shuffle(options)
         
         return options
     

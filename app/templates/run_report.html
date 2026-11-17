@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Run report') }} - {{ _('Google Form Automation Tool') }}{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/report.css') }}">
+{% endblock %}
+{% block content %}
+<div id="run-report" data-run-id="{{ run_id }}">
+    <div class="page-header">
+        <div>
+            <a href="{{ url_for('main.index') }}" class="small text-decoration-none">
+                <i class="fas fa-arrow-left me-1" aria-hidden="true"></i>{{ _('Recent Forms') }}
+            </a>
+            <h1 class="page-title" id="report-title">{{ _('Run report') }}</h1>
+            <p class="page-subtitle">
+                <span id="report-status" class="status-pill">…</span>
+                <span id="report-meta"></span>
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary btn-sm d-none" id="resume-run">
+                <i class="fas fa-play me-1" aria-hidden="true"></i>{{ _('Resume') }}
+            </button>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.export_run', run_id=run_id, format='csv') }}" download>
+                <i class="fas fa-file-csv me-1" aria-hidden="true"></i>{{ _('Export CSV') }}
+            </a>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.export_run', run_id=run_id, format='json') }}" download>
+                <i class="fas fa-file-code me-1" aria-hidden="true"></i>{{ _('Export JSON') }}
+            </a>
+        </div>
+    </div>
+
+    <div id="report-loading" class="card"><div class="card-body">
+        <div class="skeleton-line lg w-40 mb-3"></div><div class="skeleton-line w-80 mb-2"></div><div class="skeleton-line w-60"></div>
+    </div></div>
+    <div id="report-error" class="state-error d-none" role="alert">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i><span></span>
+    </div>
+
+    <div id="report-body" class="d-none">
+        <div class="metric-grid mb-4">
+            <div class="metric"><div class="metric-value" id="m-total">0</div><div class="metric-label">{{ _('Total') }}</div></div>
+            <div class="metric metric-success"><div class="metric-value" id="m-success">0</div><div class="metric-label">{{ _('Success') }}</div></div>
+            <div class="metric metric-danger"><div class="metric-value" id="m-failed">0</div><div class="metric-label">{{ _('Failed') }}</div></div>
+            <div class="metric metric-warning"><div class="metric-value" id="m-unknown">0</div><div class="metric-label">{{ _('Unknown') }}</div></div>
+            <div class="metric"><div class="metric-value" id="m-rate">0%</div><div class="metric-label">{{ _('Success Rate') }}</div></div>
+            <div class="metric"><div class="metric-value" id="m-duration">–</div><div class="metric-label">{{ _('Duration') }}</div></div>
+        </div>
+
+        <div class="card mb-4" id="retry-card">
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h2 class="section-title mb-1">{{ _('Send failed responses again') }}</h2>
+                    <p class="text-muted small mb-0">{{ _('Starts a new run with the same answers for responses that failed. Responses with an unknown outcome may already have reached Google, so they are only included when you ask.') }}</p>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="retry-include-unknown">
+                        <label class="form-check-label small" for="retry-include-unknown">{{ _('Also send responses with an unknown outcome') }}</label>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary" id="retry-button">
+                    <i class="fas fa-rotate-right me-1" aria-hidden="true"></i>{{ _('Send failed again') }}
+                </button>
+            </div>
+        </div>
+
+        <h2 class="section-title">{{ _('Actual versus target') }}</h2>
+        <p class="text-muted small">{{ _('Counts only responses that were submitted successfully.') }}</p>
+        <div id="question-charts" class="chart-grid mb-4"></div>
+
+        <div id="failure-card" class="card mb-4 d-none">
+            <div class="card-body">
+                <h2 class="section-title">{{ _('Why responses failed') }}</h2>
+                <ul id="failure-list" class="list-unstyled mb-0"></ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <h2 class="section-title mb-0">{{ _('Responses') }}</h2>
+                    <select id="rows-filter" class="form-select form-select-sm w-auto" aria-label="{{ _('Filter by status') }}">
+                        <option value="">{{ _('All') }}</option>
+                        <option value="success">{{ _('Success') }}</option>
+                        <option value="failed">{{ _('Failed') }}</option>
+                        <option value="unknown">{{ _('Unknown') }}</option>
+                        <option value="planned">{{ _('Pending') }}</option>
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-2">
+                        <thead><tr>
+                            <th scope="col">#</th>
+                            <th scope="col">{{ _('Status') }}</th>
+                            <th scope="col">{{ _('Finished') }}</th>
+                            <th scope="col">{{ _('Answers') }}</th>
+                        </tr></thead>
+                        <tbody id="rows-body"></tbody>
+                    </table>
+                </div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="small text-muted" id="rows-range"></span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary" id="rows-prev">{{ _('Previous') }}</button>
+                        <button type="button" class="btn btn-outline-secondary" id="rows-next">{{ _('Next') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window.i18n = {
+    target: {{ _('Target') | tojson }},
+    actual: {{ _('Actual') | tojson }},
+    noChoiceQuestions: {{ _('No choice questions to compare.') | tojson }},
+    noRows: {{ _('No responses match this filter.') | tojson }},
+    couldNotLoadRun: {{ _('Could not load this run.') | tojson }},
+    retryStarted: {{ _('Started a new run for the failed responses.') | tojson }},
+    retryFailed: {{ _('Could not start the retry.') | tojson }},
+    distinctValues: {{ _('distinct values') | tojson }},
+    blank: {{ _('Blank') | tojson }},
+    seed: {{ _('Seed') | tojson }},
+    retryOf: {{ _('Retry of an earlier run') | tojson }},
+    rowsRange: {{ _('{from}–{to} of {total}') | tojson }},
+    resumed: {{ _('Resumed. The remaining responses are spread over what is left of the window.') | tojson }},
+    scheduledOver: {{ _('Spread over') | tojson }},
+    minutes: {{ _('minutes') | tojson }},
+    statuses: {
+        success: {{ _('Success') | tojson }},
+        failed: {{ _('Failed') | tojson }},
+        unknown: {{ _('Unknown') | tojson }},
+        planned: {{ _('Pending') | tojson }},
+        in_flight: {{ _('Sending') | tojson }},
+        pending: {{ _('Pending') | tojson }},
+        running: {{ _('Running') | tojson }},
+        completed: {{ _('Completed') | tojson }},
+        stopped: {{ _('Stopped') | tojson }},
+        interrupted: {{ _('Interrupted') | tojson }},
+        paused: {{ _('Paused') | tojson }}
+    },
+    modes: {
+        prefill_link: {{ _('Prefilled links') | tojson }},
+        dom_fill: {{ _('Fill directly') | tojson }}
+    }
+};
+</script>
+<script src="{{ url_for('static', filename='vendor/chart.js-4.5.1/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/run_report.js') }}"></script>
+{% endblock %}

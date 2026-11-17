@@ -1,54 +1,97 @@
 /**
- * Change text and background color correspond to dark/light mode
- * 
- * @param {boolean} isDark 
+ * Theme handling. The initial theme is applied by an inline script in
+ * base.html before first paint; this file wires the toggle button and keeps
+ * following the OS preference until the user picks a theme explicitly.
  */
-function applyDarkMode(isDark) {
-    const body = document.body;
-    body.classList.toggle('bg-dark', isDark);
-    body.classList.toggle('text-white', isDark);
-    body.classList.toggle('bg-light', !isDark);
-    body.classList.toggle('text-dark', !isDark);
+const THEME_KEY = 'theme';
 
-    document.querySelectorAll('.navbar').forEach(nav => {
-      nav.classList.toggle('bg-dark', isDark);
-      nav.classList.toggle('navbar-dark', isDark);
-      nav.classList.toggle('bg-light', !isDark);
-      nav.classList.toggle('navbar-light', !isDark);
-    });
-
-    document.querySelectorAll('footer').forEach(footer => {
-        footer.classList.toggle('bg-dark', isDark);
-        footer.classList.toggle('text-light', isDark);
-        footer.classList.toggle('bg-light', !isDark);
-        footer.classList.toggle('text-dark', !isDark);
-    });
-
-    const icon = document.getElementById("darkModeIcon");
-    if (icon) {
-      icon.className = isDark ? "fas fa-sun" : "fas fa-moon";
+function readStoredTheme() {
+    try {
+        const stored = localStorage.getItem(THEME_KEY);
+        if (stored === 'light' || stored === 'dark') return stored;
+        const legacy = localStorage.getItem('darkMode');
+        if (legacy === 'true') return 'dark';
+        if (legacy === 'false') return 'light';
+    } catch (error) {
+        // Storage can be unavailable; fall back to the OS preference.
     }
+    return null;
+}
+
+function systemTheme() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+/**
+ * Apply a theme to the document and sync the toggle button.
+ *
+ * @param {'light'|'dark'} theme
+ */
+function applyTheme(theme) {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-bs-theme', theme);
+
+    const isDark = theme === 'dark';
+    const icon = document.getElementById('darkModeIcon');
+    if (icon) {
+        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    const button = document.getElementById('theme-toggle');
+    if (button) {
+        button.setAttribute('aria-pressed', String(isDark));
+    }
+    document.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
 }
 
 /**
  * Turn on/off dark mode
  */
 function toggleDarkMode() {
-    let isDark = document.body.classList.contains('bg-dark');
-    isDark = !isDark;
-    localStorage.setItem('darkMode', isDark);
-    applyDarkMode(isDark);
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    try {
+        localStorage.setItem(THEME_KEY, next);
+    } catch (error) {
+        // The choice still applies for this page view.
+    }
+    applyTheme(next);
 }
 
 /**
- * Get dark mode status from local storage
+ * Show a message in the shared toast.
+ *
+ * @param {string} message
+ * @param {'info'|'success'|'error'|'warning'} type
  */
-window.addEventListener('DOMContentLoaded', () => {
-    let darkMode = localStorage.getItem('darkMode');
-    if (darkMode === null) {
-        darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } else {
-        darkMode = (darkMode === 'true');
+function showToast(message, type = 'info') {
+    const toastElement = document.getElementById('statusToast');
+    const toastMessage = document.getElementById('toast-message');
+    if (!toastElement || !toastMessage || !window.bootstrap) {
+        console.warn(message);
+        return;
     }
-    applyDarkMode(darkMode);
+    toastMessage.textContent = message;
+    toastElement.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-info', 'text-bg-warning');
+    const classes = { success: 'text-bg-success', error: 'text-bg-danger', warning: 'text-bg-warning' };
+    toastElement.classList.add(classes[type] || 'text-bg-info');
+    bootstrap.Toast.getOrCreateInstance(toastElement).show();
+}
+
+window.toggleDarkMode = toggleDarkMode;
+window.showToast = showToast;
+
+window.addEventListener('DOMContentLoaded', () => {
+    applyTheme(readStoredTheme() || systemTheme());
+
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+            if (!readStoredTheme()) {
+                applyTheme(event.matches ? 'dark' : 'light');
+            }
+        });
+    }
 });

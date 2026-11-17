@@ -20,3 +20,30 @@ def get_storage_service():
     db_path = Config.DB_PATH
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     return StorageService(db_path)
+
+
+def get_template_store():
+    from app.services.template_store import TemplateStore
+
+    db_path = Config.DB_PATH
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    return TemplateStore(db_path)
+
+
+_run_store_provider = None
+
+
+def set_run_store_provider(provider):
+    """Install a run store factory. Pass None to restore the default."""
+    global _run_store_provider
+    _run_store_provider = provider
+
+
+def get_run_store():
+    from app.services.run_store import RunStore
+
+    if _run_store_provider is not None:
+        return _run_store_provider()
+    db_path = Config.DB_PATH
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    return RunStore(db_path, Config.RUNS_DIR)

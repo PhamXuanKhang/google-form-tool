@@ -2,9 +2,11 @@
 
 import threading
 import time
+from datetime import datetime
 
 from app.logging_config import logger
-from app.services import get_storage_service, upload_cache
+from app.services import get_run_store, get_storage_service, upload_cache
+from app.services.run_store import ROW_IN_FLIGHT, ROW_PLANNED
 
 
 active_submitters: dict = {}
@@ -75,13 +77,32 @@ def validate_submission_request(data):
     return num_submissions, concurrent_threads, min_delay, max_delay
 
 
+MAX_SEED = 2 ** 53 - 1  # largest integer JavaScript represents exactly
+
+
+def parse_seed(value):
+    """Return None when no seed was given, else a validated integer seed."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"Seed must be an integer from 0 to {MAX_SEED}.")
+    if isinstance(value, str):
+        value = value.strip()
+        if not value.isdigit():
+            raise ValueError(f"Seed must be an integer from 0 to {MAX_SEED}.")
+        value = int(value)
+    if not isinstance(value, int) or value < 0 or value > MAX_SEED:
+        raise ValueError(f"Seed must be an integer from 0 to {MAX_SEED}.")
+    return value
+
+
 def cleanup_finished_submitters():
     """Remove finished submitters whose final-status TTL has expired."""
     now = time.monotonic()
     with active_submitters_lock:
         finished = [
             fid for fid, sub in active_submitters.items()
-            if not sub.get_status().get("running", False)
+            if not _is_live(sub)
             and (now - getattr(sub, "_finished_at", 0)) > FINISHED_STATUS_TTL
         ]
         for fid in finished:
@@ -95,20 +116,221 @@ def format_skipped_type_warning(skipped_summary):
     return [f"Skipping unsupported question types in prefill mode: {', '.join(parts)}."]
 
 
-def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None, upload_id=None):
-    """Internal helper: Runs submission in background thread"""
+def _final_run_status(rows, stopped):
+    """Completed when every row has a final result; otherwise stopped or interrupted."""
+    unfinished = any(row["status"] in (ROW_PLANNED, ROW_IN_FLIGHT) for row in rows)
+    if not unfinished:
+        return "completed"
+    return "stopped" if stopped else "interrupted"
+
+
+def _submit_planned_run(submitter, concurrent_threads, min_delay, max_delay):
+    """Run ``submitter.plan`` and keep the run store in step with each row."""
+    run_id = submitter.run_id
+    store = get_run_store()
+    store.update_run(run_id, status="running", started_at=datetime.now().isoformat(timespec="seconds"))
+
+    def on_row_result(index, status, error, started_at, finished_at):
+        store.record_result(run_id, index, status, error, started_at, finished_at)
+
+    final_status = "interrupted"
+    submission_result = None
     try:
-        submit_kwargs = dict(
-            num_submissions=num_submissions,
-            responses_list=responses_list,
-            responses=responses,
+        submission_result = submitter.submit_plan(
             concurrent_threads=concurrent_threads,
             min_delay=min_delay,
             max_delay=max_delay,
+            on_row_result=on_row_result,
         )
-        if submission_mode is not None:
-            submit_kwargs["submission_mode"] = submission_mode
-        submission_result = submitter.submit_form(**submit_kwargs)
+        final_status = _final_run_status(store.load_rows(run_id), submitter.stop_flag.is_set())
+        return submission_result
+    finally:
+        fields = {"status": final_status, "finished_at": datetime.now().isoformat(timespec="seconds")}
+        if submission_result is not None:
+            fields["submission_id"] = submission_result.submission_id
+        store.update_run(run_id, **fields)
+
+
+class RunAlreadyActive(Exception):
+    """The form already has a submission running."""
+
+
+def _is_live(submitter):
+    """A submitter is live from registration until its background job ends.
+
+    ``running`` alone is not enough: it is False before the job starts and
+    turns False on stop while workers may still be sending.
+    """
+    return bool(submitter.get_status().get("running", False) or getattr(submitter, "_run_live", False))
+
+
+def form_has_running_submission(form_id):
+    with active_submitters_lock:
+        submitter = active_submitters.get(form_id)
+        return bool(submitter and _is_live(submitter))
+
+
+def live_run_ids():
+    """Run ids whose submission job is still live in this process."""
+    with active_submitters_lock:
+        return {
+            getattr(sub, "run_id", None) for sub in active_submitters.values() if _is_live(sub)
+        } - {None}
+
+
+def register_run(form_id, submitter, create_run):
+    """Atomically refuse a second submission, record the run, and register it.
+
+    ``create_run`` is called under the lock and returns the run header.
+    Raises RunAlreadyActive when the form already has a live submission.
+    """
+    with active_submitters_lock:
+        if form_has_running_submission(form_id):
+            raise RunAlreadyActive(form_id)
+        run = create_run()
+        submitter.run_id = run["run_id"]
+        submitter._run_live = True
+        active_submitters[form_id] = submitter
+    return run
+
+
+def launch_planned_run(form, plan, concurrent_threads, min_delay, max_delay, retry_of=None, snapshot=None, extra=None):
+    """Record ``plan`` as a run and start submitting it in the background.
+
+    Raises RunAlreadyActive if the form has a running submission. The check
+    and the registration happen under one lock so two requests cannot both
+    start. Returns the run header.
+    """
+    from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
+    from app.adapters.browser.form_submitter import FormSubmitter
+    from app.config import Config
+    from app.domain.response_plan import target_snapshot
+
+    threads = max(1, min(concurrent_threads, len(plan.rows)))
+    submitter = FormSubmitter(
+        form=form,
+        chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
+        chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
+        headless=True,
+    )
+    submitter.plan = plan
+    run = register_run(form.id, submitter, lambda: get_run_store().create_run(
+        form_id=form.id,
+        mode=plan.mode,
+        seed=plan.seed,
+        threads=threads,
+        min_delay=min_delay,
+        max_delay=max_delay,
+        rows=[row.to_dict() for row in plan.rows],
+        target_snapshot=snapshot if snapshot is not None else target_snapshot(form),
+        retry_of=retry_of,
+        extra=extra,
+    ))
+
+    thread = threading.Thread(
+        target=run_submission,
+        args=(submitter, form.id, len(plan.rows), threads, min_delay, max_delay, None, None, plan.mode, None),
+    )
+    thread.daemon = True
+    thread.start()
+    return run
+
+
+MIN_WINDOW_MINUTES = 1
+MAX_WINDOW_MINUTES = 7 * 24 * 60
+
+
+def parse_schedule(value):
+    """None for a normal run, else the window in seconds; raises ValueError."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("schedule must be an object like {\"window_minutes\": 60}.")
+    minutes = value.get("window_minutes")
+    if isinstance(minutes, bool) or not isinstance(minutes, (int, float)) \
+            or not MIN_WINDOW_MINUTES <= minutes <= MAX_WINDOW_MINUTES:
+        raise ValueError(f"window_minutes must be a number from {MIN_WINDOW_MINUTES} to {MAX_WINDOW_MINUTES}.")
+    return float(minutes) * 60
+
+
+def make_send_batch(form, header):
+    """Send a batch of planned rows through the normal submitter path."""
+    def send(rows, on_row_result):
+        from app.adapters.browser.driver_manager import get_chrome_binary, get_chromedriver_path
+        from app.adapters.browser.form_submitter import FormSubmitter
+        from app.config import Config
+        from app.domain.response_plan import PlanRow, ResponsePlan
+
+        submitter = FormSubmitter(
+            form=form,
+            chromebinary_path=get_chrome_binary(Config.CHROME_BINARY_PATH),
+            chromedriver_path=get_chromedriver_path(Config.CHROME_DRIVER_PATH),
+            headless=True,
+        )
+        submitter.plan = ResponsePlan(seed=header["seed"], mode=header["mode"], rows=[
+            PlanRow(index=row["index"], answers=row["answers"], skipped=row.get("skipped") or [],
+                    persona_id=row.get("persona_id"))
+            for row in rows
+        ])
+        submitter.submit_plan(
+            concurrent_threads=int(header.get("threads") or 1),
+            min_delay=float(header.get("min_delay") or 0),
+            max_delay=float(header.get("max_delay") or 0),
+            on_row_result=on_row_result,
+        )
+    return send
+
+
+# Replaced in tests to avoid real browsers.
+send_batch_factory = make_send_batch
+
+
+def start_drip_thread(form, runner):
+    """Run a registered scheduled run in the background and record its summary."""
+    def job():
+        try:
+            final = runner.run()
+            status = runner.get_status()
+            if final in ("completed", "stopped") and status["completed"]:
+                from app.models import Submission
+
+                with get_storage_service() as storage:
+                    storage.add_submission(form.id, Submission(
+                        num_submission=status["completed"],
+                        concurrent_thread=int(runner.header.get("threads") or 1),
+                        time_used=status["elapsed_time"],
+                        success_rate=round(status["success_rate"], 2),
+                        network_status="Scheduled",
+                    ))
+        except Exception:
+            logger.exception("Scheduled run job failed for form %s", form.id)
+        finally:
+            runner._finished_at = time.monotonic()
+            runner._run_live = False
+
+    thread = threading.Thread(target=job)
+    thread.daemon = True
+    thread.start()
+    return thread
+
+
+def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_delay, max_delay, responses_list=None, responses=None, submission_mode=None, upload_id=None):
+    """Internal helper: Runs submission in background thread"""
+    try:
+        if getattr(submitter, "plan", None) is not None and getattr(submitter, "run_id", None):
+            submission_result = _submit_planned_run(submitter, concurrent_threads, min_delay, max_delay)
+        else:
+            submit_kwargs = dict(
+                num_submissions=num_submissions,
+                responses_list=responses_list,
+                responses=responses,
+                concurrent_threads=concurrent_threads,
+                min_delay=min_delay,
+                max_delay=max_delay,
+            )
+            if submission_mode is not None:
+                submit_kwargs["submission_mode"] = submission_mode
+            submission_result = submitter.submit_form(**submit_kwargs)
 
         try:
             with get_storage_service() as storage:
@@ -127,3 +349,4 @@ def run_submission(submitter, form_id, num_submissions, concurrent_threads, min_
     finally:
         upload_cache.delete_cached_upload(upload_id)
         submitter._finished_at = time.monotonic()
+        submitter._run_live = False

@@ -399,3 +399,471 @@ msgstr "Cần API key để dùng AI Generate."
 
 msgid "AI Generate only supports text-like questions in this beta."
 msgstr "AI Generate trong beta này chỉ hỗ trợ câu hỏi dạng text."
+
+msgid "Skip to content"
+msgstr "Chuyển đến nội dung"
+
+msgid "Main navigation"
+msgstr "Điều hướng chính"
+
+msgid "Language"
+msgstr "Ngôn ngữ"
+
+msgid "Toggle dark mode"
+msgstr "Bật/tắt chế độ tối"
+
+msgid "Report Bug"
+msgstr "Báo lỗi"
+
+msgid "Try a different search term."
+msgstr "Hãy thử từ khoá khác."
+
+msgid "Clear search"
+msgstr "Xoá tìm kiếm"
+
+msgid "Extract a Google Form to configure answers and run submissions. It will appear here."
+msgstr "Trích xuất một Google Form để cấu hình câu trả lời và chạy gửi. Biểu mẫu sẽ hiện ở đây."
+
+msgid "Reading the form structure..."
+msgstr "Đang đọc cấu trúc biểu mẫu..."
+
+msgid "The stepper above tracks your progress through 4 steps: Enter URL → Configure Answers → Settings → Monitor. Steps unlock as you complete each one."
+msgstr "Thanh bước phía trên theo dõi tiến độ qua 4 bước: Nhập URL → Cấu hình câu trả lời → Cài đặt → Theo dõi. Mỗi bước mở khi bạn hoàn tất bước trước."
+
+msgid "You can restart this tour at any time by clicking the Quick Tour button at the top of the page. Good luck! 🚀"
+msgstr "Bạn có thể xem lại hướng dẫn bất cứ lúc nào bằng nút Quick Tour ở đầu trang. Chúc may mắn! 🚀"
+
+msgid "Run report"
+msgstr "Báo cáo đợt chạy"
+
+msgid "Export CSV"
+msgstr "Xuất CSV"
+
+msgid "Export JSON"
+msgstr "Xuất JSON"
+
+msgid "Unknown"
+msgstr "Không rõ"
+
+msgid "Duration"
+msgstr "Thời lượng"
+
+msgid "Send failed responses again"
+msgstr "Gửi lại các lượt lỗi"
+
+msgid "Starts a new run with the same answers for responses that failed. Responses with an unknown outcome may already have reached Google, so they are only included when you ask."
+msgstr "Tạo đợt chạy mới với đúng câu trả lời của các lượt lỗi. Lượt có kết quả không rõ có thể đã tới Google, nên chỉ được gửi lại khi bạn chọn."
+
+msgid "Also send responses with an unknown outcome"
+msgstr "Gửi cả các lượt có kết quả không rõ"
+
+msgid "Send failed again"
+msgstr "Gửi lại lượt lỗi"
+
+msgid "Actual versus target"
+msgstr "Thực tế so với mục tiêu"
+
+msgid "Counts only responses that were submitted successfully."
+msgstr "Chỉ tính các lượt đã gửi thành công."
+
+msgid "Why responses failed"
+msgstr "Lý do lượt gửi lỗi"
+
+msgid "Responses"
+msgstr "Các lượt gửi"
+
+msgid "Filter by status"
+msgstr "Lọc theo trạng thái"
+
+msgid "All"
+msgstr "Tất cả"
+
+msgid "Status"
+msgstr "Trạng thái"
+
+msgid "Finished"
+msgstr "Hoàn tất lúc"
+
+msgid "Answers"
+msgstr "Câu trả lời"
+
+msgid "Next"
+msgstr "Tiếp"
+
+msgid "Target"
+msgstr "Mục tiêu"
+
+msgid "Actual"
+msgstr "Thực tế"
+
+msgid "No choice questions to compare."
+msgstr "Không có câu hỏi lựa chọn để so sánh."
+
+msgid "No responses match this filter."
+msgstr "Không có lượt gửi nào khớp bộ lọc."
+
+msgid "Could not load this run."
+msgstr "Không tải được đợt chạy này."
+
+msgid "Started a new run for the failed responses."
+msgstr "Đã bắt đầu đợt chạy mới cho các lượt lỗi."
+
+msgid "Could not start the retry."
+msgstr "Không bắt đầu được việc gửi lại."
+
+msgid "distinct values"
+msgstr "giá trị khác nhau"
+
+msgid "Blank"
+msgstr "Bỏ trống"
+
+msgid "Seed"
+msgstr "Seed"
+
+msgid "Retry of an earlier run"
+msgstr "Gửi lại từ một đợt trước"
+
+msgid "{from}–{to} of {total}"
+msgstr "{from}–{to} trên {total}"
+
+msgid "Sending"
+msgstr "Đang gửi"
+
+msgid "Running"
+msgstr "Đang chạy"
+
+msgid "Stopped"
+msgstr "Đã dừng"
+
+msgid "Interrupted"
+msgstr "Bị gián đoạn"
+
+msgid "Paused"
+msgstr "Tạm dừng"
+
+msgid "Prefilled links"
+msgstr "Link điền sẵn"
+
+msgid "Fill directly"
+msgstr "Điền trực tiếp"
+
+msgid "View report"
+msgstr "Xem báo cáo"
+
+msgid "Preview this batch"
+msgstr "Xem trước đợt này"
+
+msgid "Plans every response in the app so you can check the answers before anything is sent. Nothing is sent to Google."
+msgstr "Lập sẵn từng lượt trong app để bạn kiểm tra câu trả lời trước khi gửi. Không có gì được gửi tới Google."
+
+msgid "Simulate"
+msgstr "Mô phỏng"
+
+msgid "Generate again"
+msgstr "Sinh lại"
+
+msgid "Run exactly this"
+msgstr "Chạy đúng bản này"
+
+msgid "Run a simulation to see how answers will be spread across this batch."
+msgstr "Chạy mô phỏng để xem câu trả lời sẽ phân bổ thế nào trong đợt này."
+
+msgid "Sample responses"
+msgstr "Lượt mẫu"
+
+msgid "Per minute"
+msgstr "Mỗi phút"
+
+msgid "Time left"
+msgstr "Còn lại"
+
+msgid "Latest responses"
+msgstr "Lượt gửi gần nhất"
+
+msgid "Responses appear here as they are sent."
+msgstr "Các lượt gửi sẽ hiện ở đây khi được gửi."
+
+msgid "Simulated"
+msgstr "Mô phỏng"
+
+msgid "Could not simulate this batch."
+msgstr "Không mô phỏng được đợt này."
+
+msgid "{total} responses · seed {seed}"
+msgstr "{total} lượt · seed {seed}"
+
+msgid "Runs"
+msgstr "Các đợt chạy"
+
+msgid "No runs yet."
+msgstr "Chưa có đợt chạy nào."
+
+msgid "Could not load runs."
+msgstr "Không tải được danh sách đợt chạy."
+
+msgid "Agent connection (MCP)"
+msgstr "Kết nối agent (MCP)"
+
+msgid "Let Claude or another MCP client extract, configure, simulate, run and review batches through this app. The app must be open while the agent works; the agent cannot start it."
+msgstr "Cho Claude hoặc client MCP khác trích xuất, cấu hình, mô phỏng, chạy và xem báo cáo qua app này. App phải đang mở khi agent làm việc; agent không tự mở app được."
+
+msgid "The MCP server program was not found next to the app. Reinstall the app or run it from source."
+msgstr "Không tìm thấy chương trình MCP server cạnh app. Hãy cài lại app hoặc chạy từ mã nguồn."
+
+msgid "Claude Desktop"
+msgstr "Claude Desktop"
+
+msgid "Copy"
+msgstr "Sao chép"
+
+msgid "Add this to claude_desktop_config.json, then restart Claude Desktop."
+msgstr "Thêm đoạn này vào claude_desktop_config.json rồi khởi động lại Claude Desktop."
+
+msgid "Claude Code"
+msgstr "Claude Code"
+
+msgid "Run this command in a terminal."
+msgstr "Chạy lệnh này trong terminal."
+
+msgid "Claude skill"
+msgstr "Claude skill"
+
+msgid "Download SKILL.md"
+msgstr "Tải SKILL.md"
+
+msgid "Save it as skills/google-form-automation/SKILL.md in your Claude skills folder so the agent follows the safe workflow: simulate first, and send only after you agree."
+msgstr "Lưu thành skills/google-form-automation/SKILL.md trong thư mục skills của Claude để agent làm theo quy trình an toàn: mô phỏng trước, chỉ gửi khi bạn đồng ý."
+
+msgid "Show skill"
+msgstr "Xem skill"
+
+msgid "Copied."
+msgstr "Đã sao chép."
+
+msgid "Template"
+msgstr "Template"
+
+msgid "Save current as template"
+msgstr "Lưu cấu hình hiện tại thành template"
+
+msgid "Export to file"
+msgstr "Xuất ra file"
+
+msgid "Import from file"
+msgstr "Nhập từ file"
+
+msgid "Saved templates"
+msgstr "Template đã lưu"
+
+msgid "No saved templates yet."
+msgstr "Chưa có template nào."
+
+msgid "Apply template"
+msgstr "Áp dụng template"
+
+msgid "Cancel"
+msgstr "Huỷ"
+
+msgid "Apply matching questions"
+msgstr "Áp dụng cho các câu khớp"
+
+msgid "Presets"
+msgstr "Mẫu phân phối"
+
+msgid "Apply to every question of this type"
+msgstr "Áp dụng cho mọi câu cùng loại"
+
+msgid "Even"
+msgstr "Đều"
+
+msgid "Lean high"
+msgstr "Nghiêng cao"
+
+msgid "Lean low"
+msgstr "Nghiêng thấp"
+
+msgid "Bell"
+msgstr "Hình chuông"
+
+msgid "First option heavy"
+msgstr "Dồn lựa chọn đầu"
+
+msgid "Template action failed."
+msgstr "Thao tác template thất bại."
+
+msgid "Template name:"
+msgstr "Tên template:"
+
+msgid "Template saved."
+msgstr "Đã lưu template."
+
+msgid "Template applied."
+msgstr "Đã áp dụng template."
+
+msgid "The template was made from a form with the same structure."
+msgstr "Template được tạo từ form có cùng cấu trúc."
+
+msgid "The template comes from a form with a different structure. Only matching questions will change."
+msgstr "Template đến từ form có cấu trúc khác. Chỉ các câu khớp được thay đổi."
+
+msgid "no matching question"
+msgstr "không có câu khớp"
+
+msgid "options differ"
+msgstr "lựa chọn khác nhau"
+
+msgid "Will be updated"
+msgstr "Sẽ được cập nhật"
+
+msgid "Not applied"
+msgstr "Không áp dụng"
+
+msgid "Not in the template (unchanged)"
+msgstr "Không có trong template (giữ nguyên)"
+
+msgid "AI Autopilot"
+msgstr "AI Autopilot"
+
+msgid "Personas"
+msgstr "Persona"
+
+msgid "Describe who answers this form. Gemini proposes answer settings for every question, using your own API key. Nothing changes until you choose what to apply."
+msgstr "Mô tả nhóm người trả lời form. Gemini đề xuất cấu hình cho mọi câu hỏi bằng API key của bạn. Không có gì thay đổi cho đến khi bạn chọn áp dụng."
+
+msgid "Who answers this form?"
+msgstr "Ai trả lời form này?"
+
+msgid "For example: university students in Hanoi, mostly 18-22, who drink coffee daily"
+msgstr "Ví dụ: sinh viên đại học ở Hà Nội, chủ yếu 18-22 tuổi, uống cà phê hằng ngày"
+
+msgid "Also propose personas"
+msgstr "Đề xuất cả persona"
+
+msgid "Propose settings"
+msgstr "Đề xuất cấu hình"
+
+msgid "Select all"
+msgstr "Chọn tất cả"
+
+msgid "Question"
+msgstr "Câu hỏi"
+
+msgid "Now"
+msgstr "Hiện tại"
+
+msgid "Proposed"
+msgstr "Đề xuất"
+
+msgid "Replace personas with the proposed ones:"
+msgstr "Thay persona bằng các persona được đề xuất:"
+
+msgid "Apply selected"
+msgstr "Áp dụng mục đã chọn"
+
+msgid "Split responses between groups of respondents. Each persona gets a share of the batch and can answer some questions differently; other questions use the shared settings."
+msgstr "Chia lượt gửi cho các nhóm người trả lời. Mỗi persona nhận một phần đợt gửi và có thể trả lời một số câu khác đi; các câu còn lại dùng cấu hình chung."
+
+msgid "Add persona"
+msgstr "Thêm persona"
+
+msgid "Save personas"
+msgstr "Lưu persona"
+
+msgid "Save persona answers"
+msgstr "Lưu câu trả lời của persona"
+
+msgid "Request failed."
+msgstr "Yêu cầu thất bại."
+
+msgid "Persona name"
+msgstr "Tên persona"
+
+msgid "Share of responses, in percent"
+msgstr "Tỉ lệ lượt gửi, tính theo phần trăm"
+
+msgid "questions differ"
+msgstr "câu khác cấu hình chung"
+
+msgid "Edit answers"
+msgstr "Sửa câu trả lời"
+
+msgid "Remove"
+msgstr "Xoá"
+
+msgid "No personas: every response uses the shared settings."
+msgstr "Chưa có persona: mọi lượt dùng cấu hình chung."
+
+msgid "Personas saved."
+msgstr "Đã lưu persona."
+
+msgid "Differs for this persona"
+msgstr "Khác với cấu hình chung"
+
+msgid "Use shared settings"
+msgstr "Về cấu hình chung"
+
+msgid "Editing answers for"
+msgstr "Đang sửa câu trả lời cho"
+
+msgid "Persona"
+msgstr "Persona"
+
+msgid "Save or cancel the persona answers first."
+msgstr "Hãy lưu hoặc huỷ câu trả lời của persona trước."
+
+msgid "Describe who answers the form first."
+msgstr "Hãy mô tả nhóm người trả lời trước."
+
+msgid "Proposal applied. Simulate the batch to check it."
+msgstr "Đã áp dụng đề xuất. Hãy mô phỏng đợt gửi để kiểm tra."
+
+msgid "Spread over time"
+msgstr "Rải theo thời gian"
+
+msgid "Spread over (minutes)"
+msgstr "Rải trong (phút)"
+
+msgid "Responses are sent only while the app is open. If you close it, the run pauses and can be resumed later."
+msgstr "Lượt gửi chỉ chạy khi app đang mở. Nếu đóng app, đợt chạy dừng lại và có thể tiếp tục sau."
+
+msgid "Pause"
+msgstr "Tạm dừng"
+
+msgid "Resume"
+msgstr "Tiếp tục"
+
+msgid "Next response at"
+msgstr "Lượt kế tiếp lúc"
+
+msgid "Keep the app open until the run ends."
+msgstr "Hãy để app mở cho tới khi đợt chạy xong."
+
+msgid "Paused. Resume to send the remaining responses."
+msgstr "Đã tạm dừng. Bấm Tiếp tục để gửi các lượt còn lại."
+
+msgid "Pausing after the responses being sent now."
+msgstr "Sẽ tạm dừng sau khi các lượt đang gửi hoàn tất."
+
+msgid "Choose between 1 and 10080 minutes."
+msgstr "Chọn từ 1 đến 10080 phút."
+
+msgid "About 1 response every {every} minutes, done around {end}."
+msgstr "Khoảng 1 lượt mỗi {every} phút, xong vào khoảng {end}."
+
+msgid "Resumed. The remaining responses are spread over what is left of the window."
+msgstr "Đã tiếp tục. Các lượt còn lại được rải trên phần thời gian còn lại."
+
+msgid "Spread over"
+msgstr "Rải trong"
+
+msgid "minutes"
+msgstr "phút"
+
+msgid "Open the report to resume it."
+msgstr "Mở báo cáo để tiếp tục."
+
+msgid "runs stopped when the app closed."
+msgstr "đợt chạy đã dừng khi app đóng."
+
+msgid "A run stopped when the app closed."
+msgstr "Một đợt chạy đã dừng khi app đóng."

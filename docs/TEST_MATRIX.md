@@ -20,6 +20,7 @@ Story codes refer to `docs/product/user-stories.md`.
 | US-001 Extract form | Parse Google Form structure into local form model | yes | yes | manual | desktop/browser | implemented | `tests/test_form_extractor.py`, `tests/test_extract_route.py` |
 | US-002 Configure answers | Validate answer probability/configuration in UI and backend | yes | yes | manual | browser | implemented | `tests/test_form_processor.py`, `tests/test_js_prefill_validator.py` |
 | US-003 Bulk direct submit | Submit configured responses with worker threads and status tracking | yes | yes | manual | desktop/browser | implemented | `tests/test_form_submitter.py`, `tests/test_submission_status_retention.py` |
+| US-003 Planned runs | Seeded plan per batch; every response's answers and outcome stored in the run log | yes | yes | manual | backend | implemented | `tests/test_response_plan.py`, `tests/test_run_store.py`, `tests/test_planned_submission.py` |
 | US-003 Prefill submit | Generate and submit prefilled Google Forms URLs | yes | yes | manual | desktop/browser | implemented | `tests/test_prefill_link_generator.py`, `tests/test_prefill_submission.py` |
 | US-004 AI answer generation | Generate bounded AI responses and handle model/API validation | yes | yes | manual | backend | implemented | `tests/test_ai_text_route.py`, `tests/test_ai_model_resolution.py`, `tests/test_ai_generator_gating.py` |
 | US-005 Persistence/history | Store forms, submissions, history, and exports locally | yes | yes | manual | backend | implemented | `tests/test_storage_service.py`, `tests/test_submission_persistence.py`, `tests/test_submission_history_route.py` |
@@ -28,6 +29,13 @@ Story codes refer to `docs/product/user-stories.md`.
 | US-007 Form copy MVP | Best-effort copy preview and apply flow | yes | yes | manual | desktop/browser | implemented | `tests/test_form_copier.py`, `tests/test_form_copy_planner.py`, `tests/test_form_copy_routes.py`, `tests/test_form_copy_ui.py` |
 | US-008 Windows packaging | Build backend sidecar and Electron installer | no | no | manual | Windows | implemented | `scripts/package-windows.ps1`, `google_form_tool.spec`, `electron-builder.yml` |
 | US-008 Landing page | Build static release landing page with latest-release CTA | no | yes | manual | static web | implemented | `landing/package.json`, `landing/index.html`, `landing/styles.css` |
+| US-009 Offline UI and theme | Pages load only bundled assets; vendor libraries ship licenses; theme, sidebar and stepper | yes | yes | manual | desktop/browser | implemented | `tests/test_offline_assets.py`, `tests/test_i18n_render.py` |
+| US-010 Batch preview | Seeded simulation per question, no driver, no run; same seed reproduces the run | yes | yes | manual | backend/browser | implemented | `tests/test_simulation_and_reports.py`, `tests/test_run_report.py` |
+| US-011 Run report and retry | Run summaries, paged rows, safe CSV/JSON export, retry of failed rows only | yes | yes | manual | backend/browser | implemented | `tests/test_simulation_and_reports.py`, `tests/test_run_report.py` |
+| US-012 Agent control (MCP) | Stdio MCP proxy to the running app; tools map to routes; errors become tool errors; stdout is JSON-RPC only | yes | yes | smoke | Windows/stdio | implemented | `tests/test_mcp_server.py`, `scripts/smoke-mcp.py` |
+| US-013 Presets and templates | Presets total 100 with correct shape; template export/import round trip, preview before apply, invalid files rejected | yes | yes | manual | backend/browser | implemented | `tests/test_presets_and_templates.py`, `tests/test_mcp_server.py` |
+| US-014 Personas and AI Autopilot | Persona quotas and consistent rows; validated persona lists; AI proposals checked, never saved, key never exposed; edits validated before saving | yes | yes | manual | backend/browser | implemented | `tests/test_personas.py`, `tests/test_ai_autopilot.py`, `tests/test_edit_validation.py` |
+| US-015 Scheduled runs | Send times inside the window, capped per tick; pause/resume; restart recovery without resending; stop keeps waiting rows | yes | yes | manual | backend/desktop | implemented | `tests/test_drip.py`, `tests/test_mcp_server.py` |
 
 ## Evidence Rules
 

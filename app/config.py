@@ -48,6 +48,9 @@ class Config:
     # TinyDB storage — defaults to %APPDATA%\GoogleFormTool\db.json.
     DB_PATH = os.getenv("DB_PATH") or str(_APP_DATA / "db.json")
 
+    # Per-response run logs (append-only JSONL, one file per run).
+    RUNS_DIR = os.getenv("RUNS_DIR") or str(_APP_DATA / "runs")
+
     # Chrome paths — None means Selenium Manager auto-detects the driver.
     CHROME_BINARY_PATH = os.getenv("CHROME_BINARY_PATH")
     CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH")

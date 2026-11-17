@@ -1,24 +1,29 @@
-/* CSS (đặt trong <style> hoặc file .css) */
-.spinner-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(255, 255, 255, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+/* Form Filling: loading skeleton shown in place of the preview while a form
+   is being extracted. #spinner is toggled by form_extract.js via
+   style.display, so the rules below key off that inline style. */
+.preview-skeleton {
+    flex-direction: column;
+    gap: var(--gf-space-3);
+    padding: var(--gf-space-4);
 }
 
-.spinner {
-  border: 6px solid #f3f3f3;
-  border-top: 6px solid #3498db;
-  border-radius: 50%;
-  width: 50px; height: 50px;
-  animation: spin 1s linear infinite;
+.preview-skeleton .skeleton-line.w-40 { width: 40%; }
+.preview-skeleton .skeleton-line.w-60 { width: 60%; }
+.preview-skeleton .skeleton-line.w-80 { width: 80%; }
+.preview-skeleton .skeleton-line.lg { height: 1.1rem; }
+
+.preview-skeleton-label {
+    margin: 0;
+    color: var(--gf-text-muted);
+    font-size: var(--gf-text-sm);
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+#spinner[style*="flex"] ~ #form-preview-container {
+    display: none;
+}
+
+/* Block a second extraction while one is running. */
+body:has(#spinner[style*="flex"]) #extract-form button[type="submit"] {
+    pointer-events: none;
+    opacity: 0.6;
 }

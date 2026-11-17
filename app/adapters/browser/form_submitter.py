@@ -20,12 +20,17 @@ from selenium.common.exceptions import (
 from app.models import Form, Question, Submission
 from app.domain.form_processor import FormProcessor
 from app.domain.prefill_link_generator import PrefillLinkGenerator
+from app.domain.response_plan import (
+    PLAN_MODE_DOM_FILL,
+    PLAN_MODE_PREFILL,
+    PLAN_MODES,
+    SKIPPABLE_PREFILL_TYPES,
+)
 from app.logging_config import logger
 
-SUBMISSION_MODE_PREFILL = "prefill_link"
-SUBMISSION_MODE_DOM_FILL = "dom_fill"
-VALID_SUBMISSION_MODES = (SUBMISSION_MODE_PREFILL, SUBMISSION_MODE_DOM_FILL)
-SKIPPABLE_PREFILL_TYPES = {"file_upload", "rating", "unknown"}
+SUBMISSION_MODE_PREFILL = PLAN_MODE_PREFILL
+SUBMISSION_MODE_DOM_FILL = PLAN_MODE_DOM_FILL
+VALID_SUBMISSION_MODES = PLAN_MODES
 PREFILL_MAX_BUTTON_CLICKS = 25
 REQUIRED_ERROR_MARKERS = (
     "this is a required question",
@@ -42,6 +47,7 @@ import threading
 import time
 import random
 import unicodedata
+from collections import deque
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from datetime import datetime
 from functools import wraps
@@ -99,9 +105,18 @@ class FormSubmitter:
         
         self.status_lock = threading.RLock()
         self.status = self._new_status()
-        
+
         self.stop_flag = threading.Event()
         self.threads = []
+
+        # Answers being filled. Each worker thread keeps its own copy so
+        # concurrent workers never fill a form with another row's answers.
+        self._local = threading.local()
+        self._shared_responses = None
+
+        # Set by the caller to run a prepared ResponsePlan via submit_plan.
+        self.plan = None
+        self.run_id = None
 
         # Prefill-mode queue (populated by submit_form or submit_prefilled_urls).
         self.urls_queue: Optional[List[str]] = None
@@ -150,6 +165,15 @@ class FormSubmitter:
             logger.error(f"Failed to initialize WebDriver: {str(e)}")
             raise
     
+    @property
+    def responses(self) -> Optional[Dict[str, Any]]:
+        return getattr(self._local, "responses", self._shared_responses)
+
+    @responses.setter
+    def responses(self, value: Optional[Dict[str, Any]]) -> None:
+        self._local.responses = value
+        self._shared_responses = value
+
     @staticmethod
     def _new_status() -> Dict[str, Any]:
         return {
@@ -280,20 +304,129 @@ class FormSubmitter:
         base_submissions = num_submissions // effective_threads
         remainder = num_submissions % effective_threads
 
-        try:
-            # Start submission threads
-            for i in range(effective_threads):
-                submissions_per_thread = base_submissions + (1 if i < remainder else 0)
+        return self._run_workers(
+            effective_threads,
+            worker_target,
+            lambda i: (base_submissions + (1 if i < remainder else 0), min_delay, max_delay, callback),
+            concurrent_threads,
+        )
 
-                thread = threading.Thread(
-                    target=worker_target,
-                    args=(submissions_per_thread, min_delay, max_delay, callback)
-                )
+    def submit_plan(self,
+                    concurrent_threads: int = 1,
+                    min_delay: float = 1,
+                    max_delay: float = 5,
+                    on_row_result: Optional[Callable] = None) -> Submission:
+        """Submit the rows of ``self.plan``, reporting each row's outcome.
+
+        ``on_row_result(index, status, error, started_at, finished_at)`` is
+        called with ``in_flight`` before a row is attempted and with
+        ``success`` or ``failed`` after it.
+        """
+        plan = self.plan
+        if plan is None or not plan.rows:
+            raise ValueError("submit_plan needs a plan with at least one row")
+        if concurrent_threads <= 0:
+            raise ValueError("concurrent_threads must be greater than 0")
+
+        self.submission_mode = plan.mode
+        prefill = plan.mode == SUBMISSION_MODE_PREFILL
+        if prefill:
+            urls = PrefillLinkGenerator(self.form).build_prefill_urls(plan.answers())
+            payloads = [(row.index, url) for row, url in zip(plan.rows, urls)]
+        else:
+            payloads = [(row.index, row.answers) for row in plan.rows]
+
+        self._row_queue = deque(payloads)
+        self._row_lock = threading.Lock()
+
+        with self.status_lock:
+            self.status = self._new_status()
+            self.status.update({
+                "running": True,
+                "total": len(payloads),
+                "start_time": datetime.now(),
+            })
+        self.stop_flag.clear()
+
+        return self._run_workers(
+            min(concurrent_threads, len(payloads)),
+            self._plan_worker,
+            lambda i: (min_delay, max_delay, on_row_result, prefill),
+            concurrent_threads,
+        )
+
+    def _plan_worker(self,
+                     min_delay: float,
+                     max_delay: float,
+                     on_row_result: Optional[Callable],
+                     prefill: bool) -> None:
+        """Worker thread: take rows from the shared plan queue until it is empty."""
+        driver = None
+        try:
+            driver = self.initialize_driver()
+
+            while not self.stop_flag.is_set():
+                with self._row_lock:
+                    if not self._row_queue:
+                        break
+                    index, payload = self._row_queue.popleft()
+
+                started_at = datetime.now().isoformat(timespec="milliseconds")
+                self._report_row(on_row_result, index, "in_flight", None, started_at, None)
+                error = None
+                try:
+                    if prefill:
+                        success = self._submit_prefilled_url(driver, payload)
+                    else:
+                        self.responses = payload
+                        success = self._submit_single_form(driver)
+                    if not success:
+                        error = "submit_failed"
+                    outcome = "success" if success else "failed"
+                except Exception as e:
+                    # The form may already have been submitted when this
+                    # raised, so the outcome is unknown rather than failed.
+                    success = False
+                    outcome = "unknown"
+                    error = type(e).__name__
+                finished_at = datetime.now().isoformat(timespec="milliseconds")
+
+                self._increment_status("success" if success else "failed")
+                self._report_row(on_row_result, index, outcome, error, started_at, finished_at)
+
+                if self._row_queue and not self.stop_flag.is_set():
+                    time.sleep(random.uniform(min_delay, max_delay))
+
+        except Exception as e:
+            logger.error(f"Error in plan worker: {str(e)}")
+
+        finally:
+            self._increment_status("current_threads", -1)
+            if driver:
+                driver.quit()
+
+    @staticmethod
+    def _report_row(on_row_result, index, status, error, started_at, finished_at) -> None:
+        if on_row_result is None:
+            return
+        try:
+            on_row_result(index, status, error, started_at, finished_at)
+        except Exception:
+            logger.exception("Could not record result for row %s", index)
+
+    def _run_workers(self,
+                     thread_count: int,
+                     worker_target: Callable,
+                     args_for: Callable[[int], tuple],
+                     concurrent_threads: int) -> Submission:
+        """Start worker threads, wait for them, and summarize the batch."""
+        try:
+            for i in range(thread_count):
+                thread = threading.Thread(target=worker_target, args=args_for(i))
                 self.threads.append(thread)
                 thread.start()
                 self._increment_status("current_threads")
 
-            # Wait for all threads to complete
             for thread in self.threads:
                 thread.join()
         finally:
@@ -415,12 +548,16 @@ class FormSubmitter:
         responses_list: Optional[List[Dict[str, Any]]],
         include_debug_sample: bool = False,
     ) -> tuple[int, Dict[str, int], Optional[str]]:
-        response_dicts = self._build_response_dicts(
-            num_submissions, responses, responses_list
-        )
-        response_dicts, skipped_summary = self._filter_skippable_responses(
-            response_dicts
-        )
+        if self.plan is not None:
+            response_dicts = self.plan.answers()
+            skipped_summary = self.plan.skipped_summary()
+        else:
+            response_dicts = self._build_response_dicts(
+                num_submissions, responses, responses_list
+            )
+            response_dicts, skipped_summary = self._filter_skippable_responses(
+                response_dicts
+            )
         generator = PrefillLinkGenerator(self.form)
         self.urls_queue = generator.build_prefill_urls(response_dicts)
         self.urls_lock = threading.Lock()

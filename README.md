@@ -47,16 +47,35 @@
 | Copy Form MVP | **Copy best-effort** | Preview/copy form sang target editable link, kèm warnings cho unsupported features |
 | i18n | **Tiếng Anh / Tiếng Việt** | Chuyển ngôn ngữ trong UI |
 | History | **Lịch sử submission** | Lưu lịch sử submission và export CSV |
+| Offline UI | **Giao diện mới** | Sidebar, dark mode, mọi asset đóng gói sẵn trong app (không cần CDN) |
+| Simulation | **Mô phỏng trước khi gửi** | Xem phân phối từng câu và bảng mẫu theo seed, không mở Chrome, không gọi Google |
+| Run report | **Báo cáo sau khi gửi** | Bản ghi từng lượt, thực tế so với mục tiêu, gửi lại lượt lỗi, export CSV/JSON |
+| Personas | **Persona + AI Autopilot** | Nhóm người trả lời có trọng số; Gemini đề xuất cấu hình cả form, xem lại rồi mới áp dụng |
+| Scheduled runs | **Chạy rải theo thời gian** | Rải lượt gửi trong một khung giờ, tạm dừng/tiếp tục, tiếp tục sau khi mở lại app |
+| Presets | **Preset và template** | Preset một chạm; lưu, xuất, nhập cấu hình dạng JSON |
+| MCP | **Điều khiển bằng agent** | MCP server và Claude skill để agent extract, cấu hình, mô phỏng, chạy và đọc báo cáo |
 
 ---
 
 ## Workflow
 
 ```text
-① Paste URL          ② Configure          ③ Submit settings          ④ Monitor
-   Google Form URL  →  Set probabilities  →  Threads & delay        →  Live progress
-   → Auto extract      per answer option     Min/max delay             Success/fail
+① Paste URL          ② Configure            ③ Submit settings        ④ Preview & run
+   Google Form URL  →  Probabilities,      →  Threads, delay,       →  Simulate, run now or
+   → Auto extract      presets, personas      optional time window     spread over time → report
 ```
+
+---
+
+## Dùng với Claude/agent (MCP)
+
+App kèm một MCP server chạy qua stdio (`GoogleFormToolMcp.exe` trong bản cài, hoặc `uv run python -m app.mcp_server` khi chạy từ source). Server chỉ gọi tới app đang mở trên máy, không tự đọc hay ghi dữ liệu.
+
+1. Mở app.
+2. Vào **Settings > Diagnostics**, mục **Agent connection (MCP)**, copy cấu hình cho Claude Desktop hoặc lệnh cho Claude Code.
+3. Tuỳ chọn: thêm skill `skills/google-form-automation/SKILL.md` để agent biết thứ tự thao tác.
+
+Agent có thể extract form, đặt cấu hình, áp preset, quản lý persona và template, mô phỏng, chạy, tạm dừng, tiếp tục, dừng, đọc báo cáo và gửi lại lượt lỗi. Giới hạn 500 lượt mỗi đợt và 10 luồng áp dụng như trong UI.
 
 ---
 
@@ -65,6 +84,9 @@
 - Copy Form là best-effort, không claim exact clone Google Form.
 - Một số tính năng Google Forms như grid native, file upload, quiz/theme/branching có thể unsupported hoặc partial.
 - Windows SmartScreen có thể cảnh báo khi app chưa code-sign.
+- MCP server cần app đang mở; khi app đóng, tool trả lỗi nhắc mở app.
+- Lượt đã bấm Submit nhưng hết thời gian chờ xác nhận được ghi là lỗi; "gửi lại lượt lỗi" có thể gửi trùng lượt đó. Kiểm số response trên Google trước khi gửi lại.
+- Chạy rải chỉ gửi khi app đang mở; lượt đến hạn trong lúc app đóng sẽ được gửi sau khi mở lại.
 
 ---
 
@@ -159,5 +181,5 @@ pytest tests/ -v
 ---
 
 <div align="center">
-  <sub>Made by <a href="https://github.com/PhamXuanKhang">KhangPham</a> · v1.2.0</sub>
+  <sub>Made by <a href="https://github.com/PhamXuanKhang">KhangPham</a> · v2.0.0</sub>
 </div>

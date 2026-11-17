@@ -8,8 +8,10 @@
 let submissionActive = false;
 let submissionInterval;
 let currentSubmissionFormId = null;
+let currentRunId = null;
 let lastWarningMessage = null;
-const DEFAULT_REFRESH_INTERVAL = 2000; // 2 seconds
+const DEFAULT_REFRESH_INTERVAL = 1000; // 1 second
+const EVENT_LIMIT = 8;
 
 function t(key, fallback) {
     return window.i18n?.[key] || fallback;
@@ -50,6 +52,8 @@ export async function startSubmission(settings) {
         }
         
         submissionActive = true;
+        currentRunId = data.run_id || null;
+        setReportLink(null);
         updateUIForActiveSubmission();
         
         // Start monitoring
@@ -147,13 +151,18 @@ async function updateSubmissionStatus() {
         }
         
         // Update UI with status data
+        if (statusData.run_id) {
+            currentRunId = statusData.run_id;
+        }
         updateStatusDisplay(statusData);
-        
+        await updateEvents();
+
         // If submission is no longer running, stop monitoring
         if (!statusData.running) {
             submissionActive = false;
             clearInterval(submissionInterval);
             updateUIForStoppedSubmission();
+            setReportLink(currentRunId);
         }
     } catch (error) {
         console.error('Error updating submission status:', error);
@@ -201,6 +210,20 @@ function updateStatusDisplay(statusData) {
         timeElement.textContent = formatTime(statusData.elapsed_time);
     }
 
+    updateScheduleControls(statusData);
+
+    setText('success-count', statusData.success || 0);
+    setText('failed-count', statusData.failed || 0);
+    const minutes = (statusData.elapsed_time || 0) / 60;
+    const perMinute = minutes > 0 ? (statusData.completed || 0) / minutes : 0;
+    setText('throughput', perMinute > 0 ? perMinute.toFixed(1) : '–');
+    const remaining = Math.max((statusData.total || 0) - (statusData.completed || 0), 0);
+    if (!statusData.running || remaining === 0) {
+        setText('eta', remaining === 0 ? '00:00:00' : '–');
+    } else {
+        setText('eta', perMinute > 0 ? formatTime(Math.round((remaining / perMinute) * 60)) : '–');
+    }
+
     if (statusData.warning && statusData.warning !== lastWarningMessage) {
         lastWarningMessage = statusData.warning;
         showStatusMessage(statusData.warning, 'warning');
@@ -208,6 +231,104 @@ function updateStatusDisplay(statusData) {
     
     // Update charts if they exist
     updateCharts(statusData);
+}
+
+/** Next send time and pause/resume buttons for scheduled runs. */
+function updateScheduleControls(statusData) {
+    const info = document.getElementById('schedule-info');
+    const pause = document.getElementById('pause-button');
+    const resume = document.getElementById('resume-button');
+    const scheduled = Boolean(statusData.scheduled);
+    info?.classList.toggle('d-none', !scheduled);
+    pause?.classList.toggle('d-none', !(scheduled && statusData.running));
+    resume?.classList.toggle('d-none', !(scheduled && !statusData.running && statusData.run_status === 'paused'));
+    if (!scheduled || !info) return;
+    if (statusData.running && statusData.next_due_at) {
+        info.textContent = `${t('nextSendAt', 'Next response at')} ${new Date(statusData.next_due_at).toLocaleString()}. `
+            + t('keepAppOpen', 'Keep the app open until the run ends.');
+    } else if (statusData.run_status === 'paused') {
+        info.textContent = t('runPaused', 'Paused. Resume to send the remaining responses.');
+    } else {
+        info.textContent = '';
+    }
+}
+
+async function postRunAction(action) {
+    if (!currentRunId) return null;
+    const response = await fetch(`/runs/${encodeURIComponent(currentRunId)}/${action}`, { method: 'POST' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.error) {
+        showStatusMessage(data.error || t('requestFailed', 'Request failed.'), 'error');
+        return null;
+    }
+    return data;
+}
+
+document.getElementById('pause-button')?.addEventListener('click', async () => {
+    if (await postRunAction('pause')) {
+        showStatusMessage(t('pausing', 'Pausing after the responses being sent now.'), 'info');
+    }
+});
+
+document.getElementById('resume-button')?.addEventListener('click', async () => {
+    if (await postRunAction('resume')) {
+        submissionActive = true;
+        updateUIForActiveSubmission();
+        startStatusMonitoring();
+    }
+});
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = String(value);
+}
+
+function setReportLink(runId) {
+    const link = document.getElementById('view-report-link');
+    if (!link) return;
+    if (runId) {
+        link.href = `/runs/${encodeURIComponent(runId)}/view`;
+        link.classList.remove('d-none');
+    } else {
+        link.classList.add('d-none');
+    }
+}
+
+/**
+ * Show the latest finished responses of the current run.
+ * Answers come from the form, so text is set with textContent only.
+ */
+async function updateEvents() {
+    const list = document.getElementById('event-list');
+    if (!list || !currentRunId) return;
+    try {
+        const response = await fetch(`/runs/${encodeURIComponent(currentRunId)}/rows?sort=recent&limit=${EVENT_LIMIT}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!Array.isArray(data.rows) || !data.rows.length) return;
+        const items = data.rows.map((row) => {
+            const item = document.createElement('li');
+            const pill = document.createElement('span');
+            pill.className = `status-pill status-${row.status}`;
+            pill.textContent = t(`status_${row.status}`, row.status);
+            const label = document.createElement('span');
+            label.textContent = `#${row.index + 1}`;
+            const time = document.createElement('span');
+            time.className = 'ms-auto text-muted';
+            const stamp = row.finished_at || row.started_at;
+            time.textContent = stamp ? new Date(stamp).toLocaleTimeString() : '';
+            item.append(pill, label, time);
+            if (row.error) {
+                const error = document.createElement('code');
+                error.textContent = row.error;
+                item.insertBefore(error, time);
+            }
+            return item;
+        });
+        list.replaceChildren(...items);
+    } catch (error) {
+        console.debug('Could not load latest responses:', error);
+    }
 }
 
 function stopStatusMonitoring() {

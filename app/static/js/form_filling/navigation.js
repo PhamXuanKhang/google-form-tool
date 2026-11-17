@@ -34,6 +34,7 @@ function goToStep(step) {
 
     if (step === 3) {
         syncSettingsFromExistingFormCount();
+        window.updateSchedulePreview?.();
     }
 }
 
@@ -98,6 +99,12 @@ function syncSettingsFromExistingFormCount() {
 }
 
 async function saveManualConfiguration() {
+    // The cards show a persona's answers while it is being edited; saving
+    // them now would overwrite the shared settings.
+    if (window.isEditingPersona?.()) {
+        showPopup(t("finishPersonaFirst", "Save or cancel the persona answers first."), "warning");
+        return false;
+    }
     if (!window.currentFormId) {
         showPopup(t("pleaseExtractFormFirst", "Please extract a form first."));
         return false;
@@ -162,6 +169,12 @@ function validateSettingsStep() {
     }
     if (maxDelay < minDelay) {
         return t("settingsDelayRange", "Maximum delay must be greater than or equal to minimum delay.");
+    }
+    if (settings.schedule) {
+        const minutes = settings.schedule.window_minutes;
+        if (!Number.isFinite(minutes) || minutes < 1 || minutes > 10080) {
+            return t("scheduleWindowRange", "Choose between 1 and 10080 minutes.");
+        }
     }
 
     return null;

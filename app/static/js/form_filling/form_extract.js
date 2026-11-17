@@ -63,10 +63,16 @@ async function readJsonResponse(response) {
 
 function showPreviewError(container, message) {
     container.innerHTML = "";
-    const errorMessage = document.createElement("p");
-    errorMessage.className = "text-warning";
-    errorMessage.textContent = `⚠️ ${message}`;
-    container.appendChild(errorMessage);
+    const errorBox = document.createElement("div");
+    errorBox.className = "state-error";
+    errorBox.setAttribute("role", "alert");
+    const icon = document.createElement("i");
+    icon.className = "fas fa-triangle-exclamation";
+    icon.setAttribute("aria-hidden", "true");
+    const errorMessage = document.createElement("span");
+    errorMessage.textContent = message;
+    errorBox.append(icon, errorMessage);
+    container.appendChild(errorBox);
     container.classList.remove("preview-loaded");
 }
 

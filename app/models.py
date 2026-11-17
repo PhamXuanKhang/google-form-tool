@@ -140,6 +140,25 @@ class Submission(BaseModel):
     success_rate: float = Field(ge=0, le=100)
     network_status: str
 
+class Persona(BaseModel):
+    """
+    A group of respondents with its own answer settings.
+
+    Attributes:
+        persona_id (str): Stable identifier.
+        name (str): Display name.
+        weight (float): Share of responses in percent (0-100); all personas of a form total 100.
+        description (Optional[str]): Free text describing the group.
+        overrides (Dict[str, AnswerConfig]): Answer settings per question_id that replace the
+            form's shared settings for this persona. Questions without an override use the
+            shared settings.
+    """
+    persona_id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=80)
+    weight: float = Field(ge=0, le=100)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    overrides: Dict[str, AnswerConfig] = Field(default_factory=dict)
+
 class Form(BaseModel):
     """
     Represents a complete form including metadata, structure, and submission history.
@@ -162,6 +181,7 @@ class Form(BaseModel):
     last_used: Optional[datetime]
     response_config: Optional[ResponseConfig]
     submissions: Optional[List[Submission]]
+    personas: Optional[List[Persona]] = None
 
     @classmethod
     def get_id_from_url(cls, url: str) -> str:
