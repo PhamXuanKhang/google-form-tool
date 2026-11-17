@@ -180,5 +180,5 @@ pytest tests/ -v
 ---
 
 <div align="center">
-  <sub>Made by <a href="https://github.com/PhamXuanKhang">KhangPham</a> · v1.2.0</sub>
+  <sub>Made by <a href="https://github.com/PhamXuanKhang">KhangPham</a> · v2.0.0</sub>
 </div>

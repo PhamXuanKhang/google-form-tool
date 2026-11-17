@@ -7,7 +7,7 @@ package, such as the MCP server, do not import Flask or Selenium.
 ``from app import create_app, Form`` keeps working.
 """
 
-__version__ = "1.2.0"
+__version__ = "2.0.0"
 
 _FACTORY_NAMES = {"create_app", "get_locale", "SUPPORTED_LANGUAGES", "BABEL_AVAILABLE"}
 _MODEL_NAMES = {
