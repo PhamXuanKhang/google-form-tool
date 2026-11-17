@@ -114,12 +114,13 @@ class RunStore:
     def get_run(self, run_id: str) -> Optional[Dict[str, Any]]:
         if not is_valid_run_id(run_id):
             return None
-        with TinyDB(self.db_path) as db:
+        # Readers take the write lock too, so they never see db.json half rewritten.
+        with _DB_WRITE_LOCK, TinyDB(self.db_path) as db:
             found = db.table(RUNS_TABLE).get(Query().run_id == run_id)
         return dict(found) if found else None
 
     def list_runs(self, form_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        with TinyDB(self.db_path) as db:
+        with _DB_WRITE_LOCK, TinyDB(self.db_path) as db:
             table = db.table(RUNS_TABLE)
             found = table.search(Query().form_id == form_id) if form_id else table.all()
         runs = [dict(run) for run in found]
