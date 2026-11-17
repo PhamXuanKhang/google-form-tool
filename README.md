@@ -85,6 +85,7 @@ Agent có thể extract form, đặt cấu hình, áp preset, quản lý persona
 - Một số tính năng Google Forms như grid native, file upload, quiz/theme/branching có thể unsupported hoặc partial.
 - Windows SmartScreen có thể cảnh báo khi app chưa code-sign.
 - MCP server cần app đang mở; khi app đóng, tool trả lỗi nhắc mở app.
+- Lượt đã bấm Submit nhưng hết thời gian chờ xác nhận được ghi là lỗi; "gửi lại lượt lỗi" có thể gửi trùng lượt đó. Kiểm số response trên Google trước khi gửi lại.
 - Chạy rải chỉ gửi khi app đang mở; lượt đến hạn trong lúc app đóng sẽ được gửi sau khi mở lại.
 
 ---
