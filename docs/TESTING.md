@@ -8,7 +8,7 @@ Run the full test suite from the repository root:
 uv run python -m pytest -q
 ```
 
-Current expected result: `270 passed, 1 deselected, 1 xfailed`. The xfail pins a known `/about` rendering defect.
+Current expected result: `529 passed, 1 deselected`.
 
 The JS prefill validator is covered through pytest by shelling out to Node.js. If Node.js is missing, `tests/test_js_prefill_validator.py` skips with a manual verification note.
 
@@ -25,5 +25,6 @@ The JS prefill validator is covered through pytest by shelling out to Node.js. I
 - Run `scripts/package-windows.ps1`.
 - Confirm `dist/GoogleFormTool/GoogleFormTool.exe` exists before Electron packaging.
 - Confirm installers are created under `release/` and `release/SHA256SUMS.txt` includes each artifact.
+- Run `uv run python scripts/smoke-mcp.py --port 5056` (with `$env:CI='true'`). It starts the packaged backend and `GoogleFormToolMcp.exe` with a temporary app data folder, sends `initialize`, `tools/list` and `app_status` over a pipe, and fails if any stdout line is not JSON-RPC. Use `--from-source` to check the MCP server without a build.
 - Install on a clean Windows profile, launch from Start Menu and Desktop shortcut, and confirm `/healthz` returns ok.
 - Uninstall and confirm app binaries are removed while user data under app data is preserved by default.

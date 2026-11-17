@@ -362,4 +362,5 @@ Candidate work that is not yet a story.
 | --- | --- | --- |
 | E01 form-filling reliability | Improve unsupported question handling, required-field diagnostics, and browser cleanup when specific failures recur | candidate |
 | E02 desktop packaging | Keep Windows packaging, install smoke, and runtime diagnostics aligned with releases | candidate |
+| E04 agent form authoring | Create and edit Google Forms through an agent, and make Copy Form work on real forms | planned for 2.1 |
 | E03 harness maturity | Add story packets and decisions only when repeated friction proves they are useful | dropped; the harness was collapsed into `docs/WORKFLOW.md` |
