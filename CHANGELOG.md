@@ -73,7 +73,7 @@ rải theo thời gian và điều khiển bằng agent qua MCP, trên một gia
   `<APP_DATA>/runs/<run_id>.jsonl`, không ghi vào `db.json` (decision 0004).
 - MCP là proxy HTTP tới app đang chạy (decision 0005). `import app` nhẹ hơn nhờ factory
   tách riêng.
-- Test tăng từ 272 lên 529.
+- Test tăng từ 272 lên 531.
 
 ## [1.2.0] - 2026-11-10
 

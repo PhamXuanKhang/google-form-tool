@@ -8,7 +8,7 @@ Run the full test suite from the repository root:
 uv run python -m pytest -q
 ```
 
-Current expected result: `529 passed, 1 deselected`.
+Current expected result: `531 passed, 1 deselected`.
 
 The JS prefill validator is covered through pytest by shelling out to Node.js. If Node.js is missing, `tests/test_js_prefill_validator.py` skips with a manual verification note.
 
