@@ -302,6 +302,23 @@ def test_scheduled_start_registers_a_runner_and_stores_send_times(route_env, sto
     assert _start(client).status_code == 409
 
 
+def test_scheduled_start_sends_up_to_the_chosen_threads_per_tick(route_env):
+    client, started = route_env
+
+    _start(client, concurrent_threads=4)
+
+    assert started[0].max_per_tick == 4
+
+
+def test_pausing_a_finished_scheduled_run_is_refused(route_env):
+    client, started = route_env
+    run_id = _start(client).get_json()["run_id"]
+    started[0].final_status = "completed"
+
+    assert client.post(f"/runs/{run_id}/pause").status_code == 409
+    assert not started[0]._pause.is_set()
+
+
 def test_pause_and_resume_routes(route_env, store):
     client, started = route_env
     run_id = _start(client).get_json()["run_id"]

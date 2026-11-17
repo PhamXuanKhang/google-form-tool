@@ -110,7 +110,7 @@ def pause_run(run_id):
     if not is_valid_run_id(run_id):
         return json_error("Invalid run id")
     runner = _live_runner(run_id)
-    if runner is None:
+    if runner is None or runner.final_status is not None:
         if get_run_store().get_run(run_id) is None:
             return json_error("Run not found", 404)
         return json_error("Only a scheduled run that is running can be paused.", 409)

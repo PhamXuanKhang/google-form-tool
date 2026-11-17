@@ -43,7 +43,7 @@ class DripRunner:
         self.send_batch = send_batch
         self.clock = clock
         self.tick_seconds = tick_seconds
-        self.max_per_tick = max_per_tick or max(1, int(header.get("threads") or 1))
+        self._max_per_tick = max_per_tick
         self._stop = threading.Event()
         self._pause = threading.Event()
         self._wake = threading.Event()
@@ -53,6 +53,11 @@ class DripRunner:
         self.started = time.monotonic()
         self.final_status: Optional[str] = None
         self.plan = None  # not a plain submitter; kept for code that checks the attribute
+
+    @property
+    def max_per_tick(self) -> int:
+        # Read from the header each time: a new run's header is set after registration.
+        return self._max_per_tick or max(1, int(self.header.get("threads") or 1))
 
     # ------------------------------------------------------------- control
 
