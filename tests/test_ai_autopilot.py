@@ -9,7 +9,7 @@ import pytest
 import app.adapters.ai.ai_responder as ai_responder
 from app.models import AnswerConfig, AnswerOption, Form, Page, Question, ResponseConfig
 
-SECRET_KEY = "AIzaFAKE-autopilot-key-123"
+SECRET_KEY = "fake-gemini-key-for-tests-0123456789"
 
 
 def _form():
