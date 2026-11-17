@@ -1,4 +1,4 @@
-﻿"""
+"""
 WSGI entry point for the Flask application.
 
 Usage:
