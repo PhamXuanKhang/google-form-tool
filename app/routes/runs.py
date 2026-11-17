@@ -153,7 +153,7 @@ def resume_run(run_id):
         store.update_run(run_id, status="running")
         runner.load()
     except Exception:
-        runner._run_live = False
+        runner.abandon()
         logger.exception("Could not resume run %s", run_id)
         return json_error("Could not resume the run.", 500)
     submission_manager.start_drip_thread(form, runner)

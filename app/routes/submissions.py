@@ -142,9 +142,13 @@ def start_submission():
                 if window_seconds is not None:
                     runner = DripRunner(store=get_run_store(), header={}, send_batch=lambda rows, cb: None)
                     run = submission_manager.register_run(form_id, runner, create_run)
-                    runner.header = run
-                    runner.load()
-                    runner.send_batch = submission_manager.send_batch_factory(form, run)
+                    try:
+                        runner.header = run
+                        runner.load()
+                        runner.send_batch = submission_manager.send_batch_factory(form, run)
+                    except Exception:
+                        runner.abandon()
+                        raise
                 else:
                     run = submission_manager.register_run(form_id, submitter, create_run)
             except submission_manager.RunAlreadyActive:

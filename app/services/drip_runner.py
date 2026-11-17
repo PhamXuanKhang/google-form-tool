@@ -110,6 +110,11 @@ class DripRunner:
             for index, due_at in new_times.items():
                 self.rows[index]["due_at"] = due_at
 
+    def abandon(self) -> None:
+        """Release a runner whose run never started, so the form is not left busy."""
+        self.final_status = "interrupted"
+        self._run_live = False
+
     def load(self) -> None:
         """Read the run's rows from the store (done again when the run starts)."""
         rows = {row["index"]: row for row in self.store.load_rows(self.run_id)}
@@ -118,10 +123,10 @@ class DripRunner:
 
     def run(self) -> str:
         """Send due rows until none are left, or until stopped or paused."""
-        self.load()
-        self.store.update_run(self.run_id, status="running")
         final = "interrupted"
         try:
+            self.load()
+            self.store.update_run(self.run_id, status="running")
             while True:
                 if self._stop.is_set():
                     final = "stopped"
@@ -143,6 +148,14 @@ class DripRunner:
                     due = due[:self.max_per_tick]
                 if due:
                     self.send_batch(due, self._record)
+                    with self._lock:
+                        untouched = all(self.rows[row["index"]]["status"] == ROW_PLANNED for row in due)
+                    if untouched:
+                        # The sender reported nothing (the browser could not start, for
+                        # example). Stop instead of retrying the same rows forever; they
+                        # stay planned so the user can resume.
+                        logger.error("Scheduled run %s: a batch sent no row; stopping", self.run_id)
+                        break
                     continue
                 upcoming = next_due(rows)
                 wait = self.tick_seconds

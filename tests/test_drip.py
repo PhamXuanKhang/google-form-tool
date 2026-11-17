@@ -199,6 +199,19 @@ def test_stop_leaves_waiting_rows_planned(store):
     assert store.get_run(header["run_id"])["status"] == "stopped"
 
 
+def test_a_batch_that_sends_nothing_ends_the_run_instead_of_retrying(store):
+    header = _scheduled_run(store, count=5)
+    clock = FakeClock(START + timedelta(seconds=SIX_HOURS))
+    calls = []
+
+    final = _runner(store, header, clock, lambda rows, cb: calls.append(len(rows))).run()
+
+    assert final == "interrupted"
+    assert len(calls) == 1
+    assert all(row["status"] == "planned" for row in store.load_rows(header["run_id"]))
+    assert store.get_run(header["run_id"])["status"] == "interrupted"
+
+
 def test_recovery_leaves_live_and_finished_runs_alone(store):
     live = _scheduled_run(store, count=2)
     done = _scheduled_run(store, count=2)
@@ -306,6 +319,21 @@ def test_pause_and_resume_routes(route_env, store):
     assert resumed["status"] == "running" and resumed["pending"] == 6
     assert client.post(f"/runs/{run_id}/resume").status_code == 409
     assert client.post(f"/runs/{run_id}/pause").status_code == 200
+
+
+def test_a_failed_resume_does_not_leave_the_form_busy(route_env, store, monkeypatch):
+    client, started = route_env
+    run_id = _start(client).get_json()["run_id"]
+    store.update_run(run_id, status="interrupted")
+    started[0].abandon()
+
+    def broken_update(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(store, "update_run", broken_update)
+
+    assert client.post(f"/runs/{run_id}/resume").status_code == 500
+    assert not submission_manager.form_has_running_submission("f_drip")
 
 
 def test_resume_needs_a_scheduled_paused_or_interrupted_run(route_env, store):
